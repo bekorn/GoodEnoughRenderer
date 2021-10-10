@@ -1,0 +1,35 @@
+{
+  "name": "good-enough-renderer",
+  "version": "0.0.0",
+  "dependencies": [
+    {
+      "name": "glbinding"
+    },
+    {
+      "name": "glfw3"
+    },
+    {
+      "name": "glm"
+    },
+    {
+      "name": "imgui",
+      "default-features": false,
+      "features": [
+        "docking-experimental",
+        "opengl3-binding",
+        "glfw-binding"
+      ]
+    },
+    {
+      "name": "rapidjson"
+    }
+  ],
+  "features": {
+    "benchmark": {
+      "description": "Build benchmarks",
+      "dependencies": [
+        "benchmark"
+      ]
+    }
+  }
+}

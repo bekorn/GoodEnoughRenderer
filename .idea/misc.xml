@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
+  <component name="CidrRootsConfiguration">
+    <excludeRoots>
+      <file path="$PROJECT_DIR$/build" />
+      <file path="$PROJECT_DIR$/test_assets" />
+      <file path="$PROJECT_DIR$/vcpkg" />
+
+      <file path="C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\shared"/>
+      <file path="C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\um"/>
+      <file path="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\atlmfc\include"/>
+      <file path="C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\winrt"/>
+      <file path="C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\ucrt"/>
+      <file path="C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\cppwinrt"/>
+      <file path="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\include"/>
+    </excludeRoots>
+  </component>
+</project>
