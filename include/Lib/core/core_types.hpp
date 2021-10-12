@@ -87,3 +87,41 @@ namespace glm
 	}
 }
 
+
+// Simple byte buffer
+#include <span>
+
+struct ByteBuffer
+{
+	std::unique_ptr<byte> data;
+	usize size;
+
+	explicit ByteBuffer(usize size) :
+		data(new byte[size]),
+		size(size)
+	{}
+
+	template<typename T>
+	std::span<T> span_as() const
+	{
+		return {
+			reinterpret_cast<T*>(data.get()),
+			reinterpret_cast<T*>(data.get() + size)
+		};
+	}
+
+	template<typename T>
+	std::span<T> span_as(usize offset, usize size) const
+	{
+		return {
+			reinterpret_cast<T*>(data.get() + offset),
+			reinterpret_cast<T*>(data.get() + offset + size)
+		};
+	}
+
+	template<typename T>
+	T* data_as() const
+	{
+		return reinterpret_cast<T*>(data.get());
+	}
+};

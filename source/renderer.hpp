@@ -6,13 +6,13 @@
 // TODO(bekorn): pass this without globals
 struct GlobalState
 {
-	std::filesystem::path test_assets;
-
+	std::filesystem::path const test_assets = R"(E:\Users\Berk\Desktop\Projeler\Portfolio\GoodEnoughRenderer\test_assets)";
 } global_state;
 
 struct IRenderer
 {
-	virtual void create(GlobalState & global_state) = 0;
+	virtual void create() = 0;
+
 	virtual void render(GLFW::Window const & w) = 0;
 };
 
@@ -26,35 +26,101 @@ struct MainRenderer : IRenderer
 	i32 active_vao = 1;
 	bool enable_depth_test = true;
 
-//	std::string shader_name = "basic";
-//
-//	ShaderHandle shader_handles[ShaderHandle::STAGE_COUNT] = {
-//		ShaderHandle(shader_name.data(), (ShaderHandle::Stage) 0),
-//		ShaderHandle(shader_name.data(), (ShaderHandle::Stage) 1),
-//		ShaderHandle(shader_name.data(), (ShaderHandle::Stage) 2)
-//	};
-//
-//	void update_handles(std::string const & name)
-//	{
-//		for (auto & handle : shader_handles)
-//			handle = ShaderHandle(name, handle.stage);
-//	}
-//
-//	// Persistent resources
-//	ShaderProgram program;
-//
-//	Texture2D render_target;
-//	std::vector<std::shared_ptr<Buffer>> gl_buffers_handles;
-//	VAO_ElementDraw quad_vao;
-//	VAO_ArrayDraw dragon_vao;
+	//	std::string shader_name = "basic";
+	//
+	//	ShaderHandle shader_handles[ShaderHandle::STAGE_COUNT] = {
+	//		ShaderHandle(shader_name.data(), (ShaderHandle::Stage) 0),
+	//		ShaderHandle(shader_name.data(), (ShaderHandle::Stage) 1),
+	//		ShaderHandle(shader_name.data(), (ShaderHandle::Stage) 2)
+	//	};
+	//
+	//	void update_handles(std::string const & name)
+	//	{
+	//		for (auto & handle : shader_handles)
+	//			handle = ShaderHandle(name, handle.stage);
+	//	}
+	//
+	//	// Persistent resources
+	//	ShaderProgram program;
+	//
+	//	Texture2D render_target;
+
+	std::vector<std::unique_ptr<GL::Buffer>> gl_buffers;
+	std::vector<std::unique_ptr<GL::VAO_ElementDraw>> element_vaos;
+	std::vector<std::unique_ptr<GL::VAO_ArrayDraw>> array_vaos;
 
 	std::string status;
 
-//	std::string gltf_file;
+	GLTF::GLTFData gltf_data;
 
-	void create(GlobalState & global_state) final
+	void create() final
 	{
-		GLTF::Load(global_state.test_assets / "vertex colored cube.gltf");
+		gltf_data = GLTF::Load(global_state.test_assets / "vertex colored cube.gltf");
+
+		// Only meshes[0].primitives[0] for now
+		auto const & primitive = gltf_data.meshes[0].primitives[0];
+
+		std::vector<GL::Attribute::Description> attributes;
+		attributes.reserve(primitive.attributes.size());
+		for (auto const & attribute: primitive.attributes)
+		{
+			auto const & accessor = gltf_data.accessors[attribute.accessor_index];
+			auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
+			auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
+
+			gl_buffers.emplace_back(std::make_unique<GL::Buffer>());
+			auto & gl_buffer = *gl_buffers.back();
+			gl_buffer.create(
+				{
+					.type = GL::GL_ARRAY_BUFFER,
+					.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
+				}
+			);
+
+			attributes.push_back(
+				GL::Attribute::Description{
+					.buffer = gl_buffer,
+					.location = 0,
+					.vector_dimension = accessor.vector_dimension,
+					.vector_data_type = GL::GLenum(accessor.vector_data_type),
+				}
+			);
+		}
+
+		if (primitive.has_indices())
+		{
+			auto const & buffer_view_index = gltf_data.accessors[primitive.indices_accessor_index].buffer_view_index;
+			auto const & buffer_view = gltf_data.buffer_views[buffer_view_index];
+			auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
+
+			gl_buffers.emplace_back(std::make_unique<GL::Buffer>());
+			auto & gl_element_buffer = *gl_buffers.back();
+			gl_element_buffer.create(
+				{
+					.type = GL::GL_ELEMENT_ARRAY_BUFFER,
+					.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
+				}
+			);
+
+			element_vaos.emplace_back(std::make_unique<GL::VAO_ElementDraw>());
+			auto & vao = *element_vaos.back();
+			vao.create(
+				GL::VAO_ElementDraw::Description{
+					.attributes = attributes,
+					.element_array = gl_element_buffer,
+				}
+			);
+		}
+		else
+		{
+			array_vaos.emplace_back(std::make_unique<GL::VAO_ArrayDraw>());
+			auto & vao = *array_vaos.back();
+			vao.create(
+				{
+					.attributes = attributes
+				}
+			);
+		}
 	}
 
 	void metrics_window()
@@ -166,14 +232,20 @@ struct MainRenderer : IRenderer
 
 	void render(GLFW::Window const & window) final
 	{
-		using namespace gl43core;
+		using namespace GL;
 
 		glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// UI windows
 		metrics_window();
-//		program_window();
+		//		program_window();
 		realtime_settings_window();
+
+		for (auto const & vao : element_vaos)
+		{
+			glBindVertexArray(vao->id);
+			glDrawElements(GL_TRIANGLES, vao->element_count, GL_UNSIGNED_SHORT, nullptr);
+		}
 	}
 };

@@ -155,12 +155,6 @@ namespace GLFW
 
 			// Load OpenGL API
 			glbinding::initialize(glfwGetProcAddress);
-			{
-				auto version = glbinding::aux::ContextInfo::version();
-				auto renderer = glbinding::aux::ContextInfo::renderer();
-				std::clog << "glbinding loaded OpenGL version " << version.toString()
-						  << ". Renderer: " << renderer << '\n';
-			}
 
 			// Set callbacks
 			if constexpr (DEBUG)

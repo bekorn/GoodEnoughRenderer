@@ -4,16 +4,12 @@
 #include "Lib/core/.hpp"
 #include "Lib/glfw/.hpp"
 #include "Lib/imgui/.hpp"
-
 #include "Lib/file_management/.hpp"
 
 #include "renderer.hpp"
 
 i32 main(i32 argc, char** argv)
 {
-	global_state.test_assets = argv[1];
-
-
 	GLFWContext glfw_context;
 	GLFW::Window window;
 	ImguiContext imgui_context;
@@ -22,13 +18,21 @@ i32 main(i32 argc, char** argv)
 	{
 		glfw_context.create();
 		window.create({.title = "Good Enough Renderer", .vsync = true, .gl_major = 4, .gl_minor = 3});
-		imgui_context.create({.window = window, .glsl_version = 430});
+
+		auto renderer = gl::glGetString(gl::GL_RENDERER);
+		std::clog << "Renderer: " << renderer << '\n';
+		auto const glsl_version = (const char*)gl::glGetString(gl::GL_SHADING_LANGUAGE_VERSION);
+		u32 major, minor;
+		std::sscanf(glsl_version, "%d.%d", &major, &minor);
+		std::clog << "GLSL version: " << major << '.' << minor << '\n';
+
+		imgui_context.create({.window = window, .glsl_version = (major * 100 + minor)});
 		std::cout.flush();
 	}
 	catch (std::runtime_error & error)
 	{
 		std::cerr << error.what();
-		std::terminate();
+		std::exit(1);
 	}
 
 
@@ -36,7 +40,7 @@ i32 main(i32 argc, char** argv)
 	renderers.emplace_back(new MainRenderer);
 
 	for (auto & renderer: renderers)
-		renderer->create(global_state);
+		renderer->create();
 
 
 	while (not glfwWindowShouldClose(window))

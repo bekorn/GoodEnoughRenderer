@@ -14,7 +14,7 @@ struct ImguiContext
 	{
 		GLFW::Window const & window;
 
-		i32 const & glsl_version;
+		u32 const & glsl_version;
 	};
 
 	void create(Description const & description)

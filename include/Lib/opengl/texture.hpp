@@ -1,11 +1,10 @@
 #pragma once
 
 #include ".pch.hpp"
+#include "core_types.hpp"
 
 namespace GL
 {
-	using namespace gl43core;
-
 	struct Texture2D : OpenGLObject
 	{
 		Texture2D() noexcept = default;
