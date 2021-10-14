@@ -23,7 +23,8 @@ namespace GLTF
 		u32 byte_offset;
 		u32 vector_data_type; // stores GLenum value
 		u32 vector_dimension;
-//		u32 count;
+		//		u32 count;
+		bool normalized;
 	};
 
 	struct Attribute
@@ -58,44 +59,54 @@ namespace GLTF
 		std::vector<Mesh> meshes;
 	};
 
-
-	u32 GetU32(rapidjson::Document::ConstObject const & obj, std::string_view const & key)
+	namespace JSONHelpers
 	{
-		return obj[key.data()].GetUint();
-	}
+		using JSONObj = rapidjson::Document::ConstObject const &;
+		using Key = std::string_view const &;
 
-	u32 GetU32(rapidjson::Document::ConstObject const & obj, std::string_view const & key, u32 def_value)
-	{
-		auto member = obj.FindMember(key.data());
-		if (member != obj.MemberEnd())
-			return member->value.GetUint();
-		else
-			return def_value;
-	}
+		u32 GetU32(JSONObj obj, Key key)
+		{
+			return obj[key.data()].GetUint();
+		}
 
-	std::string
-	GetString(rapidjson::Document::ConstObject const & obj, std::string_view const & key, std::string def_value)
-	{
-		auto member = obj.FindMember(key.data());
-		if (member != obj.MemberEnd())
-			return member->value.GetString();
-		else
-			return def_value;
+		u32 GetU32(JSONObj obj, Key key, u32 def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetUint();
+			else
+				return def_value;
+		}
+
+		std::string GetString(JSONObj obj, Key key, std::string const & def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetString();
+			else
+				return def_value;
+		}
+
+		bool GetBool(JSONObj obj, Key key, bool def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetBool();
+			else
+				return def_value;
+		}
 	}
 
 	// Limitation: Loads mesh[0].primitive[0] only
 	GLTFData Load(std::filesystem::path const & file)
 	{
 		using namespace rapidjson;
+		using namespace JSONHelpers;
 
 		GLTFData gltf_data;
 
-		auto content = LoadAsString(file);
-
 		Document document;
-		document.Parse(content.c_str());
-
-//		std::cout << "File contents of " << file << ":\n" << content << '\n';
+		document.Parse(LoadAsString(file).c_str());
 
 		auto const file_dir = file.parent_path();
 		// Parse buffers
@@ -145,7 +156,8 @@ namespace GLTF
 					.buffer_view_index = accessor["bufferView"].GetUint(),
 					.vector_data_type = accessor["componentType"].GetUint(),
 					.vector_dimension = get_type_dimension(accessor["type"].GetString()),
-//					.count = accessor["count"].GetUint(),
+					//					.count = accessor["count"].GetUint(),
+					.normalized = GetBool(accessor, "normalized", false),
 				}
 			);
 		}
@@ -153,7 +165,6 @@ namespace GLTF
 		for (auto const & item: document["meshes"].GetArray())
 		{
 			auto const & mesh = item.GetObject();
-			std::cout << "Mesh[" << mesh["name"].GetString() << "]:\n";
 
 			std::vector<Primitive> primitives;
 			primitives.reserve(mesh["primitives"].Size());

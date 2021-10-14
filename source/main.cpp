@@ -27,7 +27,8 @@ i32 main(i32 argc, char** argv)
 		std::clog << "GLSL version: " << major << '.' << minor << '\n';
 
 		imgui_context.create({.window = window, .glsl_version = (major * 100 + minor)});
-		std::cout.flush();
+
+		std::clog << std::endl;
 	}
 	catch (std::runtime_error & error)
 	{

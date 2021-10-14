@@ -2,6 +2,7 @@
 
 #include "Lib/glfw/window.hpp"
 #include "Lib/opengl/.hpp"
+#include "Lib/render/.hpp"
 
 // TODO(bekorn): pass this without globals
 struct GlobalState
@@ -26,101 +27,92 @@ struct MainRenderer : IRenderer
 	i32 active_vao = 1;
 	bool enable_depth_test = true;
 
-	//	std::string shader_name = "basic";
-	//
-	//	ShaderHandle shader_handles[ShaderHandle::STAGE_COUNT] = {
-	//		ShaderHandle(shader_name.data(), (ShaderHandle::Stage) 0),
-	//		ShaderHandle(shader_name.data(), (ShaderHandle::Stage) 1),
-	//		ShaderHandle(shader_name.data(), (ShaderHandle::Stage) 2)
-	//	};
-	//
-	//	void update_handles(std::string const & name)
-	//	{
-	//		for (auto & handle : shader_handles)
-	//			handle = ShaderHandle(name, handle.stage);
-	//	}
-	//
-	//	// Persistent resources
-	//	ShaderProgram program;
-	//
+	GL::ShaderProgram program;
+	std::string program_info;
+
 	//	Texture2D render_target;
 
-	std::vector<std::unique_ptr<GL::Buffer>> gl_buffers;
-	std::vector<std::unique_ptr<GL::VAO_ElementDraw>> element_vaos;
-	std::vector<std::unique_ptr<GL::VAO_ArrayDraw>> array_vaos;
+	std::vector<Mesh> meshes;
 
 	std::string status;
 
-	GLTF::GLTFData gltf_data;
+	void try_to_reload_shader()
+	{
+		program_info.clear();
+
+		auto const vert_source = LoadAsString(global_state.test_assets / "test.vert.glsl");
+		auto const frag_source = LoadAsString(global_state.test_assets / "test.frag.glsl");
+
+		bool shader_stage_error = false;
+
+		GL::ShaderStage vert_shader;
+		vert_shader.create(
+			GL::ShaderStage::Description{
+				.stage = GL::GL_VERTEX_SHADER,
+				.sources = {
+					vert_source.c_str(),
+				},
+			}
+		);
+		if (not vert_shader.is_compiled())
+		{
+			shader_stage_error = true;
+			program_info += "Vert Shader Error:\n" + vert_shader.get_log();
+		}
+
+		GL::ShaderStage frag_shader;
+		frag_shader.create(
+			GL::ShaderStage::Description{
+				.stage = GL::GL_FRAGMENT_SHADER,
+				.sources = {
+					frag_source.c_str(),
+				},
+			}
+		);
+		if (not frag_shader.is_compiled())
+		{
+			shader_stage_error = true;
+			program_info += "Frag Shader Error:\n" + frag_shader.get_log();
+		}
+
+		if (shader_stage_error)
+			return;
+
+
+		GL::ShaderProgram new_program;
+		new_program.create(
+			{
+				.shader_stages = {
+					&vert_shader,
+					&frag_shader
+				}
+			}
+		);
+
+		if (not new_program.is_linked())
+		{
+			program_info += "Linking Error:\n" + new_program.get_log();
+			return;
+		}
+
+		// TODO(bekorn): This is probably not good.. Find a better wrapping for OpenGLObjects
+		program.~ShaderProgram();
+
+		program = std::move(new_program);
+		GL::glUseProgram(program.id);
+
+		program_info += "Shader id: " + std::to_string(program.id) + "\n\n";
+		program_info += program.get_active_uniforms() + '\n';
+		program_info += program.get_active_attributes();
+	}
 
 	void create() final
 	{
-		gltf_data = GLTF::Load(global_state.test_assets / "vertex colored cube.gltf");
+		//		auto const gltf_data = GLTF::Load(global_state.test_assets / "vertex colored cube.gltf");
+		auto const gltf_data = GLTF::Load(global_state.test_assets / "axis.gltf");
+		meshes.emplace_back(gltf_data, 0);
 
-		// Only meshes[0].primitives[0] for now
-		auto const & primitive = gltf_data.meshes[0].primitives[0];
-
-		std::vector<GL::Attribute::Description> attributes;
-		attributes.reserve(primitive.attributes.size());
-		for (auto const & attribute: primitive.attributes)
-		{
-			auto const & accessor = gltf_data.accessors[attribute.accessor_index];
-			auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
-			auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
-
-			gl_buffers.emplace_back(std::make_unique<GL::Buffer>());
-			auto & gl_buffer = *gl_buffers.back();
-			gl_buffer.create(
-				{
-					.type = GL::GL_ARRAY_BUFFER,
-					.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
-				}
-			);
-
-			attributes.push_back(
-				GL::Attribute::Description{
-					.buffer = gl_buffer,
-					.location = 0,
-					.vector_dimension = accessor.vector_dimension,
-					.vector_data_type = GL::GLenum(accessor.vector_data_type),
-				}
-			);
-		}
-
-		if (primitive.has_indices())
-		{
-			auto const & buffer_view_index = gltf_data.accessors[primitive.indices_accessor_index].buffer_view_index;
-			auto const & buffer_view = gltf_data.buffer_views[buffer_view_index];
-			auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
-
-			gl_buffers.emplace_back(std::make_unique<GL::Buffer>());
-			auto & gl_element_buffer = *gl_buffers.back();
-			gl_element_buffer.create(
-				{
-					.type = GL::GL_ELEMENT_ARRAY_BUFFER,
-					.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
-				}
-			);
-
-			element_vaos.emplace_back(std::make_unique<GL::VAO_ElementDraw>());
-			auto & vao = *element_vaos.back();
-			vao.create(
-				GL::VAO_ElementDraw::Description{
-					.attributes = attributes,
-					.element_array = gl_element_buffer,
-				}
-			);
-		}
-		else
-		{
-			array_vaos.emplace_back(std::make_unique<GL::VAO_ArrayDraw>());
-			auto & vao = *array_vaos.back();
-			vao.create(
-				{
-					.attributes = attributes
-				}
-			);
-		}
+		try_to_reload_shader();
 	}
 
 	void metrics_window()
@@ -215,6 +207,22 @@ struct MainRenderer : IRenderer
 	}
 	*/
 
+	void shader_window()
+	{
+		using namespace ImGui;
+
+		Begin("Shader stuff");
+
+		if (Button("Reload Shader"))
+		{
+			try_to_reload_shader();
+		}
+
+		Text("%s", program_info.c_str());
+
+		End();
+	}
+
 	void realtime_settings_window()
 	{
 		using namespace ImGui;
@@ -223,9 +231,12 @@ struct MainRenderer : IRenderer
 
 		ColorEdit3("clear color", glm::value_ptr(clear_color));
 
-		Checkbox("Enable Depth Test", &enable_depth_test);
+		//		Checkbox("Enable Depth Test", &enable_depth_test);
 
-		SliderInt("Active VAO", &active_vao, 0, 1);
+		Text("Program id: %d", program.id);
+		i32 current_program;
+		GL::glGetIntegerv(GL::GL_CURRENT_PROGRAM, &current_program);
+		Text("Current Program id: %d", current_program);
 
 		End();
 	}
@@ -234,18 +245,31 @@ struct MainRenderer : IRenderer
 	{
 		using namespace GL;
 
-		glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		// UI windows
 		metrics_window();
 		//		program_window();
 		realtime_settings_window();
 
-		for (auto const & vao : element_vaos)
+		shader_window();
+
+
+		glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glEnable(GL_DEPTH_TEST);
+
+		for (auto const & mesh: meshes)
 		{
-			glBindVertexArray(vao->id);
-			glDrawElements(GL_TRIANGLES, vao->element_count, GL_UNSIGNED_SHORT, nullptr);
+			for (auto const & vao: mesh.array_vaos)
+			{
+				glBindVertexArray(vao->id);
+				glDrawArrays(GL_TRIANGLES, 0, vao->vertex_count);
+			}
+			for (auto const & vao: mesh.element_vaos)
+			{
+				glBindVertexArray(vao->id);
+				glDrawElements(GL_TRIANGLES, vao->element_count, GL_UNSIGNED_SHORT, nullptr);
+			}
 		}
 	}
 };

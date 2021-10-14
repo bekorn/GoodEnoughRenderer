@@ -14,6 +14,7 @@ namespace GL
 			GLuint location;
 			GLuint vector_dimension;
 			GLenum vector_data_type;
+			bool normalized;
 			GLuint stride;
 		};
 	};
@@ -49,7 +50,7 @@ namespace GL
 				glVertexAttribPointer(
 					attribute.location,
 					attribute.vector_dimension, attribute.vector_data_type,
-					false,
+					attribute.normalized,
 					attribute.stride,
 					reinterpret_cast<void*>(attribute.byte_offset)
 				);

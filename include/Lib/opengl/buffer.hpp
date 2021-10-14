@@ -10,12 +10,12 @@ namespace GL
 		GLenum type;
 
 		Buffer() noexcept = default;
+		Buffer(Buffer&&) noexcept = default;
 
 		~Buffer()
 		{
 			glDeleteBuffers(1, &id);
 		}
-
 		struct Description
 		{
 			GLenum type = GL_ARRAY_BUFFER;
