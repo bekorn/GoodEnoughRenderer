@@ -8,3 +8,4 @@
 #include "texture.hpp"
 #include "buffer.hpp"
 #include "vao.hpp"
+#include "glsl.hpp"

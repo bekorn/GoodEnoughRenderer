@@ -21,20 +21,67 @@ struct IRenderer
 struct MainRenderer : IRenderer
 {
 	// Settings
-	bool show_demo_window = false;
-
 	f32x4 clear_color = f32x4(0.45f, 0.55f, 0.60f, 1.00f);
-	i32 active_vao = 1;
-	bool enable_depth_test = true;
-
-	GL::ShaderProgram program;
-	std::string program_info;
 
 	//	Texture2D render_target;
 
 	std::vector<Mesh> meshes;
 
 	std::string status;
+
+
+	std::array<GL::ShaderProgram, GL::ATTRIBUTE_LOCATION::SIZE> attribute_visualizers;
+
+	void load_attribute_visualizers()
+	{
+		// Limitation: only works with vectors
+		auto const vert_source = LoadAsString(global_state.test_assets / "debug/single_attributes.vert.glsl");
+		auto const frag_source = LoadAsString(global_state.test_assets / "debug/single_attribute.frag.glsl");
+
+		auto const & glsl_version = GL::GLSL_VERSION_MACRO;
+		auto const layout_convention = GL::GET_GLSL_ATTRIBUTE_LOCATION_MACROS();
+
+		GL::ShaderStage frag_shader;
+		frag_shader.create(
+			GL::ShaderStage::Description{
+				.stage = GL::GL_FRAGMENT_SHADER,
+				.sources = {
+					glsl_version,
+					frag_source.c_str(),
+				},
+			}
+		);
+
+		for (auto i = 0; i < attribute_visualizers.size(); ++i)
+		{
+			auto const attribute_location = "#define ATTRIBUTE_LOCATION_VISUALIZE " + std::to_string(i) + "\n";
+
+			GL::ShaderStage vert_shader;
+			vert_shader.create(
+				GL::ShaderStage::Description{
+					.stage = GL::GL_VERTEX_SHADER,
+					.sources = {
+						glsl_version,
+						layout_convention.c_str(),
+						attribute_location.c_str(),
+						vert_source.c_str(),
+					},
+				}
+			);
+
+			attribute_visualizers[i].create(
+				{
+					.shader_stages = {
+						&vert_shader,
+						&frag_shader
+					}
+				}
+			);
+		}
+	}
+
+	GL::ShaderProgram program;
+	std::string program_info;
 
 	void try_to_reload_shader()
 	{
@@ -43,6 +90,9 @@ struct MainRenderer : IRenderer
 		auto const vert_source = LoadAsString(global_state.test_assets / "test.vert.glsl");
 		auto const frag_source = LoadAsString(global_state.test_assets / "test.frag.glsl");
 
+		auto const & glsl_version = GL::GLSL_VERSION_MACRO;
+		auto const layout_convention = GL::GET_GLSL_ATTRIBUTE_LOCATION_MACROS();
+
 		bool shader_stage_error = false;
 
 		GL::ShaderStage vert_shader;
@@ -50,6 +100,8 @@ struct MainRenderer : IRenderer
 			GL::ShaderStage::Description{
 				.stage = GL::GL_VERTEX_SHADER,
 				.sources = {
+					glsl_version,
+					layout_convention.c_str(),
 					vert_source.c_str(),
 				},
 			}
@@ -65,6 +117,8 @@ struct MainRenderer : IRenderer
 			GL::ShaderStage::Description{
 				.stage = GL::GL_FRAGMENT_SHADER,
 				.sources = {
+					glsl_version,
+					layout_convention.c_str(),
 					frag_source.c_str(),
 				},
 			}
@@ -108,6 +162,8 @@ struct MainRenderer : IRenderer
 
 	void create() final
 	{
+		load_attribute_visualizers();
+
 		//		auto const gltf_data = GLTF::Load(global_state.test_assets / "vertex colored cube.gltf");
 		auto const gltf_data = GLTF::Load(global_state.test_assets / "axis.gltf");
 		meshes.emplace_back(gltf_data, 0);
@@ -127,10 +183,6 @@ struct MainRenderer : IRenderer
 			"Application average %.3f ms/frame (%.1f FPS)",
 			1000.f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate
 		);
-
-		Separator();
-
-		Checkbox("Demo Window", &show_demo_window); // Edit bools storing our window open/close state
 
 		Separator();
 
@@ -223,6 +275,8 @@ struct MainRenderer : IRenderer
 		End();
 	}
 
+	bool visualize_attribute = false;
+
 	void realtime_settings_window()
 	{
 		using namespace ImGui;
@@ -233,10 +287,24 @@ struct MainRenderer : IRenderer
 
 		//		Checkbox("Enable Depth Test", &enable_depth_test);
 
-		Text("Program id: %d", program.id);
 		i32 current_program;
 		GL::glGetIntegerv(GL::GL_CURRENT_PROGRAM, &current_program);
 		Text("Current Program id: %d", current_program);
+
+		static i32 current_item = 0;
+		if (Checkbox("Visualize", &visualize_attribute))
+		{
+			GL::glUseProgram(visualize_attribute ? attribute_visualizers[current_item].id : program.id);
+		}
+
+		if (visualize_attribute)
+		{
+			auto const & elements = GL::ATTRIBUTE_LOCATION::AsArray();
+			if (Combo("Attribute", &current_item, elements.data(), elements.size()))
+			{
+				GL::glUseProgram(attribute_visualizers[current_item].id);
+			}
+		}
 
 		End();
 	}
