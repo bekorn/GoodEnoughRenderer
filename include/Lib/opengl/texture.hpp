@@ -8,13 +8,42 @@ namespace GL
 	struct Texture2D : OpenGLObject
 	{
 		Texture2D() noexcept = default;
+		Texture2D(Texture2D &&) noexcept = default;
 
 		~Texture2D()
 		{
 			glDeleteTextures(1, &id);
 		}
 
-		struct Description
+		struct AttachmentDescription
+		{
+			i32x2 size;
+
+			GLenum internal_format;
+			GLenum format;
+
+			GLenum min_filter = GL_LINEAR;
+			GLenum max_filter = GL_LINEAR;
+		};
+
+		void create(AttachmentDescription const & description)
+		{
+			glGenTextures(1, &id);
+
+			glBindTexture(GL_TEXTURE_2D, id);
+			glTexImage2D(
+				GL_TEXTURE_2D,
+				0,
+				description.internal_format,
+				description.size.x, description.size.y,
+				0, description.format, GL_UNSIGNED_BYTE, nullptr
+			);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, description.min_filter);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, description.max_filter);
+		}
+
+		struct ImageDescription
 		{
 			i32x2 size;
 
@@ -27,11 +56,8 @@ namespace GL
 			GLenum wrap_t = GL_CLAMP_TO_BORDER;
 		};
 
-		void create(Description const & description)
+		void create(ImageDescription const & description)
 		{
-			assert(description.size.x <= GL_MAX_TEXTURE_SIZE);
-			assert(description.size.y <= GL_MAX_TEXTURE_SIZE);
-
 			glGenTextures(1, &id);
 
 			auto channel_count = description.has_alpha ? 4 : 3;

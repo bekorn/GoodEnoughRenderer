@@ -21,14 +21,136 @@ struct IRenderer
 struct MainRenderer : IRenderer
 {
 	// Settings
-	f32x4 clear_color = f32x4(0.45f, 0.55f, 0.60f, 1.00f);
-
-	//	Texture2D render_target;
+	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
 
 	std::vector<Mesh> meshes;
 
 	std::string status;
 
+	i32x2 scene_resolution{720, 720};
+	GL::FrameBuffer scene_framebuffer;
+	std::vector<GL::Texture2D> scene_framebuffer_attachments;
+
+	void create_scene_framebuffer()
+	{
+		scene_framebuffer_attachments.resize(2);
+
+		auto & color_attachment = scene_framebuffer_attachments[0];
+		color_attachment.create(
+			GL::Texture2D::AttachmentDescription{
+				.size = scene_resolution,
+				.internal_format = GL::GL_RGB,
+				.format = GL::GL_RGBA,
+			}
+		);
+
+		auto & depth_attachment = scene_framebuffer_attachments[1];
+		depth_attachment.create(
+			GL::Texture2D::AttachmentDescription{
+				.size = scene_resolution,
+				.internal_format = GL::GL_DEPTH_COMPONENT,
+				.format = GL::GL_DEPTH_COMPONENT,
+			}
+		);
+
+		scene_framebuffer.create(
+			GL::FrameBuffer::Description{
+				.attachments = {
+					{
+						.type = GL::GL_COLOR_ATTACHMENT0,
+						.texture = color_attachment,
+					},
+					{
+						.type = GL::GL_DEPTH_ATTACHMENT,
+						.texture = depth_attachment,
+					},
+				}
+			}
+		);
+	}
+
+	void scene_render()
+	{
+		using namespace GL;
+
+		glBindFramebuffer(GL_FRAMEBUFFER, scene_framebuffer.id);
+		glViewport(0, 0, scene_resolution.x, scene_resolution.y);
+
+		glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glEnable(GL_DEPTH_TEST);
+
+		for (auto const & mesh: meshes)
+		{
+			for (auto const & vao: mesh.array_vaos)
+			{
+				glBindVertexArray(vao.id);
+				glDrawArrays(GL_TRIANGLES, 0, vao.vertex_count);
+			}
+			for (auto const & vao: mesh.element_vaos)
+			{
+				glBindVertexArray(vao.id);
+				glDrawElements(GL_TRIANGLES, vao.element_count, GL_UNSIGNED_SHORT, nullptr);
+			}
+		}
+	}
+
+	void scene_window()
+	{
+		using namespace ImGui;
+
+		Begin("Scene");
+
+		f32 scale = 0.5;
+		Text("Resolution: %dx%d, Scale: %.2f", scene_resolution.x, scene_resolution.y, scale);
+		Image(
+			reinterpret_cast<void*>(scene_framebuffer_attachments[0].id),
+			{f32(scene_resolution.x) * scale, f32(scene_resolution.y) * scale},
+			{0, 1}, {1, 0} // because default is flipped on y-axis
+		);
+
+		End();
+	}
+
+	void scene_settings_window()
+	{
+		using namespace ImGui;
+
+		Begin("Scene Settings");
+
+		ColorEdit3("Clear color", glm::value_ptr(clear_color));
+
+		//		Checkbox("Enable Depth Test", &enable_depth_test);
+
+		i32 current_program;
+		GL::glGetIntegerv(GL::GL_CURRENT_PROGRAM, &current_program);
+		Text("Current Program id: %d", current_program);
+
+		static i32 current_item = 0;
+		if (Checkbox("Visualize", &visualize_attribute))
+		{
+			GL::glUseProgram(visualize_attribute ? attribute_visualizers[current_item].id : program.id);
+		}
+
+		if (visualize_attribute)
+		{
+			static auto const elements = []()
+			{
+				std::array<char const*, GL::ATTRIBUTE_LOCATION::SIZE> array;
+				for (auto i = 0; i < GL::ATTRIBUTE_LOCATION::SIZE; ++i)
+					array[i] = GL::ATTRIBUTE_LOCATION::ToString(i);
+				return array;
+			}();
+
+			if (Combo("Attribute", &current_item, elements.data(), elements.size()))
+			{
+				GL::glUseProgram(attribute_visualizers[current_item].id);
+			}
+		}
+
+		End();
+	}
 
 	std::array<GL::ShaderProgram, GL::ATTRIBUTE_LOCATION::SIZE> attribute_visualizers;
 
@@ -158,6 +280,8 @@ struct MainRenderer : IRenderer
 	{
 		load_attribute_visualizers();
 
+		create_scene_framebuffer();
+
 		auto const gltf_data = GLTF::Load(global_state.test_assets / "axis.gltf");
 		meshes.emplace_back(gltf_data, 0);
 
@@ -202,74 +326,17 @@ struct MainRenderer : IRenderer
 
 	bool visualize_attribute = false;
 
-	void realtime_settings_window()
-	{
-		using namespace ImGui;
-
-		Begin("Realtime Settings");
-
-		ColorEdit3("clear color", glm::value_ptr(clear_color));
-
-		//		Checkbox("Enable Depth Test", &enable_depth_test);
-
-		i32 current_program;
-		GL::glGetIntegerv(GL::GL_CURRENT_PROGRAM, &current_program);
-		Text("Current Program id: %d", current_program);
-
-		static i32 current_item = 0;
-		if (Checkbox("Visualize", &visualize_attribute))
-		{
-			GL::glUseProgram(visualize_attribute ? attribute_visualizers[current_item].id : program.id);
-		}
-
-		if (visualize_attribute)
-		{
-			static auto const elements = []()
-			{
-				std::array<char const*, GL::ATTRIBUTE_LOCATION::SIZE> array;
-				for (auto i = 0; i < GL::ATTRIBUTE_LOCATION::SIZE; ++i)
-					array[i] = GL::ATTRIBUTE_LOCATION::ToString(i);
-				return array;
-			}();
-
-			if (Combo("Attribute", &current_item, elements.data(), elements.size()))
-			{
-				GL::glUseProgram(attribute_visualizers[current_item].id);
-			}
-		}
-
-		End();
-	}
-
 	void render(GLFW::Window const & window) final
 	{
 		using namespace GL;
 
 		// UI windows
 		metrics_window();
-		//		program_window();
-		realtime_settings_window();
-
+		scene_settings_window();
 		shader_window();
+		scene_window();
 
-
-		glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glEnable(GL_DEPTH_TEST);
-
-		for (auto const & mesh: meshes)
-		{
-			for (auto const & vao: mesh.array_vaos)
-			{
-				glBindVertexArray(vao.id);
-				glDrawArrays(GL_TRIANGLES, 0, vao.vertex_count);
-			}
-			for (auto const & vao: mesh.element_vaos)
-			{
-				glBindVertexArray(vao.id);
-				glDrawElements(GL_TRIANGLES, vao.element_count, GL_UNSIGNED_SHORT, nullptr);
-			}
-		}
+		// Immediate rendering
+		scene_render();
 	}
 };

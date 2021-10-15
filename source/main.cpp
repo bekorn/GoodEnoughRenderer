@@ -49,6 +49,22 @@ i32 main(i32 argc, char** argv)
 		for (auto & renderer: renderers)
 			renderer->render(window);
 
+		// Reset any modified settings
+		{
+			using namespace GL;
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+			i32 w, h;
+			glfwGetWindowSize(window, &w, &h);
+			glViewport(0, 0, w, h);
+
+			glClearColor(0, 0, 0, 1);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			glEnable(GL_DEPTH_TEST);
+		}
+
 		// Render Imgui frame
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
