@@ -75,24 +75,9 @@ namespace GL
 			}
 		}
 
-		inline char const * ToString(u32 type)
+		inline char const* ToString(u32 type)
 		{
 			return ToString(Type(type));
-		}
-
-		static std::array<char const*, SIZE> const & AsArray()
-		{
-			static bool computed = false;
-			static std::array<char const*, SIZE> array;
-
-			if (computed)
-				return array;
-
-
-			for (auto i = 0; i < SIZE; ++i)
-				array[i] = ToString(i);
-			computed = true;
-			return array;
 		}
 	}
 }

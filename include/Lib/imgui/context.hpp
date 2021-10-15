@@ -3,8 +3,6 @@
 #include ".pch.hpp"
 #include <Lib/opengl/util.hpp>
 
-#include <format>
-
 // Setup Dear ImGui context
 struct ImguiContext
 {
@@ -13,8 +11,6 @@ struct ImguiContext
 	struct Description
 	{
 		GLFW::Window const & window;
-
-		u32 const & glsl_version;
 	};
 
 	void create(Description const & description)
@@ -30,8 +26,7 @@ struct ImguiContext
 		// Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForOpenGL(description.window, true);
 
-		auto version_macro = "#version " + std::to_string(description.glsl_version);
-		ImGui_ImplOpenGL3_Init(version_macro.c_str());
+		ImGui_ImplOpenGL3_Init(GL::GLSL_VERSION_MACRO.c_str());
 	}
 
 	~ImguiContext()

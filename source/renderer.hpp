@@ -38,15 +38,12 @@ struct MainRenderer : IRenderer
 		auto const vert_source = LoadAsString(global_state.test_assets / "debug/single_attributes.vert.glsl");
 		auto const frag_source = LoadAsString(global_state.test_assets / "debug/single_attribute.frag.glsl");
 
-		auto const & glsl_version = GL::GLSL_VERSION_MACRO;
-		auto const layout_convention = GL::GET_GLSL_ATTRIBUTE_LOCATION_MACROS();
-
 		GL::ShaderStage frag_shader;
 		frag_shader.create(
-			GL::ShaderStage::Description{
+			{
 				.stage = GL::GL_FRAGMENT_SHADER,
 				.sources = {
-					glsl_version,
+					GL::GLSL_VERSION_MACRO.c_str(),
 					frag_source.c_str(),
 				},
 			}
@@ -58,11 +55,11 @@ struct MainRenderer : IRenderer
 
 			GL::ShaderStage vert_shader;
 			vert_shader.create(
-				GL::ShaderStage::Description{
+				{
 					.stage = GL::GL_VERTEX_SHADER,
 					.sources = {
-						glsl_version,
-						layout_convention.c_str(),
+						GL::GLSL_VERSION_MACRO.c_str(),
+						GL::GLSL_ATTRIBUTE_LOCATION_MACROS.c_str(),
 						attribute_location.c_str(),
 						vert_source.c_str(),
 					},
@@ -90,18 +87,15 @@ struct MainRenderer : IRenderer
 		auto const vert_source = LoadAsString(global_state.test_assets / "test.vert.glsl");
 		auto const frag_source = LoadAsString(global_state.test_assets / "test.frag.glsl");
 
-		auto const & glsl_version = GL::GLSL_VERSION_MACRO;
-		auto const layout_convention = GL::GET_GLSL_ATTRIBUTE_LOCATION_MACROS();
-
 		bool shader_stage_error = false;
 
 		GL::ShaderStage vert_shader;
 		vert_shader.create(
-			GL::ShaderStage::Description{
+			{
 				.stage = GL::GL_VERTEX_SHADER,
 				.sources = {
-					glsl_version,
-					layout_convention.c_str(),
+					GL::GLSL_VERSION_MACRO.c_str(),
+					GL::GLSL_ATTRIBUTE_LOCATION_MACROS.c_str(),
 					vert_source.c_str(),
 				},
 			}
@@ -114,11 +108,11 @@ struct MainRenderer : IRenderer
 
 		GL::ShaderStage frag_shader;
 		frag_shader.create(
-			GL::ShaderStage::Description{
+			{
 				.stage = GL::GL_FRAGMENT_SHADER,
 				.sources = {
-					glsl_version,
-					layout_convention.c_str(),
+					GL::GLSL_VERSION_MACRO.c_str(),
+					GL::GLSL_ATTRIBUTE_LOCATION_MACROS.c_str(),
 					frag_source.c_str(),
 				},
 			}
@@ -164,7 +158,6 @@ struct MainRenderer : IRenderer
 	{
 		load_attribute_visualizers();
 
-		//		auto const gltf_data = GLTF::Load(global_state.test_assets / "vertex colored cube.gltf");
 		auto const gltf_data = GLTF::Load(global_state.test_assets / "axis.gltf");
 		meshes.emplace_back(gltf_data, 0);
 
@@ -190,74 +183,6 @@ struct MainRenderer : IRenderer
 
 		End();
 	}
-
-	/*
-	void program_window()
-	{
-		using namespace ImGui;
-
-		Begin("Program Controls"); // Create a window called "Hello, world!" and append into it.
-
-		if (Text("Name"), SameLine(), InputText("", state.shader_name.data(), state.shader_name.size()))
-			state.update_handles(state.shader_name.data());
-
-
-		{
-			auto & vert = state.shader_handles[ShaderHandle::VERT];
-			Text("vert = %s", vert.path.string().c_str());
-			bool value = vert.is_file();
-			SameLine(), ImGui::Checkbox("Exists", &value);
-		}
-		{
-			auto & frag = state.shader_handles[ShaderHandle::FRAG];
-			Text("frag = %s", frag.path.string().c_str());
-			bool value = frag.is_file();
-			SameLine(), ImGui::Checkbox("Exists", &value);
-		}
-		{
-			auto & geom = state.shader_handles[ShaderHandle::GEOM];
-			Text("geom = %s", geom.path.string().c_str());
-			bool value = geom.is_file();
-			SameLine(), ImGui::Checkbox("Exists", &value);
-		}
-
-		if (Button("Compile", {100, GetTextLineHeight() * 1.5f}))
-		{
-			if (state.program.id != 0)
-			{
-				glDeleteProgram(state.program.id);
-				state.program.id = 0;
-			}
-
-			state.program.create(
-				{
-					.name = state.shader_name.data()
-				}
-			);
-
-			if (state.program.id != 0)
-			{
-				std::clog << (state.status = "Compiled successfully") << '\n';
-			}
-			else
-			{
-				GLint maxLength = 0;
-				glGetShaderiv(state.program.id, GL_INFO_LOG_LENGTH, &maxLength);
-
-				// The maxLength includes the NULL character
-				std::vector<GLchar> errorLog(maxLength);
-				glGetShaderInfoLog(state.program.id, maxLength, &maxLength, errorLog.data());
-
-				std::cerr << (state.status = "Compilation failed :(\n"s + errorLog.data()) << '\n';
-			}
-		}
-
-		NewLine();
-		Text("Program ID: %i", state.program.id);
-
-		End();
-	}
-	*/
 
 	void shader_window()
 	{
@@ -299,7 +224,14 @@ struct MainRenderer : IRenderer
 
 		if (visualize_attribute)
 		{
-			auto const & elements = GL::ATTRIBUTE_LOCATION::AsArray();
+			static auto const elements = []()
+			{
+				std::array<char const*, GL::ATTRIBUTE_LOCATION::SIZE> array;
+				for (auto i = 0; i < GL::ATTRIBUTE_LOCATION::SIZE; ++i)
+					array[i] = GL::ATTRIBUTE_LOCATION::ToString(i);
+				return array;
+			}();
+
 			if (Combo("Attribute", &current_item, elements.data(), elements.size()))
 			{
 				GL::glUseProgram(attribute_visualizers[current_item].id);
@@ -330,13 +262,13 @@ struct MainRenderer : IRenderer
 		{
 			for (auto const & vao: mesh.array_vaos)
 			{
-				glBindVertexArray(vao->id);
-				glDrawArrays(GL_TRIANGLES, 0, vao->vertex_count);
+				glBindVertexArray(vao.id);
+				glDrawArrays(GL_TRIANGLES, 0, vao.vertex_count);
 			}
 			for (auto const & vao: mesh.element_vaos)
 			{
-				glBindVertexArray(vao->id);
-				glDrawElements(GL_TRIANGLES, vao->element_count, GL_UNSIGNED_SHORT, nullptr);
+				glBindVertexArray(vao.id);
+				glDrawElements(GL_TRIANGLES, vao.element_count, GL_UNSIGNED_SHORT, nullptr);
 			}
 		}
 	}

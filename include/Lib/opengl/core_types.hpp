@@ -5,7 +5,9 @@
 // TODO(bekorn): maybe rename to ogl or OGL
 namespace GL
 {
-	using namespace gl43core;
+	// TODO(bekorn): is this the place for config?
+	auto const VERSION_MAJOR = 4;
+	auto const VERSION_MINOR = 3;
 
 	struct OpenGLObject
 	{

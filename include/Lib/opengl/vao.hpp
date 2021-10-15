@@ -24,6 +24,7 @@ namespace GL
 		GLsizei element_count = 0;
 
 		VAO_ElementDraw() noexcept = default;
+		VAO_ElementDraw(VAO_ElementDraw&&) noexcept = default;
 
 		~VAO_ElementDraw()
 		{
@@ -72,6 +73,7 @@ namespace GL
 		GLsizei vertex_count = 0;
 
 		VAO_ArrayDraw() noexcept = default;
+		VAO_ArrayDraw(VAO_ArrayDraw&&) noexcept = default;
 
 		~VAO_ArrayDraw()
 		{
