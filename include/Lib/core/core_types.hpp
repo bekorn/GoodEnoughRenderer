@@ -101,6 +101,15 @@ struct ByteBuffer
 		size(size)
 	{}
 
+	// move a pointer
+	ByteBuffer(void*& pointer, usize size) :
+		data(static_cast<byte*>(pointer)),
+		size(size)
+	{
+		// TODO(bekorn): is this useful?
+		pointer = nullptr;
+	}
+
 	template<typename T>
 	std::span<T> span_as() const
 	{

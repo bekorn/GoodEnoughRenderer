@@ -20,13 +20,11 @@ struct IRenderer
 
 struct MainRenderer : IRenderer
 {
-	// Settings
-	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
+	std::string status;
 
 	std::vector<Mesh> meshes;
 
-	std::string status;
-
+	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
 	i32x2 scene_resolution{720, 720};
 	GL::FrameBuffer scene_framebuffer;
 	std::vector<GL::Texture2D> scene_framebuffer_attachments;
@@ -83,6 +81,13 @@ struct MainRenderer : IRenderer
 
 		for (auto const & mesh: meshes)
 		{
+			// just testing since there is no Material yet
+			for (auto i = 0; i < mesh.textures.size(); ++i)
+			{
+				glActiveTexture(GL_TEXTURE0 + i);
+				glBindTexture(GL_TEXTURE_2D, mesh.textures[i].id);
+			}
+
 			for (auto const & vao: mesh.array_vaos)
 			{
 				glBindVertexArray(vao.id);
@@ -105,13 +110,16 @@ struct MainRenderer : IRenderer
 		f32 scale = 0.5;
 		Text("Resolution: %dx%d, Scale: %.2f", scene_resolution.x, scene_resolution.y, scale);
 		Image(
-			reinterpret_cast<void*>(scene_framebuffer_attachments[0].id),
+			reinterpret_cast<void*>(i64(scene_framebuffer_attachments[0].id)),
 			{f32(scene_resolution.x) * scale, f32(scene_resolution.y) * scale},
 			{0, 1}, {1, 0} // because default is flipped on y-axis
 		);
 
 		End();
 	}
+
+	bool visualize_attribute = false;
+	bool visualize_texture = false;
 
 	void scene_settings_window()
 	{
@@ -121,31 +129,57 @@ struct MainRenderer : IRenderer
 
 		ColorEdit3("Clear color", glm::value_ptr(clear_color));
 
-		//		Checkbox("Enable Depth Test", &enable_depth_test);
-
 		i32 current_program;
 		GL::glGetIntegerv(GL::GL_CURRENT_PROGRAM, &current_program);
 		Text("Current Program id: %d", current_program);
 
-		static i32 current_item = 0;
-		if (Checkbox("Visualize", &visualize_attribute))
 		{
-			GL::glUseProgram(visualize_attribute ? attribute_visualizers[current_item].id : program.id);
+			static i32 current_item = 0;
+			if (Checkbox("Visualize Attribute", &visualize_attribute))
+			{
+				GL::glUseProgram(visualize_attribute ? attribute_visualizers[current_item].id : program.id);
+			}
+
+			if (visualize_attribute)
+			{
+				static auto const elements = []()
+				{
+					std::array<char const*, GL::ATTRIBUTE_LOCATION::SIZE> array;
+					for (auto i = 0; i < GL::ATTRIBUTE_LOCATION::SIZE; ++i)
+						array[i] = GL::ATTRIBUTE_LOCATION::ToString(i);
+					return array;
+				}();
+
+				if (Combo("Attribute", &current_item, elements.data(), elements.size()))
+				{
+					GL::glUseProgram(attribute_visualizers[current_item].id);
+				}
+			}
 		}
 
-		if (visualize_attribute)
 		{
-			static auto const elements = []()
-			{
-				std::array<char const*, GL::ATTRIBUTE_LOCATION::SIZE> array;
-				for (auto i = 0; i < GL::ATTRIBUTE_LOCATION::SIZE; ++i)
-					array[i] = GL::ATTRIBUTE_LOCATION::ToString(i);
-				return array;
-			}();
+			static i32 current_item = 0;
 
-			if (Combo("Attribute", &current_item, elements.data(), elements.size()))
+			Checkbox("Visualize Texture", &visualize_texture);
+
+			if (visualize_texture)
 			{
-				GL::glUseProgram(attribute_visualizers[current_item].id);
+				auto const & mesh = meshes[0];
+
+				static auto const elements = [&mesh]()
+				{
+					std::string elements_sep_by_zero;
+					for (auto i = 0; i < mesh.textures.size(); ++i)
+						elements_sep_by_zero += std::to_string(i) + '\0';
+					return elements_sep_by_zero;
+				}();
+
+				Combo("Texture", &current_item, elements.data());
+
+				Image(
+					reinterpret_cast<void*>(i64(mesh.textures[current_item].id)),
+					{240, 240}
+				);
 			}
 		}
 
@@ -206,8 +240,8 @@ struct MainRenderer : IRenderer
 	{
 		program_info.clear();
 
-		auto const vert_source = LoadAsString(global_state.test_assets / "test.vert.glsl");
-		auto const frag_source = LoadAsString(global_state.test_assets / "test.frag.glsl");
+		auto const vert_source = LoadAsString(global_state.test_assets / "gltf_pbrMetallicRoughness.vert.glsl");
+		auto const frag_source = LoadAsString(global_state.test_assets / "gltf_pbrMetallicRoughness.frag.glsl");
 
 		bool shader_stage_error = false;
 
@@ -282,7 +316,7 @@ struct MainRenderer : IRenderer
 
 		create_scene_framebuffer();
 
-		auto const gltf_data = GLTF::Load(global_state.test_assets / "axis.gltf");
+		auto const gltf_data = GLTF::Load(global_state.test_assets / "helmet/DamagedHelmet.gltf");
 		meshes.emplace_back(gltf_data, 0);
 
 		try_to_reload_shader();
@@ -323,8 +357,6 @@ struct MainRenderer : IRenderer
 
 		End();
 	}
-
-	bool visualize_attribute = false;
 
 	void render(GLFW::Window const & window) final
 	{

@@ -22,6 +22,9 @@
     },
     {
       "name": "rapidjson"
+    },
+    {
+      "name": "stb"
     }
   ],
   "features": {

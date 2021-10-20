@@ -2,12 +2,13 @@
 
 #include ".pch.hpp"
 
+#include <filesystem>
 #include <iostream>
-
-// Spec: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.pdf
 
 namespace GLTF
 {
+	// Spec: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.pdf
+
 	using ::ByteBuffer;
 
 	struct BufferView
@@ -51,10 +52,46 @@ namespace GLTF
 		std::string name;
 	};
 
+	struct Image
+	{
+		ByteBuffer data;
+		i32x2 dimensions;
+		i32 channels;
+	};
+
+	struct Sampler
+	{
+		u32 min_filter;
+		u32 mag_filter;
+		u32 wrap_s;
+		u32 wrap_t;
+	};
+
+	struct Texture
+	{
+		u32 image_index; // == u32(-1) if default
+		u32 sampler_index; // == u32(-1) if default
+
+		bool is_default_image() const
+		{
+			return image_index == u32(-1);
+		}
+
+		bool is_default_sampler() const
+		{
+			return sampler_index == u32(-1);
+		}
+	};
+
 	struct GLTFData
 	{
 		std::vector<ByteBuffer> buffers;
 		std::vector<BufferView> buffer_views;
+
+		std::vector<Image> images;
+		std::vector<Sampler> samplers;
+		std::vector<Texture> textures;
+
 		std::vector<Accessor> accessors;
 		std::vector<Mesh> meshes;
 	};
@@ -135,6 +172,83 @@ namespace GLTF
 			);
 		}
 
+		// Parse images
+		if (auto const member = document.FindMember("images"); member != document.MemberEnd())
+		{
+			for (auto const & item: member->value.GetArray())
+			{
+				auto const & image = item.GetObject();
+
+				if (auto const member = image.FindMember("uri"); member != image.MemberEnd())
+				{
+					auto uri = member->value.GetString();
+
+					if (uri[5] != ':') // check for "data:" (base64 encoded data a json string)
+					{
+						auto const file_data = LoadAsBytes(file_dir / uri);
+						i32x2 dimensions;
+						i32 channels;
+						void* raw_pixel_data = stbi_load_from_memory(
+							file_data.data_as<const unsigned char>(), file_data.size,
+							&dimensions.x, &dimensions.y,
+							&channels, 0
+						);
+
+						auto data = ByteBuffer(
+							raw_pixel_data,
+							dimensions.x * dimensions.y * channels
+						);
+
+						gltf_data.images.push_back(
+							{
+								.data = std::move(data),
+								.dimensions = dimensions,
+								.channels = channels,
+							}
+						);
+						continue;
+					}
+				}
+
+				throw std::runtime_error("images without a uri file path are not supported yet");
+			}
+		}
+
+		// Parse samplers
+		if (auto const member = document.FindMember("samplers"); member != document.MemberEnd())
+		{
+			for (auto const & item: member->value.GetArray())
+			{
+				auto const & sampler = item.GetObject();
+
+				// Min/Mag filters have no default values in the spec, I picked the values
+				gltf_data.samplers.push_back(
+					Sampler{
+						.min_filter = GetU32(sampler, "minFilter", 9729), // def is LINEAR
+						.mag_filter = GetU32(sampler, "magFilter", 9729), // def is LINEAR
+						.wrap_s = GetU32(sampler, "wrapS", 10497), // def is REPEAT
+						.wrap_t = GetU32(sampler, "wrapT", 10497), // def is REPEAT
+					}
+				);
+			}
+		}
+
+		// Parse textures
+		if (auto const member = document.FindMember("textures"); member != document.MemberEnd())
+		{
+			for (auto const & item: member->value.GetArray())
+			{
+				auto const & texture = item.GetObject();
+
+				gltf_data.textures.push_back(
+					{
+						.image_index = GetU32(texture, "source", u32(-1)),
+						.sampler_index = GetU32(texture, "sampler", u32(-1)),
+					}
+				);
+			}
+		}
+
 		// Parse accessors
 		for (auto const & item: document["accessors"].GetArray())
 		{
@@ -162,6 +276,7 @@ namespace GLTF
 			);
 		}
 
+		// Parse meshes
 		for (auto const & item: document["meshes"].GetArray())
 		{
 			auto const & mesh = item.GetObject();

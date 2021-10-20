@@ -29,6 +29,7 @@ struct Mesh
 	std::vector<GL::Buffer> buffers;
 	std::vector<GL::VAO_ArrayDraw> array_vaos;
 	std::vector<GL::VAO_ElementDraw> element_vaos;
+	std::vector<GL::Texture2D> textures;
 
 	Mesh() noexcept = default;
 	Mesh(Mesh const &) noexcept = delete;
@@ -73,7 +74,7 @@ struct Mesh
 					.buffer = buffers[i], // !!! This is a reference: if buffers vector allocates, there will be chaos
 					.byte_offset = 0, // because each attribute has its own VBO
 					.location = GetGLConventionAttributeLocation(attribute.name),
-					.vector_dimension = accessor.vector_dimension,
+					.vector_dimension = GL::GLint(accessor.vector_dimension),
 					.vector_data_type = GL::GLenum(accessor.vector_data_type),
 					.normalized = accessor.normalized,
 				}
@@ -111,6 +112,37 @@ struct Mesh
 			vao.create(
 				{
 					.attributes = attributes
+				}
+			);
+		}
+
+		// Load Textures
+		textures.resize(gltf_data.textures.size());
+		for (auto i = 0; i < gltf_data.textures.size(); ++i)
+		{
+			auto const & texture = gltf_data.textures[i];
+
+			// TODO(bekorn) have a default image
+			auto const & image = texture.is_default_image()
+								 ? throw std::runtime_error("not implemented")
+								 : gltf_data.images[texture.image_index];
+
+			// TODO(bekorn) have a default image
+			auto const & sampler = texture.is_default_sampler()
+								   ? throw std::runtime_error("not implemented")
+								   : gltf_data.samplers[texture.sampler_index];
+
+			textures[i].create(
+				GL::Texture2D::ImageDescription{
+					.dimensions = image.dimensions,
+					.has_alpha = image.channels == 4,
+
+					.min_filter = GL::GLenum(sampler.min_filter),
+					.mag_filter = GL::GLenum(sampler.mag_filter),
+					.wrap_s = GL::GLenum(sampler.wrap_s),
+					.wrap_t = GL::GLenum(sampler.wrap_t),
+
+					.data = image.data.data.get(),
 				}
 			);
 		}

@@ -18,7 +18,14 @@ i32 main(i32 argc, char** argv)
 	try
 	{
 		glfw_context.create();
-		window.create({.title = "Good Enough Renderer", .vsync = true, .gl_major = 4, .gl_minor = 3});
+		window.create(
+			{
+				.title = "Good Enough Renderer",
+				.size = {860, 860},
+				.vsync = true,
+				.gl_major = 4, .gl_minor = 3,
+			}
+		);
 		imgui_context.create({.window = window});
 
 		std::clog << GL::GetContextInfo() << std::endl;

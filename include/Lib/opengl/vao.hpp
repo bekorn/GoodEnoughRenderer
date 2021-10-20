@@ -12,10 +12,10 @@ namespace GL
 			Buffer const & buffer;
 			usize byte_offset = 0;
 			GLuint location;
-			GLuint vector_dimension;
+			GLint vector_dimension;
 			GLenum vector_data_type;
 			bool normalized;
-			GLuint stride;
+			GLint stride;
 		};
 	};
 
