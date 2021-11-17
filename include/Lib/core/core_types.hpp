@@ -88,12 +88,15 @@ namespace glm
 }
 
 
-// Simple byte buffer
-#include <span>
+// Handy std classes
+using std::optional;
+using std::unique_ptr, std::make_unique;
 
+
+// Simple byte buffer
 struct ByteBuffer
 {
-	std::unique_ptr<byte> data;
+	unique_ptr<byte> data;
 	usize size;
 
 	explicit ByteBuffer(usize size) :

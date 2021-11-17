@@ -22,6 +22,26 @@ struct MainRenderer : IRenderer
 {
 	std::string status;
 
+	void metrics_window()
+	{
+		using namespace ImGui;
+
+		SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
+		SetNextWindowSize(ImVec2(600, 160), ImGuiCond_Once);
+		Begin("Metrics", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+
+		Text(
+			"Application average %.3f ms/frame (%.1f FPS)",
+			1000.f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate
+		);
+
+		Separator();
+
+		Text("|> %s", status.c_str());
+
+		End();
+	}
+
 	std::vector<Mesh> meshes;
 
 	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
@@ -81,20 +101,17 @@ struct MainRenderer : IRenderer
 
 		for (auto const & mesh: meshes)
 		{
-			// just testing since there is no Material yet
-			for (auto i = 0; i < mesh.textures.size(); ++i)
+			for (auto const & [vao, material_index]: mesh.array_drawables)
 			{
-				glActiveTexture(GL_TEXTURE0 + i);
-				glBindTexture(GL_TEXTURE_2D, mesh.textures[i].id);
-			}
+				mesh.materials[material_index]->set_uniforms();
 
-			for (auto const & vao: mesh.array_vaos)
-			{
 				glBindVertexArray(vao.id);
 				glDrawArrays(GL_TRIANGLES, 0, vao.vertex_count);
 			}
-			for (auto const & vao: mesh.element_vaos)
+			for (auto const & [vao, material_index]: mesh.element_drawables)
 			{
+				mesh.materials[material_index]->set_uniforms();
+
 				glBindVertexArray(vao.id);
 				glDrawElements(GL_TRIANGLES, vao.element_count, GL_UNSIGNED_SHORT, nullptr);
 			}
@@ -133,9 +150,13 @@ struct MainRenderer : IRenderer
 		GL::glGetIntegerv(GL::GL_CURRENT_PROGRAM, &current_program);
 		Text("Current Program id: %d", current_program);
 
+		ColorEdit4("Base Color", begin(
+			dynamic_cast<Material_gltf_pbrMetallicRoughness*>(meshes[0].materials[0].get())->base_color_factor
+		));
+
 		{
 			static i32 current_item = 0;
-			if (Checkbox("Visualize Attribute", &visualize_attribute))
+			if (Checkbox("Visualize Attribute of Mesh", &visualize_attribute))
 			{
 				GL::glUseProgram(visualize_attribute ? attribute_visualizers[current_item].id : program.id);
 			}
@@ -160,7 +181,7 @@ struct MainRenderer : IRenderer
 		{
 			static i32 current_item = 0;
 
-			Checkbox("Visualize Texture", &visualize_texture);
+			Checkbox("Visualize Texture of Mesh", &visualize_texture);
 
 			if (visualize_texture)
 			{
@@ -174,10 +195,13 @@ struct MainRenderer : IRenderer
 					return elements_sep_by_zero;
 				}();
 
-				Combo("Texture", &current_item, elements.data());
+				Combo("index", &current_item, elements.data());
+
+				auto const id = mesh.textures[current_item].id;
+				LabelText("id", "%d", id);
 
 				Image(
-					reinterpret_cast<void*>(i64(mesh.textures[current_item].id)),
+					reinterpret_cast<void*>(i64(id)),
 					{240, 240}
 				);
 			}
@@ -320,26 +344,6 @@ struct MainRenderer : IRenderer
 		meshes.emplace_back(gltf_data, 0);
 
 		try_to_reload_shader();
-	}
-
-	void metrics_window()
-	{
-		using namespace ImGui;
-
-		SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
-		SetNextWindowSize(ImVec2(600, 160), ImGuiCond_Once);
-		Begin("Metrics", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
-
-		Text(
-			"Application average %.3f ms/frame (%.1f FPS)",
-			1000.f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate
-		);
-
-		Separator();
-
-		Text("|> %s", status.c_str());
-
-		End();
 	}
 
 	void shader_window()

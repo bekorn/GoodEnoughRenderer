@@ -4,6 +4,9 @@
 #include "Lib/opengl/.hpp"
 #include "Lib/file_management/gltf_loader.hpp"
 
+#include "material.hpp"
+#include "drawable.hpp"
+
 u32 GetGLConventionAttributeLocation(std::string const & name)
 {
 	if (name == "POSITION") return GL::ATTRIBUTE_LOCATION::POSITION;
@@ -24,12 +27,18 @@ u32 GetGLConventionAttributeLocation(std::string const & name)
 }
 
 // Limitation: Only supports OpenGL
+// TODO(bekorn): This struct should not own the GLObjects, just reference them
+// TODO(bekorn): Mesh should only contain data about geometry
 struct Mesh
 {
+	// Resources
 	std::vector<GL::Buffer> buffers;
-	std::vector<GL::VAO_ArrayDraw> array_vaos;
-	std::vector<GL::VAO_ElementDraw> element_vaos;
 	std::vector<GL::Texture2D> textures;
+	std::vector<unique_ptr<IMaterial>> materials;
+
+	// Vertex attributes + material index
+	std::vector<ArrayDrawable> array_drawables;
+	std::vector<ElementDrawable> element_drawables;
 
 	Mesh() noexcept = default;
 	Mesh(Mesh const &) noexcept = delete;
@@ -42,78 +51,97 @@ struct Mesh
 
 		// Limitation: Only the first primitive
 		auto const & primitive = gltf_data.meshes[mesh_index].primitives[0];
-		auto const attribute_size = primitive.attributes.size();
-
-		buffers.resize(attribute_size + primitive.has_indices());
-		for (auto i = 0; i < attribute_size; ++i)
 		{
-			auto const & attribute = primitive.attributes[i];
-			auto const & accessor = gltf_data.accessors[attribute.accessor_index];
-			auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
-			auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
+			auto const attribute_size = primitive.attributes.size();
 
-			buffers[i].create(
-				{
-					.type = GL::GL_ARRAY_BUFFER,
-					.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
-				}
-			);
-		}
+			buffers.resize(attribute_size + primitive.has_indices());
+			for (auto i = 0; i < attribute_size; ++i)
+			{
+				auto const & attribute = primitive.attributes[i];
+				auto const & accessor = gltf_data.accessors[attribute.accessor_index];
+				auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
+				auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
 
-		std::vector<GL::Attribute::Description> attributes;
-		attributes.reserve(attribute_size);
-		for (auto i = 0; i < attribute_size; ++i)
-		{
-			auto const & attribute = primitive.attributes[i];
-			auto const & accessor = gltf_data.accessors[attribute.accessor_index];
-			auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
-			auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
+				buffers[i].create(
+					{
+						.type = GL::GL_ARRAY_BUFFER,
+						.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
+					}
+				);
+			}
 
-			attributes.push_back(
-				{
-					.buffer = buffers[i], // !!! This is a reference: if buffers vector allocates, there will be chaos
-					.byte_offset = 0, // because each attribute has its own VBO
-					.location = GetGLConventionAttributeLocation(attribute.name),
-					.vector_dimension = GL::GLint(accessor.vector_dimension),
-					.vector_data_type = GL::GLenum(accessor.vector_data_type),
-					.normalized = accessor.normalized,
-				}
-			);
-		}
+			std::vector<GL::Attribute::Description> attributes;
+			attributes.reserve(attribute_size);
+			for (auto i = 0; i < attribute_size; ++i)
+			{
+				auto const & attribute = primitive.attributes[i];
+				auto const & accessor = gltf_data.accessors[attribute.accessor_index];
+				auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
+				auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
 
-		if (primitive.has_indices())
-		{
-			auto const & accessor_index = primitive.indices_accessor_index;
-			auto const & buffer_view_index = gltf_data.accessors[accessor_index].buffer_view_index;
-			auto const & buffer_view = gltf_data.buffer_views[buffer_view_index];
-			auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
+				attributes.push_back(
+					{
+						.buffer = buffers[i], // !!! This is a reference: if buffers vector allocates, there will be chaos
+						.byte_offset = 0, // because each attribute has its own VBO
+						.location = GetGLConventionAttributeLocation(attribute.name),
+						.vector_dimension = GL::GLint(accessor.vector_dimension),
+						.vector_data_type = GL::GLenum(accessor.vector_data_type),
+						.normalized = accessor.normalized,
+					}
+				);
+			}
 
-			auto & gl_element_buffer = buffers.back();
-			gl_element_buffer.create(
-				{
-					.type = GL::GL_ELEMENT_ARRAY_BUFFER,
-					.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
-				}
-			);
+			//	TODO(bekorn): have a default material
+			auto const material_index = primitive.has_default_material()
+										? throw std::runtime_error("not implemented")
+										: primitive.material_index;
 
-			element_vaos.emplace_back();
-			auto & vao = element_vaos.back();
-			vao.create(
-				{
-					.attributes = attributes,
-					.element_array = gl_element_buffer,
-				}
-			);
-		}
-		else
-		{
-			array_vaos.emplace_back();
-			auto & vao = array_vaos.back();
-			vao.create(
-				{
-					.attributes = attributes
-				}
-			);
+			if (primitive.has_indices())
+			{
+				auto const & accessor_index = primitive.indices_accessor_index;
+				auto const & buffer_view_index = gltf_data.accessors[accessor_index].buffer_view_index;
+				auto const & buffer_view = gltf_data.buffer_views[buffer_view_index];
+				auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
+
+				auto & gl_element_buffer = buffers.back();
+				gl_element_buffer.create(
+					{
+						.type = GL::GL_ELEMENT_ARRAY_BUFFER,
+						.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
+					}
+				);
+
+				GL::VAO_ElementDraw vao;
+				vao.create(
+					{
+						.attributes = attributes,
+						.element_array = gl_element_buffer,
+					}
+				);
+
+				element_drawables.push_back(
+					{
+						.vao = std::move(vao),
+						.material_index = material_index,
+					}
+				);
+			}
+			else
+			{
+				GL::VAO_ArrayDraw vao;
+				vao.create(
+					{
+						.attributes = attributes,
+					}
+				);
+
+				array_drawables.push_back(
+					{
+						.vao = std::move(vao),
+						.material_index = material_index
+					}
+				);
+			}
 		}
 
 		// Load Textures
@@ -145,6 +173,42 @@ struct Mesh
 					.data = image.data.data.get(),
 				}
 			);
+		}
+
+		// Load materials
+		materials.resize(gltf_data.materials.size());
+		for (auto i = 0; i < gltf_data.materials.size(); ++i)
+		{
+			auto const & gltf_mat = gltf_data.materials[i];
+			if (gltf_mat.pbr_metallic_roughness)
+			{
+				auto const & pbr_mat = gltf_mat.pbr_metallic_roughness.value();
+				auto mat = make_unique<Material_gltf_pbrMetallicRoughness>();
+
+				// TODO: use texcoord indices as well
+				if (pbr_mat.base_color_texture)
+					mat->base_color_texture = textures[pbr_mat.base_color_texture->texture_index].id;
+				else
+					mat->base_color_factor = pbr_mat.base_color_factor;
+
+				if (pbr_mat.metallic_roughness_texture)
+					mat->metallic_roughness_texture = textures[pbr_mat.metallic_roughness_texture->texture_index].id;
+				else
+					mat->metallic_roughness_factor = {pbr_mat.metallic_factor, pbr_mat.roughness_factor};
+
+				if (gltf_mat.emissive_texture)
+					mat->emissive_texture = textures[gltf_mat.emissive_texture->texture_index].id;
+				else
+					mat->emissive_factor = gltf_mat.emissive_factor;
+
+				if (gltf_mat.occlusion_texture)
+					mat->occlusion_texture = textures[gltf_mat.occlusion_texture->texture_index].id;
+
+				if (gltf_mat.normal_texture)
+					mat->normal_texture = textures[gltf_mat.normal_texture->texture_index].id;
+
+				materials[i] = std::move(mat);
+			}
 		}
 	}
 };

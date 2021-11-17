@@ -37,7 +37,7 @@ i32 main(i32 argc, char** argv)
 	}
 
 
-	std::vector<std::unique_ptr<IRenderer>> renderers;
+	std::vector<unique_ptr<IRenderer>> renderers;
 	renderers.emplace_back(new MainRenderer);
 
 	for (auto & renderer: renderers)

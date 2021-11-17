@@ -28,30 +28,6 @@ namespace GLTF
 		bool normalized;
 	};
 
-	struct Attribute
-	{
-		std::string name;
-		u32 accessor_index;
-	};
-
-	// Equivalent of a draw call
-	struct Primitive
-	{
-		std::vector<Attribute> attributes;
-		u32 indices_accessor_index; // == u32(-1) if no indices
-
-		bool has_indices() const
-		{
-			return indices_accessor_index != u32(-1);
-		}
-	};
-
-	struct Mesh
-	{
-		std::vector<Primitive> primitives;
-		std::string name;
-	};
-
 	struct Image
 	{
 		ByteBuffer data;
@@ -83,17 +59,81 @@ namespace GLTF
 		}
 	};
 
+	struct Attribute
+	{
+		std::string name;
+		u32 accessor_index;
+	};
+
+	// Equivalent of a draw call
+	struct Primitive
+	{
+		std::vector<Attribute> attributes;
+		u32 indices_accessor_index; // == u32(-1) if no indices
+		u32 material_index; // u32(-1) if default material
+
+		bool has_indices() const
+		{
+			return indices_accessor_index != u32(-1);
+		}
+
+		bool has_default_material() const
+		{
+			return material_index == u32(-1);
+		}
+	};
+
+	struct Mesh
+	{
+		std::vector<Primitive> primitives;
+		std::string name;
+	};
+
+	struct Material
+	{
+		struct TexInfo
+		{
+			u32 texture_index;
+			u32 texcoord_index; // which TEXCOORD_n attribute to use
+		};
+
+		struct PbrMetallicRoughness
+		{
+			f32x4 base_color_factor;
+			optional<TexInfo> base_color_texture;
+			f32 metallic_factor;
+			f32 roughness_factor;
+			optional<TexInfo> metallic_roughness_texture;
+		};
+		optional<PbrMetallicRoughness> pbr_metallic_roughness;
+
+		optional<TexInfo> normal_texture;
+		f32 normal_texture_scale;
+
+		optional<TexInfo> occlusion_texture;
+		f32 occlusion_texture_strength;
+
+		optional<TexInfo> emissive_texture;
+		f32x3 emissive_factor;
+
+		std::string alpha_mode;
+		f32 alpha_cutoff;
+
+		bool double_sided;
+	};
+
 	struct GLTFData
 	{
 		std::vector<ByteBuffer> buffers;
 		std::vector<BufferView> buffer_views;
+		std::vector<Accessor> accessors;
 
 		std::vector<Image> images;
 		std::vector<Sampler> samplers;
 		std::vector<Texture> textures;
 
-		std::vector<Accessor> accessors;
 		std::vector<Mesh> meshes;
+		std::vector<Material> materials;
 	};
 
 	namespace JSONHelpers
@@ -129,6 +169,45 @@ namespace GLTF
 			auto member = obj.FindMember(key.data());
 			if (member != obj.MemberEnd())
 				return member->value.GetBool();
+			else
+				return def_value;
+		}
+
+		f32 GetF32(JSONObj obj, Key key, f32 def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetFloat();
+			else
+				return def_value;
+		}
+
+		f32x3 GetF32x3(JSONObj obj, Key key, f32x3 def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+			{
+				auto const & arr = member->value.GetArray();
+				f32x3 val;
+				for (auto i = 0; i < 3; ++i)
+					val[i] = arr[i].GetFloat();
+				return val;
+			}
+			else
+				return def_value;
+		}
+
+		f32x4 GetF32x4(JSONObj obj, Key key, f32x4 def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+			{
+				auto const & arr = member->value.GetArray();
+				f32x4 val;
+				for (auto i = 0; i < 4; ++i)
+					val[i] = arr[i].GetFloat();
+				return val;
+			}
 			else
 				return def_value;
 		}
@@ -303,6 +382,7 @@ namespace GLTF
 					{
 						.attributes = attributes,
 						.indices_accessor_index = GetU32(primitive, "indices", -1),
+						.material_index = GetU32(primitive, "material", -1),
 					}
 				);
 			}
@@ -313,6 +393,54 @@ namespace GLTF
 					.name = GetString(mesh, "name", "<no-name>") // TODO(bekorn): find a default name
 				}
 			);
+		}
+
+		// Parse materials
+		for (auto const & item: document["materials"].GetArray())
+		{
+			auto const get_tex_info = [](JSONObj material, Key key) -> optional<Material::TexInfo>
+			{
+				auto member = material.FindMember(key.data());
+				if (member != material.MemberEnd())
+				{
+					auto tex_info = member->value.GetObject();
+					return Material::TexInfo{
+						.texture_index = GetU32(tex_info, "index"),
+						.texcoord_index = GetU32(tex_info, "texCoord", 0),
+					};
+				}
+				else
+					return {};
+			};
+
+			auto const & material = item.GetObject();
+			Material mat{
+				.normal_texture = get_tex_info(material, "normalTexture"),
+
+				.occlusion_texture = get_tex_info(material, "occlusionTexture"),
+
+				.emissive_texture = get_tex_info(material, "emissiveTexture"),
+				.emissive_factor = GetF32x3(material, "emissiveFactor", {0, 0, 0}),
+
+				.alpha_mode = GetString(material, "alphaMode", "OPAQUE"),
+				.alpha_cutoff = GetF32(material, "alphaCutoff", 0.5),
+
+				.double_sided = GetBool(material, "doubleSided", false),
+			};
+
+			if (auto member = material.FindMember("pbrMetallicRoughness"); member != material.MemberEnd())
+			{
+				auto const & pbrMetallicRoughness = member->value.GetObject();
+				mat.pbr_metallic_roughness = {
+					.base_color_factor = GetF32x4(pbrMetallicRoughness, "baseColorFactor", {1, 1, 1, 1}),
+					.base_color_texture = get_tex_info(pbrMetallicRoughness, "baseColorTexture"),
+					.metallic_factor = GetF32(pbrMetallicRoughness, "metallicFactor", 1),
+					.roughness_factor = GetF32(pbrMetallicRoughness, "roughnessFactor", 1),
+					.metallic_roughness_texture = get_tex_info(pbrMetallicRoughness, "metallicRoughnessTexture"),
+				};
+			}
+
+			gltf_data.materials.push_back(mat);
 		}
 
 		return gltf_data;

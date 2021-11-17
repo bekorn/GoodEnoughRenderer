@@ -39,7 +39,6 @@ vec3 get_emission()
         return texture(emissive_sampler, vertex_texcoord).rgb;
     else
         return vec3(0);
-
 }
 
 float get_occlusion()

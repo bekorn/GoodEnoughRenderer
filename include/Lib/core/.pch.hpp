@@ -14,3 +14,10 @@
 #include <glm/gtc/type_precision.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/component_wise.hpp>
+
+
+// Handy std classes
+#include <memory>
+#include <optional>
+#include <span>
+
