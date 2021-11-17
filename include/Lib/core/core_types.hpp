@@ -89,7 +89,7 @@ namespace glm
 
 
 // Handy std classes
-using std::optional;
+using std::optional, std::nullopt;
 using std::unique_ptr, std::make_unique;
 
 

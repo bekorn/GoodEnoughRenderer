@@ -54,7 +54,7 @@ struct Mesh
 		{
 			auto const attribute_size = primitive.attributes.size();
 
-			buffers.resize(attribute_size + primitive.has_indices());
+			buffers.resize(attribute_size + primitive.indices_accessor_index.has_value());
 			for (auto i = 0; i < attribute_size; ++i)
 			{
 				auto const & attribute = primitive.attributes[i];
@@ -92,13 +92,13 @@ struct Mesh
 			}
 
 			//	TODO(bekorn): have a default material
-			auto const material_index = primitive.has_default_material()
-										? throw std::runtime_error("not implemented")
-										: primitive.material_index;
+			auto const material_index = primitive.material_index.has_value()
+										? primitive.material_index.value()
+										: throw std::runtime_error("not implemented");
 
-			if (primitive.has_indices())
+			if (primitive.indices_accessor_index)
 			{
-				auto const & accessor_index = primitive.indices_accessor_index;
+				auto const & accessor_index = primitive.indices_accessor_index.value();
 				auto const & buffer_view_index = gltf_data.accessors[accessor_index].buffer_view_index;
 				auto const & buffer_view = gltf_data.buffer_views[buffer_view_index];
 				auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
@@ -151,14 +151,14 @@ struct Mesh
 			auto const & texture = gltf_data.textures[i];
 
 			// TODO(bekorn) have a default image
-			auto const & image = texture.is_default_image()
-								 ? throw std::runtime_error("not implemented")
-								 : gltf_data.images[texture.image_index];
+			auto const & image = texture.image_index.has_value()
+								 ? gltf_data.images[texture.image_index.value()]
+								 : throw std::runtime_error("not implemented");
 
 			// TODO(bekorn) have a default image
-			auto const & sampler = texture.is_default_sampler()
-								   ? throw std::runtime_error("not implemented")
-								   : gltf_data.samplers[texture.sampler_index];
+			auto const & sampler = texture.sampler_index.has_value()
+								   ? gltf_data.samplers[texture.sampler_index.value()]
+								   : throw std::runtime_error("not implemented");
 
 			textures[i].create(
 				GL::Texture2D::ImageDescription{

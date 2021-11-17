@@ -45,18 +45,8 @@ namespace GLTF
 
 	struct Texture
 	{
-		u32 image_index; // == u32(-1) if default
-		u32 sampler_index; // == u32(-1) if default
-
-		bool is_default_image() const
-		{
-			return image_index == u32(-1);
-		}
-
-		bool is_default_sampler() const
-		{
-			return sampler_index == u32(-1);
-		}
+		optional<u32> image_index;
+		optional<u32> sampler_index;
 	};
 
 	struct Attribute
@@ -69,18 +59,8 @@ namespace GLTF
 	struct Primitive
 	{
 		std::vector<Attribute> attributes;
-		u32 indices_accessor_index; // == u32(-1) if no indices
-		u32 material_index; // u32(-1) if default material
-
-		bool has_indices() const
-		{
-			return indices_accessor_index != u32(-1);
-		}
-
-		bool has_default_material() const
-		{
-			return material_index == u32(-1);
-		}
+		optional<u32> indices_accessor_index;
+		optional<u32> material_index;
 	};
 
 	struct Mesh
@@ -153,6 +133,15 @@ namespace GLTF
 				return member->value.GetUint();
 			else
 				return def_value;
+		}
+
+		optional<u32> GetOptionalU32(JSONObj obj, Key key)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetUint();
+			else
+				return nullopt;
 		}
 
 		std::string GetString(JSONObj obj, Key key, std::string const & def_value)
@@ -321,8 +310,8 @@ namespace GLTF
 
 				gltf_data.textures.push_back(
 					{
-						.image_index = GetU32(texture, "source", u32(-1)),
-						.sampler_index = GetU32(texture, "sampler", u32(-1)),
+						.image_index = GetOptionalU32(texture, "source"),
+						.sampler_index = GetOptionalU32(texture, "sampler"),
 					}
 				);
 			}
@@ -381,8 +370,8 @@ namespace GLTF
 				primitives.push_back(
 					{
 						.attributes = attributes,
-						.indices_accessor_index = GetU32(primitive, "indices", -1),
-						.material_index = GetU32(primitive, "material", -1),
+						.indices_accessor_index = GetOptionalU32(primitive, "indices"),
+						.material_index = GetOptionalU32(primitive, "material"),
 					}
 				);
 			}
