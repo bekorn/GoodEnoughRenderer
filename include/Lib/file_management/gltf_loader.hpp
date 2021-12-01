@@ -42,6 +42,12 @@ namespace GLTF
 		u32 wrap_s;
 		u32 wrap_t;
 	};
+	static Sampler constexpr SamplerDefault{
+		.min_filter = 9729, // LINEAR
+		.mag_filter = 9729, // LINEAR
+		.wrap_s = 10497, // REPEAT
+		.wrap_t = 10497 // REPEAT
+	};
 
 	struct Texture
 	{
@@ -214,6 +220,7 @@ namespace GLTF
 		document.Parse(LoadAsString(file).c_str());
 
 		auto const file_dir = file.parent_path();
+
 		// Parse buffers
 		for (auto const & item: document["buffers"].GetArray())
 		{
@@ -291,11 +298,11 @@ namespace GLTF
 
 				// Min/Mag filters have no default values in the spec, I picked the values
 				gltf_data.samplers.push_back(
-					Sampler{
-						.min_filter = GetU32(sampler, "minFilter", 9729), // def is LINEAR
-						.mag_filter = GetU32(sampler, "magFilter", 9729), // def is LINEAR
-						.wrap_s = GetU32(sampler, "wrapS", 10497), // def is REPEAT
-						.wrap_t = GetU32(sampler, "wrapT", 10497), // def is REPEAT
+					{
+						.min_filter = GetU32(sampler, "minFilter", SamplerDefault.min_filter),
+						.mag_filter = GetU32(sampler, "magFilter", SamplerDefault.mag_filter),
+						.wrap_s = GetU32(sampler, "wrapS", SamplerDefault.wrap_s),
+						.wrap_t = GetU32(sampler, "wrapT", SamplerDefault.wrap_t),
 					}
 				);
 			}

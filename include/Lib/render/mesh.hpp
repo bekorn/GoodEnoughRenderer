@@ -155,10 +155,9 @@ struct Mesh
 								 ? gltf_data.images[texture.image_index.value()]
 								 : throw std::runtime_error("not implemented");
 
-			// TODO(bekorn) have a default image
 			auto const & sampler = texture.sampler_index.has_value()
 								   ? gltf_data.samplers[texture.sampler_index.value()]
-								   : throw std::runtime_error("not implemented");
+								   : GLTF::SamplerDefault;
 
 			textures[i].create(
 				GL::Texture2D::ImageDescription{
