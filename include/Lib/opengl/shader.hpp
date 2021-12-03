@@ -2,6 +2,7 @@
 
 #include ".pch.hpp"
 #include "core_types.hpp"
+#include "glue.hpp"
 
 #include <string>
 
@@ -46,44 +47,6 @@ namespace GL
 			return log;
 		}
 	};
-
-	std::string GLTypeToString(GLenum type)
-	{
-		if (type == GL_FLOAT) return "FLOAT";
-		if (type == GL_FLOAT_VEC2) return "FLOAT_VEC2";
-		if (type == GL_FLOAT_VEC3) return "FLOAT_VEC3";
-		if (type == GL_FLOAT_VEC4) return "FLOAT_VEC4";
-		if (type == GL_FLOAT_MAT2) return "FLOAT_MAT2";
-		if (type == GL_FLOAT_MAT3) return "FLOAT_MAT3";
-		if (type == GL_FLOAT_MAT4) return "FLOAT_MAT4";
-		if (type == GL_FLOAT_MAT2x3) return "FLOAT_MAT2x3";
-		if (type == GL_FLOAT_MAT2x4) return "FLOAT_MAT2x4";
-		if (type == GL_FLOAT_MAT3x2) return "FLOAT_MAT3x2";
-		if (type == GL_FLOAT_MAT3x4) return "FLOAT_MAT3x4";
-		if (type == GL_FLOAT_MAT4x2) return "FLOAT_MAT4x2";
-		if (type == GL_FLOAT_MAT4x3) return "FLOAT_MAT4x3";
-		if (type == GL_INT) return "INT";
-		if (type == GL_INT_VEC2) return "INT_VEC2";
-		if (type == GL_INT_VEC3) return "INT_VEC3";
-		if (type == GL_INT_VEC4) return "INT_VEC4";
-		if (type == GL_UNSIGNED_INT) return "UNSIGNED_INT";
-		if (type == GL_UNSIGNED_INT_VEC2) return "UNSIGNED_INT_VEC2";
-		if (type == GL_UNSIGNED_INT_VEC3) return "UNSIGNED_INT_VEC3";
-		if (type == GL_UNSIGNED_INT_VEC4) return "UNSIGNED_INT_VEC4";
-		if (type == GL_DOUBLE) return "DOUBLE";
-		if (type == GL_DOUBLE_VEC2) return "DOUBLE_VEC2";
-		if (type == GL_DOUBLE_VEC3) return "DOUBLE_VEC3";
-		if (type == GL_DOUBLE_VEC4) return "DOUBLE_VEC4";
-		if (type == GL_DOUBLE_MAT2) return "DOUBLE_MAT2";
-		if (type == GL_DOUBLE_MAT3) return "DOUBLE_MAT3";
-		if (type == GL_DOUBLE_MAT4) return "DOUBLE_MAT4";
-		if (type == GL_DOUBLE_MAT2x3) return "DOUBLE_MAT2x3";
-		if (type == GL_DOUBLE_MAT2x4) return "DOUBLE_MAT2x4";
-		if (type == GL_DOUBLE_MAT3x2) return "DOUBLE_MAT3x2";
-		if (type == GL_DOUBLE_MAT3x4) return "DOUBLE_MAT3x4";
-		if (type == GL_DOUBLE_MAT4x2) return "DOUBLE_MAT4x2";
-		/*if (type == GL_DOUBLE_MAT4x3)*/ return "DOUBLE_MAT4x3";
-	}
 
 	struct ShaderProgram : OpenGLObject
 	{
@@ -132,162 +95,65 @@ namespace GL
 			return log;
 		}
 
-
-		std::string get_active_uniforms_OLD() const
-		{
-			std::string result;
-
-			i32 max_info_size;
-			glGetProgramiv(id, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_info_size);
-			std::string info(max_info_size, 0);
-
-			i32 uniform_size;
-			glGetProgramiv(id, GL_ACTIVE_UNIFORMS, &uniform_size);
-			result += "Uniform size: " + std::to_string(uniform_size) + '\n';
-
-			for (ifast i = 0; i < uniform_size; ++i)
-			{
-				GLenum uniform_type;
-				i32 uniform_array_size;
-				i32 info_size;
-				glGetActiveUniform(
-					id, i,
-					max_info_size, &info_size,
-					&uniform_array_size, &uniform_type, info.data()
-				);
-
-				result.append(info, 0, info_size);
-				result += "[" + std::to_string(uniform_array_size) + "] ";
-				result += GLTypeToString(uniform_type) + "\n";
-			}
-
-			return result;
-		}
-
-		std::string get_active_attributes_OLD() const
-		{
-			std::string result;
-
-			i32 max_info_size;
-			glGetProgramiv(id, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &max_info_size);
-			std::string info(max_info_size, '\0');
-
-			i32 attribute_size;
-			glGetProgramiv(id, GL_ACTIVE_ATTRIBUTES, &attribute_size);
-			result += "Attribute size: " + std::to_string(attribute_size) + '\n';
-
-			for (ifast i = 0; i < attribute_size; ++i)
-			{
-				GLenum attribute_type;
-				i32 attribute_array_size;
-				i32 info_size;
-				glGetActiveAttrib(
-					id, i,
-					max_info_size, &info_size,
-					&attribute_array_size, &attribute_type, info.data()
-				);
-
-				result.append(info, 0, info_size);
-				result += "[" + std::to_string(attribute_array_size) + "] ";
-				result += GLTypeToString(attribute_type) + "\n";
-			}
-
-			return result;
-		}
-
-		// The new API
 		// https://www.khronos.org/opengl/wiki/Program_Introspection#Interface_query
 
-		std::string get_active_uniforms() const
+		struct GLSLMapping
 		{
-			std::string result;
+			u32 location;
+			GLenum glsl_type; // just for debug purposes
+			std::string name;
+		};
+		vector<GLSLMapping> uniform_mappings;
+		vector<GLSLMapping> attribute_mappings;
 
-			auto const interface = GL_UNIFORM;
-			auto const prop_size = 3;
-			array<GLenum, prop_size> const query_props{
-				GL_TYPE,
-				GL_ARRAY_SIZE,
-//				GL_NAME_LENGTH,
+		vector<GLSLMapping> query_interface_mapping(GLenum const interface)
+		{
+			vector<GLSLMapping> mappings;
+
+			array const query_props{
 				GL_LOCATION,
+				GL_TYPE,
 			};
-
-			array<i32, prop_size> query_results;
+			array<i32, query_props.size()> query_results;
 
 			i32 max_name_size;
 			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
-			std::string name(max_name_size, 0);
+			std::string name_buffer(max_name_size, 0);
 
-			i32 uniform_size;
-			glGetProgramInterfaceiv(id, interface, GL_ACTIVE_RESOURCES, &uniform_size);
-			result += "Uniform size: " + std::to_string(uniform_size) + '\n';
+			i32 attribute_size;
+			glGetProgramInterfaceiv(id, interface, GL_ACTIVE_RESOURCES, &attribute_size);
 
-			for (auto i = 0; i < uniform_size; ++i)
+			mappings.reserve(attribute_size);
+			for (auto i = 0; i < attribute_size; ++i)
 			{
 				glGetProgramResourceiv(
 					id, interface, i,
-					prop_size, query_props.data(),
-					prop_size, nullptr, query_results.data()
+					query_props.size(), query_props.data(),
+					query_props.size(), nullptr, query_results.data()
 				);
 
 				i32 name_size;
 				glGetProgramResourceName(
 					id, interface, i,
-					name.size(), &name_size, name.data()
+					name_buffer.size(), &name_size, name_buffer.data()
 				);
 
-				result += GLTypeToString(GLenum(query_results[0]));
-				result += "[" + std::to_string(query_results[1]) + "] ";
-				result.append(name, 0, name_size);
-				result += " (location = " + std::to_string(query_results[2]) + ")\n";
+				mappings.emplace_back(
+					GLSLMapping{
+						.location = static_cast<u32>(query_results[0]),
+						.glsl_type = static_cast<GLenum>(query_results[1]),
+						.name = name_buffer.substr(0, name_size),
+					}
+				);
 			}
 
-			return result;
+			return mappings;
 		}
 
-		std::string get_active_attributes() const
+		void update_interface_mapping()
 		{
-			std::string result;
-
-			auto const interface = GL_PROGRAM_INPUT;
-			auto const prop_size = 3;
-			array<GLenum, prop_size> const query_props{
-				GL_TYPE,
-				GL_ARRAY_SIZE,
-				//				GL_NAME_LENGTH,
-				GL_LOCATION,
-			};
-
-			array<i32, prop_size> query_results;
-
-			i32 max_name_size;
-			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
-			std::string name(max_name_size, 0);
-
-			i32 uniform_size;
-			glGetProgramInterfaceiv(id, interface, GL_ACTIVE_RESOURCES, &uniform_size);
-			result += "Attribute size: " + std::to_string(uniform_size) + '\n';
-
-			for (auto i = 0; i < uniform_size; ++i)
-			{
-				glGetProgramResourceiv(
-					id, interface, i,
-					prop_size, query_props.data(),
-					prop_size, nullptr, query_results.data()
-				);
-
-				i32 name_size;
-				glGetProgramResourceName(
-					id, interface, i,
-					name.size(), &name_size, name.data()
-				);
-
-				result += GLTypeToString(GLenum(query_results[0]));
-				result += "[" + std::to_string(query_results[1]) + "] ";
-				result.append(name, 0, name_size);
-				result += " (location = " + std::to_string(query_results[2]) + ")\n";
-			}
-
-			return result;
+			uniform_mappings = query_interface_mapping(GL_UNIFORM);
+			attribute_mappings = query_interface_mapping(GL_PROGRAM_INPUT);
 		}
 	};
 }

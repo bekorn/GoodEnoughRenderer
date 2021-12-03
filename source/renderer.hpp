@@ -27,7 +27,6 @@ struct MainRenderer : IRenderer
 		using namespace ImGui;
 
 		SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
-		SetNextWindowSize(ImVec2(600, 160), ImGuiCond_Once);
 		Begin("Metrics", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
 
 		Text(
@@ -283,7 +282,7 @@ struct MainRenderer : IRenderer
 		if (not vert_shader.is_compiled())
 		{
 			shader_stage_error = true;
-			program_info += "Vert Shader Error:\n" + vert_shader.get_log();
+			program_info += "Vert Shader: " + vert_shader.get_log();
 		}
 
 		GL::ShaderStage frag_shader;
@@ -300,11 +299,14 @@ struct MainRenderer : IRenderer
 		if (not frag_shader.is_compiled())
 		{
 			shader_stage_error = true;
-			program_info += "Frag Shader Error:\n" + frag_shader.get_log();
+			program_info += "Frag Shader: " + frag_shader.get_log();
 		}
 
 		if (shader_stage_error)
+		{
+			program_info = "Compilation failed! " + program_info;
 			return;
+		}
 
 
 		GL::ShaderProgram new_program;
@@ -319,7 +321,7 @@ struct MainRenderer : IRenderer
 
 		if (not new_program.is_linked())
 		{
-			program_info += "Linking Error:\n" + new_program.get_log();
+			program_info = "Compilation failed! Linking Error:\n" + new_program.get_log();
 			return;
 		}
 
@@ -327,11 +329,9 @@ struct MainRenderer : IRenderer
 		program.~ShaderProgram();
 		program = move(new_program);
 
-		GL::glUseProgram(program.id);
+		program.update_interface_mapping();
 
-		program_info += "Shader id: " + std::to_string(program.id) + "\n\n";
-		program_info += program.get_active_uniforms() + '\n';
-		program_info += program.get_active_attributes();
+		GL::glUseProgram(program.id);
 	}
 
 	void create() final
@@ -352,14 +352,53 @@ struct MainRenderer : IRenderer
 	{
 		using namespace ImGui;
 
-		Begin("Shader stuff");
+		Begin("Shader Info");
 
 		if (Button("Reload Shader"))
-		{
 			try_to_reload_shader();
+
+		if (not program_info.empty())
+			SameLine(), TextColored({255, 0, 0, 255}, "%s", program_info.c_str());
+
+		if (BeginTable("uniform_mappings", 3, ImGuiTableFlags_BordersInnerH))
+		{
+			TableSetupColumn("Uniform Location");
+			TableSetupColumn("Type");
+			TableSetupColumn("Name");
+			TableHeadersRow();
+
+			for (auto const & mapping : program.uniform_mappings)
+			{
+				TableNextRow();
+				TableNextColumn();
+				Text("%d", mapping.location);
+				TableNextColumn();
+				Text("%s", GL::GLSLTypeToString(mapping.glsl_type).data());
+				TableNextColumn();
+				Text("%s", mapping.name.data());
+			}
+			EndTable();
 		}
 
-		Text("%s", program_info.c_str());
+		if (BeginTable("attribute_mappings", 3, ImGuiTableFlags_BordersInnerH))
+		{
+			TableSetupColumn("Attribute Location");
+			TableSetupColumn("Type");
+			TableSetupColumn("Name");
+			TableHeadersRow();
+
+			for (auto const & mapping : program.attribute_mappings)
+			{
+				TableNextRow();
+				TableNextColumn();
+				Text("%d", mapping.location);
+				TableNextColumn();
+				Text("%s", GL::GLSLTypeToString(mapping.glsl_type).data());
+				TableNextColumn();
+				Text("%s", mapping.name.data());
+			}
+			EndTable();
+		}
 
 		End();
 	}

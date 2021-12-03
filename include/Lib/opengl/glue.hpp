@@ -1,0 +1,116 @@
+#pragma once
+
+namespace GL
+{
+	std::string_view GLSLTypeToString(GLenum type)
+	{
+		// https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetActiveUniform.xhtml
+		if (type == GL_FLOAT) return "float";
+		if (type == GL_FLOAT_VEC2) return "vec2";
+		if (type == GL_FLOAT_VEC3) return "vec3";
+		if (type == GL_FLOAT_VEC4) return "vec4";
+		if (type == GL_DOUBLE) return "double";
+		if (type == GL_DOUBLE_VEC2) return "dvec2";
+		if (type == GL_DOUBLE_VEC3) return "dvec3";
+		if (type == GL_DOUBLE_VEC4) return "dvec4";
+		if (type == GL_INT) return "int";
+		if (type == GL_INT_VEC2) return "ivec2";
+		if (type == GL_INT_VEC3) return "ivec3";
+		if (type == GL_INT_VEC4) return "ivec4";
+		if (type == GL_UNSIGNED_INT) return "unsigned int";
+		if (type == GL_UNSIGNED_INT_VEC2) return "uvec2";
+		if (type == GL_UNSIGNED_INT_VEC3) return "uvec3";
+		if (type == GL_UNSIGNED_INT_VEC4) return "uvec4";
+		if (type == GL_BOOL) return "bool";
+		if (type == GL_BOOL_VEC2) return "bvec2";
+		if (type == GL_BOOL_VEC3) return "bvec3";
+		if (type == GL_BOOL_VEC4) return "bvec4";
+		if (type == GL_FLOAT_MAT2) return "mat2";
+		if (type == GL_FLOAT_MAT3) return "mat3";
+		if (type == GL_FLOAT_MAT4) return "mat4";
+		if (type == GL_FLOAT_MAT2x3) return "mat2x3";
+		if (type == GL_FLOAT_MAT2x4) return "mat2x4";
+		if (type == GL_FLOAT_MAT3x2) return "mat3x2";
+		if (type == GL_FLOAT_MAT3x4) return "mat3x4";
+		if (type == GL_FLOAT_MAT4x2) return "mat4x2";
+		if (type == GL_FLOAT_MAT4x3) return "mat4x3";
+		if (type == GL_DOUBLE_MAT2) return "dmat2";
+		if (type == GL_DOUBLE_MAT3) return "dmat3";
+		if (type == GL_DOUBLE_MAT4) return "dmat4";
+		if (type == GL_DOUBLE_MAT2x3) return "dmat2x3";
+		if (type == GL_DOUBLE_MAT2x4) return "dmat2x4";
+		if (type == GL_DOUBLE_MAT3x2) return "dmat3x2";
+		if (type == GL_DOUBLE_MAT3x4) return "dmat3x4";
+		if (type == GL_DOUBLE_MAT4x2) return "dmat4x2";
+		if (type == GL_DOUBLE_MAT4x3) return "dmat4x3";
+		if (type == GL_SAMPLER_1D) return "sampler1D";
+		if (type == GL_SAMPLER_2D) return "sampler2D";
+		if (type == GL_SAMPLER_3D) return "sampler3D";
+		if (type == GL_SAMPLER_CUBE) return "samplerCube";
+		if (type == GL_SAMPLER_1D_SHADOW) return "sampler1DShadow";
+		if (type == GL_SAMPLER_2D_SHADOW) return "sampler2DShadow";
+		if (type == GL_SAMPLER_1D_ARRAY) return "sampler1DArray";
+		if (type == GL_SAMPLER_2D_ARRAY) return "sampler2DArray";
+		if (type == GL_SAMPLER_1D_ARRAY_SHADOW) return "sampler1DArrayShadow";
+		if (type == GL_SAMPLER_2D_ARRAY_SHADOW) return "sampler2DArrayShadow";
+		if (type == GL_SAMPLER_2D_MULTISAMPLE) return "sampler2DMS";
+		if (type == GL_SAMPLER_2D_MULTISAMPLE_ARRAY) return "sampler2DMSArray";
+		if (type == GL_SAMPLER_CUBE_SHADOW) return "samplerCubeShadow";
+		if (type == GL_SAMPLER_BUFFER) return "samplerBuffer";
+		if (type == GL_SAMPLER_2D_RECT) return "sampler2DRect";
+		if (type == GL_SAMPLER_2D_RECT_SHADOW) return "sampler2DRectShadow";
+		if (type == GL_INT_SAMPLER_1D) return "isampler1D";
+		if (type == GL_INT_SAMPLER_2D) return "isampler2D";
+		if (type == GL_INT_SAMPLER_3D) return "isampler3D";
+		if (type == GL_INT_SAMPLER_CUBE) return "isamplerCube";
+		if (type == GL_INT_SAMPLER_1D_ARRAY) return "isampler1DArray";
+		if (type == GL_INT_SAMPLER_2D_ARRAY) return "isampler2DArray";
+		if (type == GL_INT_SAMPLER_2D_MULTISAMPLE) return "isampler2DMS";
+		if (type == GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY) return "isampler2DMSArray";
+		if (type == GL_INT_SAMPLER_BUFFER) return "isamplerBuffer";
+		if (type == GL_INT_SAMPLER_2D_RECT) return "isampler2DRect";
+		if (type == GL_UNSIGNED_INT_SAMPLER_1D) return "usampler1D";
+		if (type == GL_UNSIGNED_INT_SAMPLER_2D) return "usampler2D";
+		if (type == GL_UNSIGNED_INT_SAMPLER_3D) return "usampler3D";
+		if (type == GL_UNSIGNED_INT_SAMPLER_CUBE) return "usamplerCube";
+		if (type == GL_UNSIGNED_INT_SAMPLER_1D_ARRAY) return "usampler2DArray";
+		if (type == GL_UNSIGNED_INT_SAMPLER_2D_ARRAY) return "usampler2DArray";
+		if (type == GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE) return "usampler2DMS";
+		if (type == GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY) return "usampler2DMSArray";
+		if (type == GL_UNSIGNED_INT_SAMPLER_BUFFER) return "usamplerBuffer";
+		if (type == GL_UNSIGNED_INT_SAMPLER_2D_RECT) return "usampler2DRect";
+		if (type == GL_IMAGE_1D) return "image1D";
+		if (type == GL_IMAGE_2D) return "image2D";
+		if (type == GL_IMAGE_3D) return "image3D";
+		if (type == GL_IMAGE_2D_RECT) return "image2DRect";
+		if (type == GL_IMAGE_CUBE) return "imageCube";
+		if (type == GL_IMAGE_BUFFER) return "imageBuffer";
+		if (type == GL_IMAGE_1D_ARRAY) return "image1DArray";
+		if (type == GL_IMAGE_2D_ARRAY) return "image2DArray";
+		if (type == GL_IMAGE_2D_MULTISAMPLE) return "image2DMS";
+		if (type == GL_IMAGE_2D_MULTISAMPLE_ARRAY) return "image2DMSArray";
+		if (type == GL_INT_IMAGE_1D) return "iimage1D";
+		if (type == GL_INT_IMAGE_2D) return "iimage2D";
+		if (type == GL_INT_IMAGE_3D) return "iimage3D";
+		if (type == GL_INT_IMAGE_2D_RECT) return "iimage2DRect";
+		if (type == GL_INT_IMAGE_CUBE) return "iimageCube";
+		if (type == GL_INT_IMAGE_BUFFER) return "iimageBuffer";
+		if (type == GL_INT_IMAGE_1D_ARRAY) return "iimage1DArray";
+		if (type == GL_INT_IMAGE_2D_ARRAY) return "iimage2DArray";
+		if (type == GL_INT_IMAGE_2D_MULTISAMPLE) return "iimage2DMS";
+		if (type == GL_INT_IMAGE_2D_MULTISAMPLE_ARRAY) return "iimage2DMSArray";
+		if (type == GL_UNSIGNED_INT_IMAGE_1D) return "uimage1D";
+		if (type == GL_UNSIGNED_INT_IMAGE_2D) return "uimage2D";
+		if (type == GL_UNSIGNED_INT_IMAGE_3D) return "uimage3D";
+		if (type == GL_UNSIGNED_INT_IMAGE_2D_RECT) return "uimage2DRect";
+		if (type == GL_UNSIGNED_INT_IMAGE_CUBE) return "uimageCube";
+		if (type == GL_UNSIGNED_INT_IMAGE_BUFFER) return "uimageBuffer";
+		if (type == GL_UNSIGNED_INT_IMAGE_1D_ARRAY) return "uimage1DArray";
+		if (type == GL_UNSIGNED_INT_IMAGE_2D_ARRAY) return "uimage2DArray";
+		if (type == GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE) return "uimage2DMS";
+		if (type == GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY) return "uimage2DMSArray";
+		if (type == GL_UNSIGNED_INT_ATOMIC_COUNTER) return "atomic_uint";
+
+		return "unknown type :(";
+	}
+}
