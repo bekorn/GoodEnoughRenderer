@@ -23,7 +23,7 @@ namespace GL
 				Texture2D const & texture;
 			};
 
-			std::vector<Attachment> const & attachments;
+			vector<Attachment> const & attachments;
 		};
 
 		void create(Description const & description)

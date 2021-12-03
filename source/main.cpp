@@ -5,7 +5,6 @@
 #include "Lib/opengl/util.hpp"
 #include "Lib/glfw/.hpp"
 #include "Lib/imgui/.hpp"
-#include "Lib/file_management/.hpp"
 
 #include "renderer.hpp"
 
@@ -37,7 +36,7 @@ i32 main(i32 argc, char** argv)
 	}
 
 
-	std::vector<unique_ptr<IRenderer>> renderers;
+	vector<unique_ptr<IRenderer>> renderers;
 	renderers.emplace_back(new MainRenderer);
 
 	for (auto & renderer: renderers)

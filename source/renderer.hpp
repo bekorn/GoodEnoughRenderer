@@ -42,12 +42,12 @@ struct MainRenderer : IRenderer
 		End();
 	}
 
-	std::vector<Mesh> meshes;
+	vector<Mesh> meshes;
 
 	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
 	i32x2 scene_resolution{720, 720};
 	GL::FrameBuffer scene_framebuffer;
-	std::vector<GL::Texture2D> scene_framebuffer_attachments;
+	vector<GL::Texture2D> scene_framebuffer_attachments;
 
 	void create_scene_framebuffer()
 	{
@@ -165,7 +165,7 @@ struct MainRenderer : IRenderer
 			{
 				static auto const elements = []()
 				{
-					std::array<char const*, GL::ATTRIBUTE_LOCATION::SIZE> array;
+					array<char const*, GL::ATTRIBUTE_LOCATION::SIZE> array;
 					for (auto i = 0; i < GL::ATTRIBUTE_LOCATION::SIZE; ++i)
 						array[i] = GL::ATTRIBUTE_LOCATION::ToString(i);
 					return array;
@@ -210,7 +210,7 @@ struct MainRenderer : IRenderer
 		End();
 	}
 
-	std::array<GL::ShaderProgram, GL::ATTRIBUTE_LOCATION::SIZE> attribute_visualizers;
+	array<GL::ShaderProgram, GL::ATTRIBUTE_LOCATION::SIZE> attribute_visualizers;
 
 	void load_attribute_visualizers()
 	{
@@ -325,8 +325,8 @@ struct MainRenderer : IRenderer
 
 		// TODO(bekorn): This is probably not good.. Find a better wrapping for OpenGLObjects
 		program.~ShaderProgram();
+		program = move(new_program);
 
-		program = std::move(new_program);
 		GL::glUseProgram(program.id);
 
 		program_info += "Shader id: " + std::to_string(program.id) + "\n\n";
@@ -340,7 +340,9 @@ struct MainRenderer : IRenderer
 
 		create_scene_framebuffer();
 
-		auto const gltf_data = GLTF::Load(global_state.test_assets / "helmet/DamagedHelmet.gltf");
+//		auto const gltf_data = GLTF::Load(global_state.test_assets / "helmet/DamagedHelmet.gltf");
+//		auto const gltf_data = GLTF::Load(global_state.test_assets / "avocado/Avocado.gltf");
+		auto const gltf_data = GLTF::Load(global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
 		meshes.emplace_back(gltf_data, 0);
 
 		try_to_reload_shader();

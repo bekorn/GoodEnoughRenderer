@@ -18,6 +18,9 @@
 
 // Handy std classes
 #include <memory>
-#include <optional>
+#include <vector>
+#include <array>
 #include <span>
+#include <optional>
+#include <variant>
 

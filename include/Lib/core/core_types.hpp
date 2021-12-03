@@ -88,8 +88,11 @@ namespace glm
 }
 
 
-// Handy std classes
+// Handy std stuff
+using std::move;
+using std::vector, std::array, std::span;
 using std::optional, std::nullopt;
+using std::variant;
 using std::unique_ptr, std::make_unique;
 
 
@@ -105,7 +108,7 @@ struct ByteBuffer
 	{}
 
 	// move a pointer
-	ByteBuffer(void*& pointer, usize size) :
+	ByteBuffer(void* & pointer, usize size) :
 		data(static_cast<byte*>(pointer)),
 		size(size)
 	{
@@ -114,7 +117,7 @@ struct ByteBuffer
 	}
 
 	template<typename T>
-	std::span<T> span_as() const
+	span<T> span_as() const
 	{
 		return {
 			reinterpret_cast<T*>(data.get()),
@@ -123,7 +126,7 @@ struct ByteBuffer
 	}
 
 	template<typename T>
-	std::span<T> span_as(usize offset, usize size) const
+	span<T> span_as(usize offset, usize size) const
 	{
 		return {
 			reinterpret_cast<T*>(data.get() + offset),

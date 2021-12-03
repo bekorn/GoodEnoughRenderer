@@ -33,7 +33,7 @@ namespace GL
 
 		struct Description
 		{
-			std::vector<Attribute::Description> const & attributes;
+			vector<Attribute::Description> const & attributes;
 			Buffer const & element_array;
 		};
 
@@ -82,7 +82,7 @@ namespace GL
 
 		struct Description
 		{
-			std::vector<Attribute::Description> const & attributes;
+			vector<Attribute::Description> const & attributes;
 		};
 
 		void create(Description const & description)

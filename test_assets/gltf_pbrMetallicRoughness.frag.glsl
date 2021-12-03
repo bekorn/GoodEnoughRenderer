@@ -17,45 +17,70 @@ out vec4 out_color;
 const vec3 light_pos = vec3(1, 1, -1);
 
 
+bool is_sampler_bound(sampler2D sampler)
+{
+    // I believe these are Dynamically Uniform Expressions, e.i. no branching among the warp
+    return textureSize(sampler, 0).x > 1;
+    //    return textureQueryLevels(sampler) != 0; // this does not work with my nvidia drivier :/
+}
+
+bool is_factor_bound(vec4 factor)
+{
+    // same as above
+    // TODO(bekorn): this introduces a convention: col.a == 0 means no color set
+    return factor.a != 0;
+}
+
+
 vec3 get_base_color()
 {
     vec3 base_color = vec3(1);
 
-    // I believe this is a Dynamically Uniform Expression, e.i. no branching among the warp
-    if (textureQueryLevels(base_color_sampler) != 0)
+    if (is_sampler_bound(base_color_sampler))
+    {
         base_color *= texture(base_color_sampler, vertex_texcoord).rgb;
+    }
 
-    // same as above
-    // TODO(bekorn): this introduces a convention: col.a == 0 means no color set
-    if (base_color_factor.a != 0)
+    // TODO(bekorn): gltf specifies that baseColor.a is used for actual alpha values, so this check does not work on baseColor
+    if (is_factor_bound(base_color_factor))
+    {
         base_color *= base_color_factor.rgb;
+    }
 
     return base_color;
 }
 
 vec3 get_emission()
 {
-    if (textureQueryLevels(emissive_sampler) != 0)
+    if (is_sampler_bound(emissive_sampler))
+    {
         return texture(emissive_sampler, vertex_texcoord).rgb;
+    }
     else
+    {
         return vec3(0);
+    }
 }
 
 float get_occlusion()
 {
-    if (textureQueryLevels(occlusion_sampler) != 0)
+    if (is_sampler_bound(occlusion_sampler))
+    {
         return texture(occlusion_sampler, vertex_texcoord).r;
+    }
     else
+    {
         return 1;
+    }
 }
 
 vec3 get_normal()
 {
     vec3 normal = vertex_normal;
 
-    if (textureQueryLevels(normal_sampler) != 0)
+    if (is_sampler_bound(normal_sampler))
     {
-        vec3 normal_tex = normalize(texture(normal_sampler, vertex_texcoord).rgb * 2 - 1);
+        //        vec3 normal_tex = normalize(texture(normal_sampler, vertex_texcoord).rgb * 2 - 1);
         // TODO(bekorn): implement normal mapping (prerequisite: bi/tangent space attributes)
     }
 

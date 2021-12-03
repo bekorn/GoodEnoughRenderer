@@ -17,7 +17,7 @@ namespace GL
 		struct Description
 		{
 			GLenum stage;
-			std::vector<char const*> const & sources;
+			vector<char const*> const & sources;
 		};
 
 		void create(Description const & description)
@@ -98,7 +98,7 @@ namespace GL
 
 		struct Description
 		{
-			std::vector<ShaderStage const*> const & shader_stages;
+			vector<ShaderStage const*> const & shader_stages;
 		};
 
 		void create(Description const & description)
@@ -204,14 +204,14 @@ namespace GL
 
 			auto const interface = GL_UNIFORM;
 			auto const prop_size = 3;
-			std::array<GLenum, prop_size> const query_props{
+			array<GLenum, prop_size> const query_props{
 				GL_TYPE,
 				GL_ARRAY_SIZE,
 //				GL_NAME_LENGTH,
 				GL_LOCATION,
 			};
 
-			std::array<i32, prop_size> query_results;
+			array<i32, prop_size> query_results;
 
 			i32 max_name_size;
 			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
@@ -250,14 +250,14 @@ namespace GL
 
 			auto const interface = GL_PROGRAM_INPUT;
 			auto const prop_size = 3;
-			std::array<GLenum, prop_size> const query_props{
+			array<GLenum, prop_size> const query_props{
 				GL_TYPE,
 				GL_ARRAY_SIZE,
 				//				GL_NAME_LENGTH,
 				GL_LOCATION,
 			};
 
-			std::array<i32, prop_size> query_results;
+			array<i32, prop_size> query_results;
 
 			i32 max_name_size;
 			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);

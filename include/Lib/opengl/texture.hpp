@@ -55,7 +55,7 @@ namespace GL
 			GLenum wrap_s = GL_CLAMP_TO_BORDER;
 			GLenum wrap_t = GL_CLAMP_TO_BORDER;
 
-			const void* data = nullptr;
+			span<byte> data = {};
 		};
 
 		void create(ImageDescription const & description)
@@ -76,7 +76,7 @@ namespace GL
 				0,
 				GL_RGBA,
 				description.dimensions.x, description.dimensions.y,
-				0, channel_format, GL_UNSIGNED_BYTE, description.data
+				0, channel_format, GL_UNSIGNED_BYTE, description.data.data()
 			);
 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, description.min_filter);
@@ -85,8 +85,8 @@ namespace GL
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, description.wrap_s);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, description.wrap_t);
 
-			// TODO(bekorn): this will be needed for specific filter types
-			// glGenerateMipmap(GL_TEXTURE_2D);
+			if (not (description.min_filter == GL_NEAREST or description.min_filter == GL_LINEAR))
+				glGenerateMipmap(GL_TEXTURE_2D);;
 
 			if (not aligns_to_4)
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);

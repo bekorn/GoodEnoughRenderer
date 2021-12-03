@@ -20,7 +20,7 @@ namespace GL
 		{
 			GLenum type = GL_ARRAY_BUFFER;
 			GLenum usage = GL_STATIC_DRAW;
-			std::span<byte> const & data;
+			span<byte> const & data;
 		};
 
 		void create(Description const & description)

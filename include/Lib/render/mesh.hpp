@@ -32,13 +32,13 @@ u32 GetGLConventionAttributeLocation(std::string const & name)
 struct Mesh
 {
 	// Resources
-	std::vector<GL::Buffer> buffers;
-	std::vector<GL::Texture2D> textures;
-	std::vector<unique_ptr<IMaterial>> materials;
+	vector<GL::Buffer> buffers;
+	vector<GL::Texture2D> textures;
+	vector<unique_ptr<IMaterial>> materials;
 
 	// Vertex attributes + material index
-	std::vector<ArrayDrawable> array_drawables;
-	std::vector<ElementDrawable> element_drawables;
+	vector<ArrayDrawable> array_drawables;
+	vector<ElementDrawable> element_drawables;
 
 	Mesh() noexcept = default;
 	Mesh(Mesh const &) noexcept = delete;
@@ -70,7 +70,7 @@ struct Mesh
 				);
 			}
 
-			std::vector<GL::Attribute::Description> attributes;
+			vector<GL::Attribute::Description> attributes;
 			attributes.reserve(attribute_size);
 			for (auto i = 0; i < attribute_size; ++i)
 			{
@@ -121,7 +121,7 @@ struct Mesh
 
 				element_drawables.push_back(
 					{
-						.vao = std::move(vao),
+						.vao = move(vao),
 						.material_index = material_index,
 					}
 				);
@@ -137,7 +137,7 @@ struct Mesh
 
 				array_drawables.push_back(
 					{
-						.vao = std::move(vao),
+						.vao = move(vao),
 						.material_index = material_index
 					}
 				);
@@ -169,7 +169,7 @@ struct Mesh
 					.wrap_s = GL::GLenum(sampler.wrap_s),
 					.wrap_t = GL::GLenum(sampler.wrap_t),
 
-					.data = image.data.data.get(),
+					.data = image.data.span_as<byte>(),
 				}
 			);
 		}
@@ -206,7 +206,7 @@ struct Mesh
 				if (gltf_mat.normal_texture)
 					mat->normal_texture = textures[gltf_mat.normal_texture->texture_index].id;
 
-				materials[i] = std::move(mat);
+				materials[i] = move(mat);
 			}
 		}
 	}

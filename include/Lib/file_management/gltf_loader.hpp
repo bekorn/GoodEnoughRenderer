@@ -1,6 +1,8 @@
 #pragma once
 
 #include ".pch.hpp"
+#include "core_types.hpp"
+#include "Lib/file_management/utils.hpp"
 
 #include <filesystem>
 #include <iostream>
@@ -16,6 +18,7 @@ namespace GLTF
 		u32 buffer_index;
 		u32 byte_offset;
 		u32 byte_length;
+		optional<u32> target; // GLenum, 34962=ARRAY_BUFFER or 34963=ELEMENT_ARRAY_BUFFER
 	};
 
 	struct Accessor
@@ -64,14 +67,14 @@ namespace GLTF
 	// Equivalent of a draw call
 	struct Primitive
 	{
-		std::vector<Attribute> attributes;
+		vector<Attribute> attributes;
 		optional<u32> indices_accessor_index;
 		optional<u32> material_index;
 	};
 
 	struct Mesh
 	{
-		std::vector<Primitive> primitives;
+		vector<Primitive> primitives;
 		std::string name;
 	};
 
@@ -110,16 +113,16 @@ namespace GLTF
 
 	struct GLTFData
 	{
-		std::vector<ByteBuffer> buffers;
-		std::vector<BufferView> buffer_views;
-		std::vector<Accessor> accessors;
+		vector<ByteBuffer> buffers;
+		vector<BufferView> buffer_views;
+		vector<Accessor> accessors;
 
-		std::vector<Image> images;
-		std::vector<Sampler> samplers;
-		std::vector<Texture> textures;
+		vector<Image> images;
+		vector<Sampler> samplers;
+		vector<Texture> textures;
 
-		std::vector<Mesh> meshes;
-		std::vector<Material> materials;
+		vector<Mesh> meshes;
+		vector<Material> materials;
 	};
 
 	namespace JSONHelpers
@@ -243,6 +246,7 @@ namespace GLTF
 					.buffer_index = GetU32(buffer_view, "buffer"),
 					.byte_offset = GetU32(buffer_view, "byteOffset", 0),
 					.byte_length = GetU32(buffer_view, "byteLength"),
+					.target = GetOptionalU32(buffer_view, "target")
 				}
 			);
 		}
@@ -254,38 +258,35 @@ namespace GLTF
 			{
 				auto const & image = item.GetObject();
 
-				if (auto const member = image.FindMember("uri"); member != image.MemberEnd())
-				{
-					auto uri = member->value.GetString();
+				auto const member = image.FindMember("uri");
+				if (member == image.MemberEnd())
+					continue;
 
-					if (uri[5] != ':') // check for "data:" (base64 encoded data a json string)
+				auto uri = member->value.GetString();
+				if (uri[5] == ':') // check for "data:" (base64 encoded data as a json string)
+					throw std::runtime_error("images without a uri file path are not supported yet");
+
+				auto const file_data = LoadAsBytes(file_dir / uri);
+				i32x2 dimensions;
+				i32 channels;
+				void* raw_pixel_data = stbi_load_from_memory(
+					file_data.data_as<const unsigned char>(), file_data.size,
+					&dimensions.x, &dimensions.y,
+					&channels, 0
+				);
+
+				auto data = ByteBuffer(
+					raw_pixel_data,
+					dimensions.x * dimensions.y * channels
+				);
+
+				gltf_data.images.push_back(
 					{
-						auto const file_data = LoadAsBytes(file_dir / uri);
-						i32x2 dimensions;
-						i32 channels;
-						void* raw_pixel_data = stbi_load_from_memory(
-							file_data.data_as<const unsigned char>(), file_data.size,
-							&dimensions.x, &dimensions.y,
-							&channels, 0
-						);
-
-						auto data = ByteBuffer(
-							raw_pixel_data,
-							dimensions.x * dimensions.y * channels
-						);
-
-						gltf_data.images.push_back(
-							{
-								.data = std::move(data),
-								.dimensions = dimensions,
-								.channels = channels,
-							}
-						);
-						continue;
+						.data = move(data),
+						.dimensions = dimensions,
+						.channels = channels,
 					}
-				}
-
-				throw std::runtime_error("images without a uri file path are not supported yet");
+				);
 			}
 		}
 
@@ -356,13 +357,13 @@ namespace GLTF
 		{
 			auto const & mesh = item.GetObject();
 
-			std::vector<Primitive> primitives;
+			vector<Primitive> primitives;
 			primitives.reserve(mesh["primitives"].Size());
 			for (auto const & item: mesh["primitives"].GetArray())
 			{
 				auto const & primitive = item.GetObject();
 
-				std::vector<Attribute> attributes;
+				vector<Attribute> attributes;
 				attributes.reserve(primitive["attributes"].MemberCount());
 				for (auto const & attribute: primitive["attributes"].GetObject())
 				{
