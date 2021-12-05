@@ -49,99 +49,22 @@ struct Mesh
 		// TODO(bekorn): This method creates a vbo for each attribute,
 		//  it would be better to merge them in a single vbo
 
-		// Limitation: Only the first primitive
-		auto const & primitive = gltf_data.meshes[mesh_index].primitives[0];
+		// Load Buffers
+		buffers.resize(gltf_data.buffer_views.size());
+		for (auto i = 0; i < gltf_data.buffer_views.size(); ++i)
 		{
-			auto const attribute_size = primitive.attributes.size();
+			auto const & buffer_view = gltf_data.buffer_views[i];
+			auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
 
-			buffers.resize(attribute_size + primitive.indices_accessor_index.has_value());
-			for (auto i = 0; i < attribute_size; ++i)
-			{
-				auto const & attribute = primitive.attributes[i];
-				auto const & accessor = gltf_data.accessors[attribute.accessor_index];
-				auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
-				auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
-
-				buffers[i].create(
-					{
-						.type = GL::GL_ARRAY_BUFFER,
-						.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
-					}
-				);
-			}
-
-			vector<GL::Attribute::Description> attributes;
-			attributes.reserve(attribute_size);
-			for (auto i = 0; i < attribute_size; ++i)
-			{
-				auto const & attribute = primitive.attributes[i];
-				auto const & accessor = gltf_data.accessors[attribute.accessor_index];
-				auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
-				auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
-
-				attributes.push_back(
-					{
-						.buffer = buffers[i], // !!! This is a reference: if buffers vector allocates, there will be chaos
-						.byte_offset = 0, // because each attribute has its own VBO
-						.location = GetGLConventionAttributeLocation(attribute.name),
-						.vector_dimension = GL::GLint(accessor.vector_dimension),
-						.vector_data_type = GL::GLenum(accessor.vector_data_type),
-						.normalized = accessor.normalized,
-					}
-				);
-			}
-
-			//	TODO(bekorn): have a default material
-			auto const material_index = primitive.material_index.has_value()
-										? primitive.material_index.value()
-										: throw std::runtime_error("not implemented");
-
-			if (primitive.indices_accessor_index)
-			{
-				auto const & accessor_index = primitive.indices_accessor_index.value();
-				auto const & buffer_view_index = gltf_data.accessors[accessor_index].buffer_view_index;
-				auto const & buffer_view = gltf_data.buffer_views[buffer_view_index];
-				auto const & buffer = gltf_data.buffers[buffer_view.buffer_index];
-
-				auto & gl_element_buffer = buffers.back();
-				gl_element_buffer.create(
-					{
-						.type = GL::GL_ELEMENT_ARRAY_BUFFER,
-						.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
-					}
-				);
-
-				GL::VAO_ElementDraw vao;
-				vao.create(
-					{
-						.attributes = attributes,
-						.element_array = gl_element_buffer,
-					}
-				);
-
-				element_drawables.push_back(
-					{
-						.vao = move(vao),
-						.material_index = material_index,
-					}
-				);
-			}
-			else
-			{
-				GL::VAO_ArrayDraw vao;
-				vao.create(
-					{
-						.attributes = attributes,
-					}
-				);
-
-				array_drawables.push_back(
-					{
-						.vao = move(vao),
-						.material_index = material_index
-					}
-				);
-			}
+			// element arrays will have the ARRAY_BUFFER type as well, but it doesn't matter apparently
+			// no debug messages from Intel or Nvidia drivers, also using DSA API buffers can be typeless
+			// see https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions#glbuffer
+			buffers[i].create(
+				{
+					.type = GL::GL_ARRAY_BUFFER,
+					.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
+				}
+			);
 		}
 
 		// Load Textures
@@ -207,6 +130,78 @@ struct Mesh
 					mat->normal_texture = textures[gltf_mat.normal_texture->texture_index].id;
 
 				materials[i] = move(mat);
+			}
+		}
+
+		// Load Primitives
+		for (auto const & primitive : gltf_data.meshes[mesh_index].primitives)
+		{
+			auto const attribute_size = primitive.attributes.size();
+
+			vector<GL::Attribute::Description> attributes;
+			attributes.reserve(attribute_size);
+			for (auto i = 0; i < attribute_size; ++i)
+			{
+				auto const & attribute = primitive.attributes[i];
+				auto const & accessor = gltf_data.accessors[attribute.accessor_index];
+
+				attributes.push_back(
+					{
+						.buffer = buffers[accessor.buffer_view_index], // !!! This is a reference: if the vector allocates, there will be chaos
+						.byte_offset = 0, // because each attribute has its own VBO
+						.location = GetGLConventionAttributeLocation(attribute.name),
+						.vector_dimension = GL::GLint(accessor.vector_dimension),
+						.vector_data_type = GL::GLenum(accessor.vector_data_type),
+						.normalized = accessor.normalized,
+					}
+				);
+			}
+
+			//	TODO(bekorn): have a default material
+			auto const material_index = primitive.material_index.has_value()
+										? primitive.material_index.value()
+										: throw std::runtime_error("not implemented");
+
+			if (primitive.indices_accessor_index.has_value())
+			{
+				auto const & accessor = gltf_data.accessors[primitive.indices_accessor_index.value()];
+
+				GL::VAO_ElementDraw vao;
+				vao.create(
+					{
+						.attributes = attributes,
+						.element_array = buffers[accessor.buffer_view_index],
+						.element_count = accessor.count,
+					}
+				);
+
+				element_drawables.push_back(
+					{
+						.vao = move(vao),
+						.material_index = material_index,
+					}
+				);
+			}
+			else
+			{
+				// assuming all the attributes have the same count
+				auto const & accessor = gltf_data.accessors[primitive.attributes[0].accessor_index];
+				auto vertex_count = accessor.count;
+
+				GL::VAO_ArrayDraw vao;
+				vao.create(
+					{
+						.attributes = attributes,
+						.vertex_count = vertex_count,
+					}
+				);
+
+				array_drawables.push_back(
+					{
+						.vao = move(vao),
+						.material_index = material_index
+					}
+				);
 			}
 		}
 	}

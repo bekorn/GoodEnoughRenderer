@@ -19,7 +19,6 @@ namespace GLTF
 		u32 buffer_index;
 		u32 byte_offset;
 		u32 byte_length;
-		optional<u32> target; // GLenum, 34962=ARRAY_BUFFER or 34963=ELEMENT_ARRAY_BUFFER
 	};
 
 	struct Accessor
@@ -28,7 +27,7 @@ namespace GLTF
 		u32 byte_offset;
 		u32 vector_data_type; // stores GLenum value
 		u32 vector_dimension;
-		//		u32 count;
+		u32 count;
 		bool normalized;
 	};
 
@@ -246,8 +245,7 @@ namespace GLTF
 				{
 					.buffer_index = GetU32(buffer_view, "buffer"),
 					.byte_offset = GetU32(buffer_view, "byteOffset", 0),
-					.byte_length = GetU32(buffer_view, "byteLength"),
-					.target = GetOptionalU32(buffer_view, "target")
+					.byte_length = GetU32(buffer_view, "byteLength")
 				}
 			);
 		}
@@ -352,7 +350,7 @@ namespace GLTF
 					.buffer_view_index = accessor["bufferView"].GetUint(),
 					.vector_data_type = accessor["componentType"].GetUint(),
 					.vector_dimension = get_type_dimension(accessor["type"].GetString()),
-					//					.count = accessor["count"].GetUint(),
+					.count = accessor["count"].GetUint(),
 					.normalized = GetBool(accessor, "normalized", false),
 				}
 			);

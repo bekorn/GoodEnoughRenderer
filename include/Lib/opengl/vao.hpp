@@ -35,18 +35,16 @@ namespace GL
 		{
 			vector<Attribute::Description> const & attributes;
 			Buffer const & element_array;
+			u32 element_count;
 		};
 
 		void create(Description const & description)
 		{
-			assert(not description.attributes.empty());
-
 			glGenVertexArrays(1, &id);
 			glBindVertexArray(id);
 
 			for (auto & attribute: description.attributes)
 			{
-				assert(attribute.buffer.type == GL_ARRAY_BUFFER);
 				glBindBuffer(GL_ARRAY_BUFFER, attribute.buffer.id);
 				glVertexAttribPointer(
 					attribute.location,
@@ -58,11 +56,9 @@ namespace GL
 				glEnableVertexAttribArray(attribute.location);
 			}
 
-			assert(description.element_array.type == GL_ELEMENT_ARRAY_BUFFER);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, description.element_array.id);
 
-			// Query element count
-			glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &element_count);
+			element_count = description.element_count;
 
 			glBindVertexArray(0);
 		}
@@ -83,18 +79,16 @@ namespace GL
 		struct Description
 		{
 			vector<Attribute::Description> const & attributes;
+			u32 vertex_count;
 		};
 
 		void create(Description const & description)
 		{
-			assert(not description.attributes.empty());
-
 			glGenVertexArrays(1, &id);
 			glBindVertexArray(id);
 
 			for (auto & attribute: description.attributes)
 			{
-				assert(attribute.buffer.type == GL_ARRAY_BUFFER);
 				glBindBuffer(GL_ARRAY_BUFFER, attribute.buffer.id);
 				glVertexAttribPointer(
 					attribute.location,
@@ -106,11 +100,7 @@ namespace GL
 				glEnableVertexAttribArray(attribute.location);
 			}
 
-			// Query vertex count
-			auto const & attr = description.attributes.front();
-			glBindBuffer(attr.buffer.type, attr.buffer.id);
-			glGetBufferParameteriv(attr.buffer.type, GL_BUFFER_SIZE, &vertex_count);
-			vertex_count /= attr.vector_dimension;
+			vertex_count = description.vertex_count;
 
 			glBindVertexArray(0);
 		}
