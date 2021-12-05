@@ -102,6 +102,8 @@ struct ByteBuffer
 	unique_ptr<byte> data;
 	usize size;
 
+	ByteBuffer() = default;
+
 	explicit ByteBuffer(usize size) :
 		data(new byte[size]),
 		size(size)

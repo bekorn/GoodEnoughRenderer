@@ -342,7 +342,8 @@ struct MainRenderer : IRenderer
 
 //		auto const gltf_data = GLTF::Load(global_state.test_assets / "helmet/DamagedHelmet.gltf");
 //		auto const gltf_data = GLTF::Load(global_state.test_assets / "avocado/Avocado.gltf");
-		auto const gltf_data = GLTF::Load(global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
+//		auto const gltf_data = GLTF::Load(global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
+		auto const gltf_data = GLTF::Load(global_state.test_assets / "sponza/Sponza.gltf");
 		meshes.emplace_back(gltf_data, 0);
 
 		try_to_reload_shader();

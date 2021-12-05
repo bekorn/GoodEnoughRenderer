@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <execution>
 
 namespace GLTF
 {
@@ -254,40 +255,45 @@ namespace GLTF
 		// Parse images
 		if (auto const member = document.FindMember("images"); member != document.MemberEnd())
 		{
-			for (auto const & item: member->value.GetArray())
-			{
-				auto const & image = item.GetObject();
+			auto const & items = member->value.GetArray();
+			gltf_data.images.resize(items.Size());
+			std::transform(
+				std::execution::par_unseq,
+				items.Begin(), items.End(),
+				gltf_data.images.data(),
+				[&file_dir](Document::Array::ValueType const & item) -> GLTF::Image
+				{
+					auto const & image = item.GetObject();
 
-				auto const member = image.FindMember("uri");
-				if (member == image.MemberEnd())
-					continue;
+					auto const member = image.FindMember("uri");
+					if (member == image.MemberEnd())
+						throw std::runtime_error("images without a uri file path are not supported yet");
 
-				auto uri = member->value.GetString();
-				if (uri[5] == ':') // check for "data:" (base64 encoded data as a json string)
-					throw std::runtime_error("images without a uri file path are not supported yet");
+					auto uri = member->value.GetString();
+					if (uri[5] == ':') // check for "data:" (base64 encoded data as a json string)
+						throw std::runtime_error("images without a uri file path are not supported yet");
 
-				auto const file_data = LoadAsBytes(file_dir / uri);
-				i32x2 dimensions;
-				i32 channels;
-				void* raw_pixel_data = stbi_load_from_memory(
-					file_data.data_as<const unsigned char>(), file_data.size,
-					&dimensions.x, &dimensions.y,
-					&channels, 0
-				);
+					auto const file_data = LoadAsBytes(file_dir / uri);
+					i32x2 dimensions;
+					i32 channels;
+					void* raw_pixel_data = stbi_load_from_memory(
+						file_data.data_as<const unsigned char>(), file_data.size,
+						&dimensions.x, &dimensions.y,
+						&channels, 0
+					);
 
-				auto data = ByteBuffer(
-					raw_pixel_data,
-					dimensions.x * dimensions.y * channels
-				);
+					auto data = ByteBuffer(
+						raw_pixel_data,
+						dimensions.x * dimensions.y * channels
+					);
 
-				gltf_data.images.push_back(
-					{
+					return {
 						.data = move(data),
 						.dimensions = dimensions,
 						.channels = channels,
-					}
-				);
-			}
+					};
+				}
+			);
 		}
 
 		// Parse samplers
