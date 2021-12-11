@@ -7,8 +7,6 @@ namespace GL
 {
 	struct Buffer : OpenGLObject
 	{
-		GLenum type;
-
 		Buffer() noexcept = default;
 		Buffer(Buffer&&) noexcept = default;
 
@@ -18,24 +16,19 @@ namespace GL
 		}
 		struct Description
 		{
-			GLenum type = GL_ARRAY_BUFFER;
 			GLenum usage = GL_STATIC_DRAW;
 			span<byte> const & data;
 		};
 
 		void create(Description const & description)
 		{
-			glGenBuffers(1, &id);
-
-			glBindBuffer(description.type, id);
-			glBufferData(
-				description.type,
+			glCreateBuffers(1, &id);
+			glNamedBufferData(
+				id,
 				description.data.size(),
 				description.data.data(),
 				description.usage
 			);
-
-			type = description.type;
 		}
 	};
 

@@ -28,19 +28,15 @@ namespace GL
 
 		void create(Description const & description)
 		{
-			glGenFramebuffers(1, &id);
-
-			glBindFramebuffer(GL_FRAMEBUFFER, id);
+			glCreateFramebuffers(1, &id);
 
 			for (auto const & attachment: description.attachments)
 			{
-				glFramebufferTexture2D(
-					GL_FRAMEBUFFER, attachment.type,
-					GL_TEXTURE_2D, attachment.texture.id, 0
+				glNamedFramebufferTexture(
+					id, attachment.type,
+					attachment.texture.id, 0
 				);
 			}
-
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 	};
 }

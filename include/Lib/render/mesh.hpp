@@ -61,8 +61,7 @@ struct Mesh
 			// see https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions#glbuffer
 			buffers[i].create(
 				{
-					.type = GL::GL_ARRAY_BUFFER,
-					.data = buffer.span_as<byte>(buffer_view.byte_offset, buffer_view.byte_length)
+					.data = buffer.span_as<byte>(buffer_view.offset, buffer_view.length)
 				}
 			);
 		}
@@ -144,11 +143,14 @@ struct Mesh
 			{
 				auto const & attribute = primitive.attributes[i];
 				auto const & accessor = gltf_data.accessors[attribute.accessor_index];
+				auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
 
 				attributes.push_back(
 					{
 						.buffer = buffers[accessor.buffer_view_index], // !!! This is a reference: if the vector allocates, there will be chaos
-						.byte_offset = 0, // because each attribute has its own VBO
+						.buffer_offset = 0, // because each attribute has its own VBO
+						.buffer_stride = buffer_view.stride,
+
 						.location = GetGLConventionAttributeLocation(attribute.name),
 						.vector_dimension = GL::GLint(accessor.vector_dimension),
 						.vector_data_type = GL::GLenum(accessor.vector_data_type),

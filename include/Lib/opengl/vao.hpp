@@ -10,7 +10,9 @@ namespace GL
 		struct Description
 		{
 			Buffer const & buffer;
-			usize byte_offset = 0;
+			usize buffer_offset;
+			optional<usize> buffer_stride;
+
 			GLuint location;
 			GLint vector_dimension;
 			GLenum vector_data_type;
@@ -40,27 +42,31 @@ namespace GL
 
 		void create(Description const & description)
 		{
-			glGenVertexArrays(1, &id);
-			glBindVertexArray(id);
+			glCreateVertexArrays(1, &id);
 
 			for (auto & attribute: description.attributes)
 			{
-				glBindBuffer(GL_ARRAY_BUFFER, attribute.buffer.id);
-				glVertexAttribPointer(
+				glVertexArrayVertexBuffer(
+					id,
+					attribute.location,
+					attribute.buffer.id,
+					attribute.buffer_offset,
+					attribute.buffer_stride.value_or(attribute.vector_dimension * ComponentTypeSize(attribute.vector_data_type))
+				);
+				glVertexArrayAttribFormat(
+					id,
 					attribute.location,
 					attribute.vector_dimension, attribute.vector_data_type,
 					attribute.normalized,
-					attribute.stride,
-					reinterpret_cast<void*>(attribute.byte_offset)
+					0
 				);
-				glEnableVertexAttribArray(attribute.location);
+				glVertexArrayAttribBinding(id, attribute.location, attribute.location);
+				glEnableVertexArrayAttrib(id, attribute.location);
 			}
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, description.element_array.id);
+			glVertexArrayElementBuffer(id, description.element_array.id);
 
 			element_count = description.element_count;
-
-			glBindVertexArray(0);
 		}
 	};
 
@@ -84,25 +90,29 @@ namespace GL
 
 		void create(Description const & description)
 		{
-			glGenVertexArrays(1, &id);
-			glBindVertexArray(id);
+			glCreateVertexArrays(1, &id);
 
 			for (auto & attribute: description.attributes)
 			{
-				glBindBuffer(GL_ARRAY_BUFFER, attribute.buffer.id);
-				glVertexAttribPointer(
+				glVertexArrayVertexBuffer(
+					id,
+					attribute.location,
+					attribute.buffer.id,
+					attribute.buffer_offset,
+					attribute.buffer_stride.value_or(attribute.vector_dimension * ComponentTypeSize(attribute.vector_data_type))
+				);
+				glVertexArrayAttribFormat(
+					id,
 					attribute.location,
 					attribute.vector_dimension, attribute.vector_data_type,
-					false,
-					attribute.stride,
-					reinterpret_cast<void*>(attribute.byte_offset)
+					attribute.normalized,
+					0
 				);
-				glEnableVertexAttribArray(attribute.location);
+				glVertexArrayAttribBinding(id, attribute.location, attribute.location);
+				glEnableVertexArrayAttrib(id, attribute.location);
 			}
 
 			vertex_count = description.vertex_count;
-
-			glBindVertexArray(0);
 		}
 	};
 }

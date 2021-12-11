@@ -55,18 +55,16 @@ struct MainRenderer : IRenderer
 		auto & color_attachment = scene_framebuffer_attachments[0];
 		color_attachment.create(
 			GL::Texture2D::AttachmentDescription{
-				.size = scene_resolution,
-				.internal_format = GL::GL_RGB,
-				.format = GL::GL_RGBA,
+				.dimensions = scene_resolution,
+				.internal_format = GL::GL_RGB8,
 			}
 		);
 
 		auto & depth_attachment = scene_framebuffer_attachments[1];
 		depth_attachment.create(
 			GL::Texture2D::AttachmentDescription{
-				.size = scene_resolution,
-				.internal_format = GL::GL_DEPTH_COMPONENT,
-				.format = GL::GL_DEPTH_COMPONENT,
+				.dimensions = scene_resolution,
+				.internal_format = GL::GL_DEPTH_COMPONENT32F,
 			}
 		);
 

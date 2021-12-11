@@ -17,10 +17,8 @@ namespace GL
 
 		struct AttachmentDescription
 		{
-			i32x2 size;
-
+			i32x2 dimensions;
 			GLenum internal_format;
-			GLenum format;
 
 			GLenum min_filter = GL_LINEAR;
 			GLenum mag_filter = GL_LINEAR;
@@ -28,25 +26,22 @@ namespace GL
 
 		void create(AttachmentDescription const & description)
 		{
-			glGenTextures(1, &id);
+			glCreateTextures(GL_TEXTURE_2D, 1, &id);
 
-			glBindTexture(GL_TEXTURE_2D, id);
-			glTexImage2D(
-				GL_TEXTURE_2D,
-				0,
+			glTextureStorage2D(
+				id,
+				1,
 				description.internal_format,
-				description.size.x, description.size.y,
-				0, description.format, GL_UNSIGNED_BYTE, nullptr
+				description.dimensions.x, description.dimensions.y
 			);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, description.min_filter);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, description.mag_filter);
+			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, description.min_filter);
+			glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, description.mag_filter);
 		}
 
 		struct ImageDescription
 		{
 			i32x2 dimensions;
-
 			bool has_alpha = false;
 
 			GLenum min_filter = GL_LINEAR;
@@ -60,7 +55,7 @@ namespace GL
 
 		void create(ImageDescription const & description)
 		{
-			glGenTextures(1, &id);
+			glCreateTextures(GL_TEXTURE_2D, 1, &id);
 
 			auto channel_count = description.has_alpha ? 4 : 3;
 			auto channel_format = description.has_alpha ? GL_RGBA : GL_RGB;
@@ -70,23 +65,28 @@ namespace GL
 			if (not aligns_to_4)
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-			glBindTexture(GL_TEXTURE_2D, id);
-			glTexImage2D(
-				GL_TEXTURE_2D,
+			glTextureStorage2D(
+				id,
+				1,
+				GL_RGBA8,
+				description.dimensions.x, description.dimensions.y
+			);
+			glTextureSubImage2D(
+				id,
 				0,
-				GL_RGBA,
+				0, 0,
 				description.dimensions.x, description.dimensions.y,
-				0, channel_format, GL_UNSIGNED_BYTE, description.data.data()
+				channel_format, GL_UNSIGNED_BYTE, description.data.data()
 			);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, description.min_filter);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, description.mag_filter);
+			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, description.min_filter);
+			glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, description.mag_filter);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, description.wrap_s);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, description.wrap_t);
+			glTextureParameteri(id, GL_TEXTURE_WRAP_S, description.wrap_s);
+			glTextureParameteri(id, GL_TEXTURE_WRAP_T, description.wrap_t);
 
 			if (not (description.min_filter == GL_NEAREST or description.min_filter == GL_LINEAR))
-				glGenerateMipmap(GL_TEXTURE_2D);;
+				glGenerateTextureMipmap(id);
 
 			if (not aligns_to_4)
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);

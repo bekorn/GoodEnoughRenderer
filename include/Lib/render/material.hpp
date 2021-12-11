@@ -34,20 +34,15 @@ struct Material_gltf_pbrMetallicRoughness : IMaterial
 	{
 		using namespace GL;
 
-		glActiveTexture(GL_TEXTURE0 + 0);
-		glBindTexture(GL_TEXTURE_2D, base_color_texture);
+		glBindTextureUnit(0, base_color_texture);
 		glUniform4fv(0, 1, begin(base_color_factor));
 
-		glActiveTexture(GL_TEXTURE0 + 1);
-		glBindTexture(GL_TEXTURE_2D, metallic_roughness_texture);
+		glBindTextureUnit(1, metallic_roughness_texture);
 
-		glActiveTexture(GL_TEXTURE0 + 2);
-		glBindTexture(GL_TEXTURE_2D, emissive_texture);
+		glBindTextureUnit(2, emissive_texture);
 
-		glActiveTexture(GL_TEXTURE0 + 3);
-		glBindTexture(GL_TEXTURE_2D, occlusion_texture);
+		glBindTextureUnit(3, occlusion_texture);
 
-		glActiveTexture(GL_TEXTURE0 + 4);
-		glBindTexture(GL_TEXTURE_2D, normal_texture);
+		glBindTextureUnit(4, normal_texture);
 	}
 };

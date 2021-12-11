@@ -1,13 +1,14 @@
 #pragma once
 
-#include ".pch.hpp"
+#include "Lib/core/core_types.hpp"
 
-// TODO(bekorn): maybe rename to ogl or OGL
 namespace GL
 {
 	// TODO(bekorn): is this the place for config?
-	auto const VERSION_MAJOR = 4;
-	auto const VERSION_MINOR = 3;
+	auto constexpr VERSION_MAJOR = 4;
+	auto constexpr VERSION_MINOR = 5;
+
+	// following DSA API https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
 
 	struct OpenGLObject
 	{

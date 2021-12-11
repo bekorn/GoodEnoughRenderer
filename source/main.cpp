@@ -1,8 +1,7 @@
 #include <iostream>
-#include <vector>
 
 #include "Lib/core/.hpp"
-#include "Lib/opengl/util.hpp"
+#include "Lib/opengl/.hpp"
 #include "Lib/glfw/.hpp"
 #include "Lib/imgui/.hpp"
 
@@ -22,7 +21,7 @@ i32 main(i32 argc, char** argv)
 				.title = "Good Enough Renderer",
 				.size = {860, 860},
 				.vsync = true,
-				.gl_major = 4, .gl_minor = 3,
+				.gl_major = GL::VERSION_MAJOR, .gl_minor = GL::VERSION_MINOR,
 			}
 		);
 		imgui_context.create({.window = window});
@@ -55,20 +54,23 @@ i32 main(i32 argc, char** argv)
 		for (auto & renderer: renderers)
 			renderer->render(window);
 
-		// Reset any modified settings
 		{
 			using namespace GL;
 
+			// Reset any modified settings
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 			i32 w, h;
 			glfwGetWindowSize(window, &w, &h);
 			glViewport(0, 0, w, h);
 
-			glClearColor(0, 0, 0, 1);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 			glEnable(GL_DEPTH_TEST);
+
+			// clear
+			f32x4 clear_color(0, 0, 0, 1);
+			glClearNamedFramebufferfv(0, GL::GL_COLOR, 0, begin(clear_color));
+			f32 clear_depth = 0;
+			glClearNamedFramebufferfv(0, GL::GL_DEPTH, 0, &clear_depth);
 		}
 
 		// Render Imgui frame

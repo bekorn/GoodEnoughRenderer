@@ -17,8 +17,9 @@ namespace GLTF
 	struct BufferView
 	{
 		u32 buffer_index;
-		u32 byte_offset;
-		u32 byte_length;
+		u32 offset;
+		u32 length;
+		optional<u32> stride;
 	};
 
 	struct Accessor
@@ -244,8 +245,9 @@ namespace GLTF
 			gltf_data.buffer_views.push_back(
 				{
 					.buffer_index = GetU32(buffer_view, "buffer"),
-					.byte_offset = GetU32(buffer_view, "byteOffset", 0),
-					.byte_length = GetU32(buffer_view, "byteLength")
+					.offset = GetU32(buffer_view, "byteOffset", 0),
+					.length = GetU32(buffer_view, "byteLength"),
+					.stride = GetOptionalU32(buffer_view, "byteStride"),
 				}
 			);
 		}
