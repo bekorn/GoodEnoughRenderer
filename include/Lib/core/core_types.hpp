@@ -99,45 +99,39 @@ using std::unique_ptr, std::make_unique;
 // Simple byte buffer
 struct ByteBuffer
 {
-	unique_ptr<byte> data;
+	unique_ptr<byte[]> data;
 	usize size;
 
 	ByteBuffer() = default;
 
 	explicit ByteBuffer(usize size) :
-		data(new byte[size]),
+		data(make_unique<byte[]>(size)),
 		size(size)
 	{}
 
 	// move a pointer
-	ByteBuffer(void* & pointer, usize size) :
+	ByteBuffer(void* && pointer, usize size) :
 		data(static_cast<byte*>(pointer)),
 		size(size)
 	{
-		// TODO(bekorn): is this useful?
 		pointer = nullptr;
 	}
 
 	template<typename T>
-	span<T> span_as() const
+	auto span_as() const
 	{
-		return {
-			reinterpret_cast<T*>(data.get()),
-			reinterpret_cast<T*>(data.get() + size)
-		};
+		return span<T>(data.get(), size);
 	}
 
 	template<typename T>
-	span<T> span_as(usize offset, usize size) const
+	auto span_as(usize offset, usize size) const
 	{
-		return {
-			reinterpret_cast<T*>(data.get() + offset),
-			reinterpret_cast<T*>(data.get() + offset + size)
-		};
+		assert(("Out of bounds access", offset + size <= this->size));
+		return span<T>(data.get() + offset, size);
 	}
 
 	template<typename T>
-	T* data_as() const
+	auto data_as() const
 	{
 		return reinterpret_cast<T*>(data.get());
 	}

@@ -281,7 +281,7 @@ namespace GLTF
 					);
 
 					auto data = ByteBuffer(
-						raw_pixel_data,
+						move(raw_pixel_data),
 						dimensions.x * dimensions.y * channels
 					);
 
