@@ -69,24 +69,6 @@ using f64x4x4 = glm::f64mat4x4;
 using f32x3x3 = glm::f32mat3x3;
 using f64x3x3 = glm::f64mat3x3;
 
-// Type helpers
-using glm::value_ptr;
-
-namespace glm
-{
-	template<glm::length_t L, typename T, glm::qualifier Q>
-	inline T* begin(glm::vec<L, T, Q> & vec)
-	{
-		return &vec[0];
-	}
-
-	template<glm::length_t L, typename T, glm::qualifier Q>
-	inline T* end(glm::vec<L, T, Q> & vec)
-	{
-		return begin(vec) + L;
-	}
-}
-
 
 // Handy std stuff
 using std::move;

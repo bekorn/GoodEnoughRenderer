@@ -43,6 +43,10 @@ struct MainRenderer : IRenderer
 
 	vector<Mesh> meshes;
 
+	f32x3 position{0, 0, 0};
+	f32x3 rotation{0, 0, 0};
+	f32 scale{1};
+
 	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
 	i32x2 scene_resolution{720, 720};
 	GL::FrameBuffer scene_framebuffer;
@@ -96,6 +100,12 @@ struct MainRenderer : IRenderer
 
 		glEnable(GL_DEPTH_TEST);
 
+		glm::mat4x4 transform(1);
+		transform *= glm::translate(position);
+		transform *= glm::orientate4(glm::radians(rotation));
+		transform *= glm::scale(f32x3(scale));
+		glUniformMatrix4fv(10, 1, false, begin(transform));
+
 		for (auto const & mesh: meshes)
 		{
 			for (auto const & [vao, material_index]: mesh.array_drawables)
@@ -146,6 +156,10 @@ struct MainRenderer : IRenderer
 		i32 current_program;
 		GL::glGetIntegerv(GL::GL_CURRENT_PROGRAM, &current_program);
 		Text("Current Program id: %d", current_program);
+
+		SliderFloat3("Transform", begin(position), -2, 2, "%.2f");
+		SliderFloat3("Rotation", begin(rotation), 0, 360, "%.2f");
+		SliderFloat("Scale", &scale, 0.1, 10, "%.2f");
 
 		ColorEdit4("Base Color", begin(
 			dynamic_cast<Material_gltf_pbrMetallicRoughness*>(meshes[0].materials[0].get())->base_color_factor

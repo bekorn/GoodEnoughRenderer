@@ -12,8 +12,10 @@
 
 // extensions (http://glm.g-truc.net/glm.pdf)
 #include <glm/gtc/type_precision.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/range.hpp>
 #include <glm/gtx/component_wise.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 
 // Handy std classes
