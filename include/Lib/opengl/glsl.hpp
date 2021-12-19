@@ -1,9 +1,8 @@
 #pragma once
 
-#include ".pch.hpp"
-#include "convention.hpp"
-
 #include <sstream>
+
+#include "convention.hpp"
 
 namespace GL
 {

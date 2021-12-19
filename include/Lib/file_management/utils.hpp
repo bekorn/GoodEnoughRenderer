@@ -1,45 +1,94 @@
 #pragma once
 
-#include <filesystem>
-#include <fstream>
+#include "Lib/core/core.hpp"
 
-#include "Lib/core/core_types.hpp"
+#include "core.hpp"
 
-ByteBuffer LoadAsBytes(std::filesystem::path const & path)
+namespace File
 {
-	assert(std::filesystem::exists(path));
-	std::basic_ifstream<byte> file(path, std::ios::in | std::ios::binary | std::ios::ate);
+	namespace JSON
+	{
+		using JSONObj = rapidjson::Document::ConstObject const &;
+		using Key = std::string_view const &;
 
-	usize file_size = file.tellg();
-	ByteBuffer buffer(file_size);
+		u32 GetU32(JSONObj obj, Key key)
+		{
+			return obj[key.data()].GetUint();
+		}
 
-	file.seekg(0);
-	file.read(buffer.data.get(), file_size);
+		u32 GetU32(JSONObj obj, Key key, u32 def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetUint();
+			else
+				return def_value;
+		}
 
-	return buffer;
-}
+		optional<u32> GetOptionalU32(JSONObj obj, Key key)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetUint();
+			else
+				return nullopt;
+		}
 
-ByteBuffer LoadAsBytes(std::filesystem::path const & path, usize file_size)
-{
-	assert(std::filesystem::exists(path));
-	std::basic_ifstream<byte> file(path, std::ios::in | std::ios::binary);
+		std::string GetString(JSONObj obj, Key key, std::string const & def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetString();
+			else
+				return def_value;
+		}
 
-	ByteBuffer buffer(file_size);
-	file.read(buffer.data.get(), file_size);
+		bool GetBool(JSONObj obj, Key key, bool def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetBool();
+			else
+				return def_value;
+		}
 
-	return buffer;
-}
+		f32 GetF32(JSONObj obj, Key key, f32 def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+				return member->value.GetFloat();
+			else
+				return def_value;
+		}
 
-std::string LoadAsString(std::filesystem::path const & path)
-{
-	assert(std::filesystem::exists(path));
-	std::basic_ifstream<char> file(path, std::ios::in | std::ios::binary | std::ios::ate);
+		f32x3 GetF32x3(JSONObj obj, Key key, f32x3 def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+			{
+				auto const & arr = member->value.GetArray();
+				f32x3 val;
+				for (auto i = 0; i < 3; ++i)
+					val[i] = arr[i].GetFloat();
+				return val;
+			}
+			else
+				return def_value;
+		}
 
-	usize file_size = file.tellg();
-	std::string buffer(file_size, '\0');
-
-	file.seekg(0);
-	file.read(buffer.data(), file_size);
-
-	return buffer;
+		f32x4 GetF32x4(JSONObj obj, Key key, f32x4 def_value)
+		{
+			auto member = obj.FindMember(key.data());
+			if (member != obj.MemberEnd())
+			{
+				auto const & arr = member->value.GetArray();
+				f32x4 val;
+				for (auto i = 0; i < 4; ++i)
+					val[i] = arr[i].GetFloat();
+				return val;
+			}
+			else
+				return def_value;
+		}
+	}
 }

@@ -1,10 +1,13 @@
 #pragma once
 
-#include "Lib/core/core_types.hpp"
+#include "Lib/core/core.hpp"
+
+#include ".pch.hpp"
 
 namespace GL
 {
-	// TODO(bekorn): is this the place for config?
+	using namespace gl45core;
+
 	auto constexpr VERSION_MAJOR = 4;
 	auto constexpr VERSION_MINOR = 5;
 

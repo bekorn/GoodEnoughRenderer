@@ -5,13 +5,14 @@
 #include "Lib/glfw/.hpp"
 #include "Lib/imgui/.hpp"
 
-#include "renderer.hpp"
+#include "game.hpp"
+#include "editor.hpp"
 
 i32 main(i32 argc, char** argv)
 {
-	GLFWContext glfw_context;
+	GLFW::Context glfw_context;
 	GLFW::Window window;
-	ImguiContext imgui_context;
+	Imgui::Context imgui_context;
 
 	try
 	{
@@ -36,7 +37,12 @@ i32 main(i32 argc, char** argv)
 
 
 	vector<unique_ptr<IRenderer>> renderers;
-	renderers.emplace_back(new MainRenderer);
+	{
+		auto scene = make_unique<Game>();
+		auto editor = make_unique<Editor>(*scene);
+		renderers.emplace_back(move(scene));
+		renderers.emplace_back(move(editor));
+	}
 
 	for (auto & renderer: renderers)
 		renderer->create();

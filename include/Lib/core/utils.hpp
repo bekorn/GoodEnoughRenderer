@@ -1,9 +1,10 @@
 #pragma once
 
-#include "core_types.hpp"
 #include <chrono>
 #include <iostream>
 #include <iomanip>
+
+#include "core.hpp"
 
 struct Timer
 {

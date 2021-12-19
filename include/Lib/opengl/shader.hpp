@@ -1,10 +1,9 @@
 #pragma once
 
-#include ".pch.hpp"
-#include "core_types.hpp"
-#include "glue.hpp"
-
 #include <string>
+
+#include "core.hpp"
+#include "glue.hpp"
 
 namespace GL
 {
