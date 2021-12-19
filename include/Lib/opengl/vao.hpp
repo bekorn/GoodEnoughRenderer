@@ -8,7 +8,7 @@ namespace GL
 	{
 		struct Description
 		{
-			Buffer const & buffer;
+			index_ptr<vector<Buffer>> buffer;
 			usize buffer_offset;
 			optional<usize> buffer_stride;
 
@@ -48,7 +48,7 @@ namespace GL
 				glVertexArrayVertexBuffer(
 					id,
 					attribute.location,
-					attribute.buffer.id,
+					attribute.buffer->id,
 					attribute.buffer_offset,
 					attribute.buffer_stride.value_or(attribute.vector_dimension * ComponentTypeSize(attribute.vector_data_type))
 				);
@@ -96,7 +96,7 @@ namespace GL
 				glVertexArrayVertexBuffer(
 					id,
 					attribute.location,
-					attribute.buffer.id,
+					attribute.buffer->id,
 					attribute.buffer_offset,
 					attribute.buffer_stride.value_or(attribute.vector_dimension * ComponentTypeSize(attribute.vector_data_type))
 				);

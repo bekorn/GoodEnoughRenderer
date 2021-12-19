@@ -78,12 +78,31 @@ struct Editor : IRenderer
 
 		Begin("Mesh Settings", nullptr, ImGuiWindowFlags_NoCollapse);
 
-		static u64 mesh_index, min_index = 0, max_index;
-		max_index = game.meshes.size() - 1;
-		SliderScalar("Mesh Index", ImGuiDataType_U64, &mesh_index, &min_index, &max_index);
+		static u64 mesh_index;
+		{
+			static u64 min_index = 0, max_index;
+			max_index = game.meshes.size() - 1;
+			SliderScalar("Mesh Index", ImGuiDataType_U64, &mesh_index, &min_index, &max_index);
+		}
 
 		auto & mesh = game.meshes[mesh_index];
 
+		LabelText("Name", "%s", mesh.name.c_str());
+
+		vector<u32> vao_ids;
+		for (auto & drawable: mesh.array_drawables)
+			vao_ids.push_back(drawable.vao.id);
+		for (auto & drawable: mesh.element_drawables)
+			vao_ids.push_back(drawable.vao.id);
+
+		{
+			std::stringstream ss;
+			for (auto id : vao_ids)
+				ss << id << ", ";
+			LabelText("VAO ids", "%s", ss.str().c_str());
+		}
+
+		NewLine();
 		BulletText("Transform");
 		SliderFloat3("Position", begin(mesh.position), -2, 2, "%.2f");
 		SliderFloat3("Rotation", begin(mesh.rotation), 0, 360, "%.2f");
@@ -91,8 +110,25 @@ struct Editor : IRenderer
 
 		NewLine();
 		BulletText("Material");
+
+		vector<u32> material_indices;
+		for (auto & drawable: mesh.array_drawables)
+			material_indices.push_back(drawable.material_ptr.index);
+		for (auto & drawable: mesh.element_drawables)
+			material_indices.push_back(drawable.material_ptr.index);
+
+		static i32 material_index;
+		{
+			std::stringstream ss;
+			for (auto & i: material_indices)
+				ss << i << '\0';
+			Combo("Material Index", &material_index, ss.str().c_str());
+		}
+
+		auto const & material = game.materials[material_index];
+
 		ColorEdit4("Base Color", begin(
-			dynamic_cast<Render::Material_gltf_pbrMetallicRoughness*>(mesh.materials[0].get())->base_color_factor
+			dynamic_cast<Render::Material_gltf_pbrMetallicRoughness*>(material.get())->base_color_factor
 		));
 
 		{
@@ -119,32 +155,27 @@ struct Editor : IRenderer
 			}
 		}
 
-		{
-			static i32 current_item = 0;
+		End();
+	}
 
-			Checkbox("Visualize Texture of Mesh", &visualize_texture);
+	void assets_window()
+	{
+		using namespace ImGui;
 
-			if (visualize_texture)
-			{
-				static auto const elements = [&mesh]()
-				{
-					std::string elements_sep_by_zero;
-					for (auto i = 0; i < mesh.textures.size(); ++i)
-						elements_sep_by_zero += std::to_string(i) + '\0';
-					return elements_sep_by_zero;
-				}();
+		Begin("Assets");
 
-				Combo("index", &current_item, elements.data());
+		static u64 texture_index = 0, min_index = 0;
+		u64 const max_index = game.textures.size() - 1;
 
-				auto const id = mesh.textures[current_item].id;
-				LabelText("id", "%d", id);
+		SliderScalar("Index", ImGuiDataType_U64, &texture_index, &min_index, &max_index);
 
-				Image(
-					reinterpret_cast<void*>(i64(id)),
-					{240, 240}
-				);
-			}
-		}
+		auto const id = game.textures[texture_index].id;
+		LabelText("id", "%d", id);
+
+		Image(
+			reinterpret_cast<void*>(i64(id)),
+			{240, 240}
+		);
 
 		End();
 	}
@@ -339,8 +370,9 @@ struct Editor : IRenderer
 	{
 		metrics_window();
 		game_window();
-		mesh_settings_window();
 		game_settings_window();
+		mesh_settings_window();
+		assets_window();
 		shader_window();
 	}
 };

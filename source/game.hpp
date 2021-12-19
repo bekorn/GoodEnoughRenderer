@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Lib/core/.hpp"
 #include "Lib/opengl/.hpp"
 #include "Lib/render/.hpp"
 #include "Lib/asset_kitchen/gltf/.hpp"
@@ -9,8 +10,14 @@
 
 struct Game : IRenderer
 {
+	// GL resources
+	vector<GL::Buffer> buffers;
+	vector<GL::Texture2D> textures;
+	// Render resources
 	vector<Render::Mesh> meshes;
+	vector<unique_ptr<Render::IMaterial>> materials;
 
+	// Settings
 	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
 	f32 clear_depth = 1;
 	i32x2 resolution{720, 720};
@@ -55,12 +62,12 @@ struct Game : IRenderer
 
 	void load_assets()
 	{
-		//		auto const gltf_data = GLTF::Load(global_state.test_assets / "helmet/DamagedHelmet.gltf");
-		//		auto const gltf_data = GLTF::Load(global_state.test_assets / "avocado/Avocado.gltf");
-		//		auto const gltf_data = GLTF::Load(global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
-		//		auto const gltf_data = GLTF::Load(global_state.test_assets / "sponza/Sponza.gltf");
-		auto const gltf_data = GLTF::Load(global_state.test_assets / "flight_helmet/FlightHelmet.gltf");
-		meshes.emplace_back(gltf_data, 0);
+		auto const gltf_data = GLTF::Load(global_state.test_assets / "helmet/DamagedHelmet.gltf");
+//		auto const gltf_data = GLTF::Load(global_state.test_assets / "avocado/Avocado.gltf");
+//		auto const gltf_data = GLTF::Load(global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
+//		auto const gltf_data = GLTF::Load(global_state.test_assets / "sponza/Sponza.gltf");
+//		auto const gltf_data = GLTF::Load(global_state.test_assets / "flight_helmet/FlightHelmet.gltf");
+		Convert(gltf_data, buffers, textures, materials, meshes);
 	}
 
 	void create() override
@@ -87,16 +94,16 @@ struct Game : IRenderer
 			// TODO(bekorn): find a proper location
 			glUniformMatrix4fv(10, 1, false, begin(transform));
 
-			for (auto const & [vao, material_index]: mesh.array_drawables)
+			for (auto const & [vao, material_ref]: mesh.array_drawables)
 			{
-				mesh.materials[material_index]->set_uniforms();
+				material_ref->get()->set_uniforms();
 
 				glBindVertexArray(vao.id);
 				glDrawArrays(GL_TRIANGLES, 0, vao.vertex_count);
 			}
-			for (auto const & [vao, material_index]: mesh.element_drawables)
+			for (auto const & [vao, material_ref]: mesh.element_drawables)
 			{
-				mesh.materials[material_index]->set_uniforms();
+				material_ref->get()->set_uniforms();
 
 				glBindVertexArray(vao.id);
 				glDrawElements(GL_TRIANGLES, vao.element_count, GL_UNSIGNED_SHORT, nullptr);
