@@ -40,6 +40,11 @@ struct Mesh
 	vector<ArrayDrawable> array_drawables;
 	vector<ElementDrawable> element_drawables;
 
+	// Transform data
+	f32x3 position{0, 0, 0};
+	f32x3 rotation{0, 0, 0};
+	f32 scale{1};
+
 	Mesh() noexcept = default;
 	Mesh(Mesh const &) noexcept = delete;
 	Mesh(Mesh &&) noexcept = default;
@@ -206,5 +211,14 @@ struct Mesh
 				);
 			}
 		}
+	}
+
+	glm::mat4x4 CalculateTransform() const
+	{
+		glm::mat4x4 transform(1);
+		transform *= glm::translate(position);
+		transform *= glm::orientate4(glm::radians(rotation));
+		transform *= glm::scale(f32x3(scale));
+		return transform;
 	}
 };

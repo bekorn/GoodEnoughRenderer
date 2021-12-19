@@ -1,3 +1,4 @@
+// TODO(bekorn): find a proper location
 layout(location = 10) uniform mat4 transform;
 
 layout(location = ATTRIBUTE_LOCATION_POSITION)      in vec3 a_position;

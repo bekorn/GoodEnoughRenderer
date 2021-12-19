@@ -43,11 +43,8 @@ struct MainRenderer : IRenderer
 
 	vector<Mesh> meshes;
 
-	f32x3 position{0, 0, 0};
-	f32x3 rotation{0, 0, 0};
-	f32 scale{1};
-
 	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
+	f32 clear_depth = 1;
 	i32x2 scene_resolution{720, 720};
 	GL::FrameBuffer scene_framebuffer;
 	vector<GL::Texture2D> scene_framebuffer_attachments;
@@ -92,19 +89,13 @@ struct MainRenderer : IRenderer
 	{
 		using namespace GL;
 
-		glBindFramebuffer(GL_FRAMEBUFFER, scene_framebuffer.id);
 		glViewport(0, 0, scene_resolution.x, scene_resolution.y);
 
-		glClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBindFramebuffer(GL_FRAMEBUFFER, scene_framebuffer.id);
+		glClearNamedFramebufferfv(scene_framebuffer.id, GL_COLOR, 0, begin(clear_color));
+		glClearNamedFramebufferfv(scene_framebuffer.id, GL_DEPTH, 0, &clear_depth);
 
 		glEnable(GL_DEPTH_TEST);
-
-		glm::mat4x4 transform(1);
-		transform *= glm::translate(position);
-		transform *= glm::orientate4(glm::radians(rotation));
-		transform *= glm::scale(f32x3(scale));
-		glUniformMatrix4fv(10, 1, false, begin(transform));
 
 		for (auto const & mesh: meshes)
 		{
@@ -112,12 +103,20 @@ struct MainRenderer : IRenderer
 			{
 				mesh.materials[material_index]->set_uniforms();
 
+				auto transform = mesh.CalculateTransform();
+				// TODO(bekorn): find a proper location
+				glUniformMatrix4fv(10, 1, false, begin(transform));
+
 				glBindVertexArray(vao.id);
 				glDrawArrays(GL_TRIANGLES, 0, vao.vertex_count);
 			}
 			for (auto const & [vao, material_index]: mesh.element_drawables)
 			{
 				mesh.materials[material_index]->set_uniforms();
+
+				auto transform = mesh.CalculateTransform();
+				// TODO(bekorn): find a proper location
+				glUniformMatrix4fv(10, 1, false, begin(transform));
 
 				glBindVertexArray(vao.id);
 				glDrawElements(GL_TRIANGLES, vao.element_count, GL_UNSIGNED_SHORT, nullptr);
@@ -129,7 +128,7 @@ struct MainRenderer : IRenderer
 	{
 		using namespace ImGui;
 
-		Begin("Scene");
+		Begin("Scene", nullptr, ImGuiWindowFlags_NoCollapse);
 
 		f32 scale = 0.5;
 		Text("Resolution: %dx%d, Scale: %.2f", scene_resolution.x, scene_resolution.y, scale);
@@ -149,20 +148,38 @@ struct MainRenderer : IRenderer
 	{
 		using namespace ImGui;
 
-		Begin("Scene Settings");
+		Begin("Scene Settings", nullptr, ImGuiWindowFlags_NoCollapse);
 
-		ColorEdit3("Clear color", glm::value_ptr(clear_color));
+		ColorEdit3("Clear color", begin(clear_color));
 
 		i32 current_program;
 		GL::glGetIntegerv(GL::GL_CURRENT_PROGRAM, &current_program);
 		Text("Current Program id: %d", current_program);
 
-		SliderFloat3("Transform", begin(position), -2, 2, "%.2f");
-		SliderFloat3("Rotation", begin(rotation), 0, 360, "%.2f");
-		SliderFloat("Scale", &scale, 0.1, 10, "%.2f");
+		End();
+	}
 
+	void mesh_settings_window()
+	{
+		using namespace ImGui;
+
+		Begin("Mesh Settings", nullptr, ImGuiWindowFlags_NoCollapse);
+
+		static u64 mesh_index, min_index = 0, max_index;
+		max_index = meshes.size() - 1;
+		SliderScalar("Mesh Index", ImGuiDataType_U64, &mesh_index, &min_index, &max_index);
+
+		Mesh & mesh = meshes[mesh_index];
+
+		BulletText("Transform");
+		SliderFloat3("Position", begin(mesh.position), -2, 2, "%.2f");
+		SliderFloat3("Rotation", begin(mesh.rotation), 0, 360, "%.2f");
+		SliderFloat("Scale", &mesh.scale, 0.1, 10, "%.2f");
+
+		NewLine();
+		BulletText("Material");
 		ColorEdit4("Base Color", begin(
-			dynamic_cast<Material_gltf_pbrMetallicRoughness*>(meshes[0].materials[0].get())->base_color_factor
+			dynamic_cast<Material_gltf_pbrMetallicRoughness*>(mesh.materials[0].get())->base_color_factor
 		));
 
 		{
@@ -196,8 +213,6 @@ struct MainRenderer : IRenderer
 
 			if (visualize_texture)
 			{
-				auto const & mesh = meshes[0];
-
 				static auto const elements = [&mesh]()
 				{
 					std::string elements_sep_by_zero;
@@ -352,10 +367,10 @@ struct MainRenderer : IRenderer
 
 		create_scene_framebuffer();
 
-//		auto const gltf_data = GLTF::Load(global_state.test_assets / "helmet/DamagedHelmet.gltf");
+		auto const gltf_data = GLTF::Load(global_state.test_assets / "helmet/DamagedHelmet.gltf");
 //		auto const gltf_data = GLTF::Load(global_state.test_assets / "avocado/Avocado.gltf");
 //		auto const gltf_data = GLTF::Load(global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
-		auto const gltf_data = GLTF::Load(global_state.test_assets / "sponza/Sponza.gltf");
+//		auto const gltf_data = GLTF::Load(global_state.test_assets / "sponza/Sponza.gltf");
 		meshes.emplace_back(gltf_data, 0);
 
 		try_to_reload_shader();
@@ -365,7 +380,7 @@ struct MainRenderer : IRenderer
 	{
 		using namespace ImGui;
 
-		Begin("Shader Info");
+		Begin("Shader Info", nullptr, ImGuiWindowFlags_NoCollapse);
 
 		if (Button("Reload Shader"))
 			try_to_reload_shader();
@@ -422,9 +437,10 @@ struct MainRenderer : IRenderer
 
 		// UI windows
 		metrics_window();
-		scene_settings_window();
 		shader_window();
 		scene_window();
+		scene_settings_window();
+		mesh_settings_window();
 
 		// Immediate rendering
 		scene_render();
