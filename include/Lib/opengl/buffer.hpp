@@ -1,22 +1,26 @@
 #pragma once
 
+#include "Lib/core/utils.hpp"
+
 #include "core.hpp"
 
 namespace GL
 {
 	struct Buffer : OpenGLObject
 	{
-		Buffer() noexcept = default;
-		Buffer(Buffer&&) noexcept = default;
+		CTOR(Buffer, default);
+		COPY(Buffer, delete);
+		MOVE(Buffer, default);
 
 		~Buffer()
 		{
 			glDeleteBuffers(1, &id);
 		}
+
 		struct Description
 		{
 			GLenum usage = GL_STATIC_DRAW;
-			span<byte> const & data;
+			span<byte> data = {};
 		};
 
 		void create(Description const & description)
@@ -30,5 +34,4 @@ namespace GL
 			);
 		}
 	};
-
 }

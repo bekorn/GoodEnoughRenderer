@@ -10,6 +10,7 @@ namespace GL
 		return "#version " + std::to_string(VERSION_MAJOR) + std::to_string(VERSION_MINOR) + "0\n";
 	}();
 
+	// TODO(bekorn): deprecate
 	// TODO(bekorn): This looks better but still computed at runtime
 	auto const GLSL_ATTRIBUTE_LOCATION_MACROS = []()
 	{

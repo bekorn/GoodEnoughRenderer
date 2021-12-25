@@ -95,6 +95,12 @@ struct ByteBuffer
 		pointer = nullptr;
 	}
 
+	byte* begin() const
+	{ return data.get(); }
+
+	byte* end() const
+	{ return data.get() + size;	}
+
 	template<typename T>
 	auto span_as() const
 	{
@@ -120,3 +126,15 @@ struct ByteBuffer
 		return reinterpret_cast<T*>(data.get());
 	}
 };
+
+// shortcuts
+#define CTOR(type, behaviour) \
+	type() noexcept = behaviour;
+
+#define COPY(type, behaviour) \
+	type(type const &) noexcept = behaviour; \
+	type& operator=(type const &) noexcept = behaviour;
+
+#define MOVE(type, behaviour) \
+	type(type &&) noexcept = behaviour; \
+	type& operator=(type &&) noexcept = behaviour;

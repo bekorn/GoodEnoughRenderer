@@ -22,15 +22,13 @@ namespace GL
 		OpenGLObject(OpenGLObject const &) noexcept = delete;
 		OpenGLObject& operator=(OpenGLObject const &) noexcept = delete;
 
-		OpenGLObject(OpenGLObject && other)  noexcept
+		OpenGLObject(OpenGLObject && other) noexcept
 		{
-			id = other.id;
-			other.id = 0;
+			std::swap(id, other.id);
 		}
 		OpenGLObject& operator=(OpenGLObject && other) noexcept
 		{
-			id = other.id;
-			other.id = 0;
+			std::swap(id, other.id);
 			return *this;
 		};
 	};

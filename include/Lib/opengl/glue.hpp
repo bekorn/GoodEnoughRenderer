@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Lib/geometry/core.hpp"
+
 namespace GL
 {
 	std::string_view GLSLTypeToString(GLenum type)
@@ -137,5 +139,55 @@ namespace GL
 
 		default: throw std::runtime_error("Unknown component Type :(");
 		}
+	}
+
+	GLenum IntoGLenum(Geometry::Attribute::Type::Value type)
+	{
+		using enum Geometry::Attribute::Type::Value;
+		switch (type)
+		{
+		case F32: return GL_FLOAT;
+		case I8:
+		case I8NORM: return GL_BYTE;
+		case I16:
+		case I16NORM: return GL_SHORT;
+		case I32:
+		case I32NORM: return GL_INT;
+		case U8:
+		case U8NORM: return GL_UNSIGNED_BYTE;
+		case U16:
+		case U16NORM: return GL_UNSIGNED_SHORT;
+		case U32:
+		case U32NORM: return GL_UNSIGNED_INT;
+		}
+	}
+
+	Geometry::Attribute::Type IntoAttributeType(GLenum type, bool is_normalized)
+	{
+		using enum Geometry::Attribute::Type::Value;
+
+		if (is_normalized)
+			switch (type)
+			{
+			case GL_BYTE: return I8NORM;
+			case GL_SHORT: return I16NORM;
+			case GL_INT: return I32NORM;
+			case GL_UNSIGNED_BYTE: return U8NORM;
+			case GL_UNSIGNED_SHORT: return U16NORM;
+			case GL_UNSIGNED_INT: return U32NORM;
+			}
+		else
+			switch (type)
+			{
+			case GL_FLOAT: return F32;
+			case GL_BYTE: return I8;
+			case GL_SHORT: return I16;
+			case GL_INT: return I32;
+			case GL_UNSIGNED_BYTE: return U8;
+			case GL_UNSIGNED_SHORT: return U16;
+			case GL_UNSIGNED_INT: return U32;
+			}
+
+		throw std::runtime_error("Unknown type or combination :(");
 	}
 }

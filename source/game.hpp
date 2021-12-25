@@ -14,8 +14,9 @@ struct Game : IRenderer
 	vector<GL::Buffer> buffers;
 	vector<GL::Texture2D> textures;
 	// Render resources
-	vector<Render::Mesh> meshes;
+	vector<Geometry::Primitive> primitives;
 	vector<unique_ptr<Render::IMaterial>> materials;
+	vector<Render::Mesh> meshes;
 
 	// Settings
 	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
@@ -67,7 +68,9 @@ struct Game : IRenderer
 //		auto const gltf_data = GLTF::Load(global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
 //		auto const gltf_data = GLTF::Load(global_state.test_assets / "sponza/Sponza.gltf");
 //		auto const gltf_data = GLTF::Load(global_state.test_assets / "flight_helmet/FlightHelmet.gltf");
-		Convert(gltf_data, buffers, textures, materials, meshes);
+
+//		Convert(gltf_data, buffers, textures, materials, meshes);
+		Convert(gltf_data, textures, materials, primitives, meshes);
 	}
 
 	void create() override
@@ -106,7 +109,15 @@ struct Game : IRenderer
 				material_ref->get()->set_uniforms();
 
 				glBindVertexArray(vao.id);
-				glDrawElements(GL_TRIANGLES, vao.element_count, GL_UNSIGNED_SHORT, nullptr);
+				void* element_offset = reinterpret_cast<void*>(static_cast<usize>(vao.element_offset));
+				glDrawElements(GL_TRIANGLES, vao.element_count, GL_UNSIGNED_SHORT, element_offset);
+			}
+			for (auto const & [_, material_ref, vertex_array]: mesh.primitives)
+			{
+				material_ref->get()->set_uniforms();
+
+				glBindVertexArray(vertex_array.id);
+				glDrawElements(GL_TRIANGLES, vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
 			}
 		}
 	}

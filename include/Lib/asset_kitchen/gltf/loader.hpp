@@ -38,7 +38,6 @@ namespace GLTF
 		{
 			auto const & buffer_view = item.GetObject();
 
-			// Limitation: no strided view
 			gltf_data.buffer_views.push_back(
 				{
 					.buffer_index = GetU32(buffer_view, "buffer"),
@@ -147,6 +146,7 @@ namespace GLTF
 			gltf_data.accessors.push_back(
 				{
 					.buffer_view_index = accessor["bufferView"].GetUint(),
+					.byte_offset = GetU32(accessor, "byteOffset", 0),
 					.vector_data_type = accessor["componentType"].GetUint(),
 					.vector_dimension = get_type_dimension(accessor["type"].GetString()),
 					.count = accessor["count"].GetUint(),

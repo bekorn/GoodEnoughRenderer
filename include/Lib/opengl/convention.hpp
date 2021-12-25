@@ -1,9 +1,13 @@
 #pragma once
 
+#include "Lib/core/core.hpp"
+#include "Lib/core/intrinsics.hpp"
+
 #include "core.hpp"
 
 namespace GL
 {
+	// TODO(bekorn): deprecate
 	namespace ATTRIBUTE_LOCATION
 	{
 		// TODO(bekorn): This is not scalable :(
@@ -73,6 +77,8 @@ namespace GL
 //			case WEIGHTS_2: return "WEIGHTS_2";
 //			case WEIGHTS_3: return "WEIGHTS_3";
 			}
+
+			unreachable();
 		}
 
 		inline char const* ToString(u32 type)

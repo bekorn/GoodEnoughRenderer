@@ -18,6 +18,7 @@ namespace Render
 		// Vertex attributes + material index
 		vector<ArrayDrawable> array_drawables;
 		vector<ElementDrawable> element_drawables;
+		vector<Primitive> primitives;
 
 		// Transform data
 		f32x3 position{0, 0, 0};

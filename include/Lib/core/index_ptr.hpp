@@ -26,13 +26,13 @@ struct index_ptr
 		container(container), index(item_ptr - container.data())
 	{}
 
-	auto operator*() const
+	auto& operator*() const
 	{
-		return std::next(container.begin(), index);
+		return *std::next(container.begin(), index);
 	}
 
 	auto operator->() const
 	{
-		return operator*();
+		return std::next(container.begin(), index);
 	}
 };

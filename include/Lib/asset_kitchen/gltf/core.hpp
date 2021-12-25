@@ -22,7 +22,7 @@ namespace GLTF
 	{
 		u32 buffer_view_index;
 		u32 byte_offset;
-		u32 vector_data_type; // stores GLenum value
+		u32 vector_data_type;
 		u32 vector_dimension;
 		u32 count;
 		bool normalized;

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include <iomanip>
+#include <source_location>
 
 #include "core.hpp"
 
@@ -37,3 +38,13 @@ struct Timer
 		wall_last = wall_now;
 	};
 };
+
+// TODO(bekorn): this is demonstrative but still much better than depending on macros
+void log(std::string_view message, std::source_location const location = std::source_location::current())
+{
+	std::cout
+		<< "LOG "
+		<< location.file_name() << "(" << location.line() << ") " << location.function_name() << ':'
+		<< message
+		<< '\n';
+}

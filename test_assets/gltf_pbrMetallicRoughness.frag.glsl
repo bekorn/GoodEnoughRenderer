@@ -76,7 +76,7 @@ float get_occlusion()
 
 vec3 get_normal()
 {
-    vec3 normal = vertex_normal;
+    vec3 normal = normalize(vertex_normal);
 
     if (is_sampler_bound(normal_sampler))
     {

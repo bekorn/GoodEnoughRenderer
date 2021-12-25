@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sstream>
+
 #include "Lib/opengl/.hpp"
 #include "Lib/render/.hpp"
 #include "Lib/imgui/.hpp"
@@ -94,13 +96,70 @@ struct Editor : IRenderer
 			vao_ids.push_back(drawable.vao.id);
 		for (auto & drawable: mesh.element_drawables)
 			vao_ids.push_back(drawable.vao.id);
+		for (auto & drawable: mesh.primitives)
+			vao_ids.push_back(drawable.vertex_array.id);
 
 		{
 			std::stringstream ss;
 			for (auto id : vao_ids)
 				ss << id << ", ";
-			LabelText("VAO ids", "%s", ss.str().c_str());
+			LabelText("VAO ids", "%s", ss.str().data());
 		}
+
+		if (not mesh.primitives.empty())
+		{
+			{
+				bool any_vertex_array_loaded = false;
+				for (auto const & primitive: mesh.primitives)
+					any_vertex_array_loaded |= primitive.is_loaded();
+
+				if (any_vertex_array_loaded)
+				{
+					if (Button("Unload all primitives"))
+						for (auto & primitive: mesh.primitives)
+							primitive.unload();
+				}
+				else
+				{
+					if (Button("Load all primitives"))
+						for (auto & primitive: mesh.primitives)
+							primitive.load(program);
+				}
+			}
+
+
+			static u64 primitive_index;
+			{
+				static u64 min_index = 0, max_index;
+				max_index = mesh.primitives.size() - 1;
+				SliderScalar("Primitive Index", ImGuiDataType_U64, &primitive_index, &min_index, &max_index);
+			}
+
+			auto const & primitive = *mesh.primitives[primitive_index].primitive_ptr;
+
+			if (BeginTable("Attributes", 3, ImGuiTableFlags_BordersInnerH))
+			{
+				TableSetupColumn("Key"), TableSetupColumn("Data"), TableSetupColumn("Size");
+				TableHeadersRow();
+
+				std::ostringstream ss;
+				for (auto const &[key, data]: primitive.attributes)
+				{
+					TableNextRow();
+
+					TableNextColumn(); ss << key;
+					TextUnformatted(ss.str().data()), ss.str({});
+
+					TableNextColumn(); ss << data.type << 'x' << (u32)data.dimension;
+					TextUnformatted(ss.str().data()), ss.str({});
+
+					TableNextColumn(); ss << data.buffer.size / (data.type.size() * data.dimension);
+					TextUnformatted(ss.str().data()), ss.str({});
+				}
+				EndTable();
+			}
+		}
+
 
 		NewLine();
 		BulletText("Transform");
@@ -115,6 +174,8 @@ struct Editor : IRenderer
 		for (auto & drawable: mesh.array_drawables)
 			material_indices.push_back(drawable.material_ptr.index);
 		for (auto & drawable: mesh.element_drawables)
+			material_indices.push_back(drawable.material_ptr.index);
+		for (auto & drawable: mesh.primitives)
 			material_indices.push_back(drawable.material_ptr.index);
 
 		static i32 material_index;
@@ -296,8 +357,6 @@ struct Editor : IRenderer
 			return;
 		}
 
-		// TODO(bekorn): This is probably not good.. Find a better wrapping for OpenGLObjects
-		program.~ShaderProgram();
 		program = move(new_program);
 
 		program.update_interface_mapping();
@@ -332,7 +391,7 @@ struct Editor : IRenderer
 				TableNextColumn();
 				Text("%s", GL::GLSLTypeToString(mapping.glsl_type).data());
 				TableNextColumn();
-				Text("%s", mapping.name.data());
+				Text("%s", mapping.key.data());
 			}
 			EndTable();
 		}
@@ -352,7 +411,7 @@ struct Editor : IRenderer
 				TableNextColumn();
 				Text("%s", GL::GLSLTypeToString(mapping.glsl_type).data());
 				TableNextColumn();
-				Text("%s", mapping.name.data());
+				Text("%s", (std::stringstream() << mapping.key).str().data());
 			}
 			EndTable();
 		}
