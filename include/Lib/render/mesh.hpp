@@ -16,8 +16,6 @@ namespace Render
 		std::string name; // just for debug purposes
 
 		// Vertex attributes + material index
-		vector<ArrayDrawable> array_drawables;
-		vector<ElementDrawable> element_drawables;
 		vector<Primitive> primitives;
 
 		// Transform data

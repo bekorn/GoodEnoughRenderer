@@ -2,7 +2,6 @@
 
 #include "core.hpp"
 #include "util.hpp"
-#include "convention.hpp"
 #include "glue.hpp"
 #include "shader.hpp"
 #include "texture.hpp"

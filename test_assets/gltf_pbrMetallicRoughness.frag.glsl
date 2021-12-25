@@ -1,7 +1,7 @@
-layout(location = ATTRIBUTE_LOCATION_POSITION)      in vec3 vertex_position;
-layout(location = ATTRIBUTE_LOCATION_NORMAL)        in vec3 vertex_normal;
-layout(location = ATTRIBUTE_LOCATION_COLOR_0)       in vec3 vertex_color;
-layout(location = ATTRIBUTE_LOCATION_TEXCOORD_0)    in vec2 vertex_texcoord;
+in vec3 vertex_position;
+in vec3 vertex_normal;
+in vec3 vertex_color;
+in vec2 vertex_texcoord;
 
 layout(binding = 0)  uniform sampler2D base_color_sampler;
 layout(location = 0) uniform vec4      base_color_factor;

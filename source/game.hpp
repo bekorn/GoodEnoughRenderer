@@ -69,7 +69,6 @@ struct Game : IRenderer
 //		auto const gltf_data = GLTF::Load(global_state.test_assets / "sponza/Sponza.gltf");
 //		auto const gltf_data = GLTF::Load(global_state.test_assets / "flight_helmet/FlightHelmet.gltf");
 
-//		Convert(gltf_data, buffers, textures, materials, meshes);
 		Convert(gltf_data, textures, materials, primitives, meshes);
 	}
 
@@ -97,21 +96,6 @@ struct Game : IRenderer
 			// TODO(bekorn): find a proper location
 			glUniformMatrix4fv(10, 1, false, begin(transform));
 
-			for (auto const & [vao, material_ref]: mesh.array_drawables)
-			{
-				material_ref->get()->set_uniforms();
-
-				glBindVertexArray(vao.id);
-				glDrawArrays(GL_TRIANGLES, 0, vao.vertex_count);
-			}
-			for (auto const & [vao, material_ref]: mesh.element_drawables)
-			{
-				material_ref->get()->set_uniforms();
-
-				glBindVertexArray(vao.id);
-				void* element_offset = reinterpret_cast<void*>(static_cast<usize>(vao.element_offset));
-				glDrawElements(GL_TRIANGLES, vao.element_count, GL_UNSIGNED_SHORT, element_offset);
-			}
 			for (auto const & [_, material_ref, vertex_array]: mesh.primitives)
 			{
 				material_ref->get()->set_uniforms();

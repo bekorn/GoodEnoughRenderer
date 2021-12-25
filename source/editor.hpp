@@ -91,23 +91,23 @@ struct Editor : IRenderer
 
 		LabelText("Name", "%s", mesh.name.c_str());
 
-		vector<u32> vao_ids;
-		for (auto & drawable: mesh.array_drawables)
-			vao_ids.push_back(drawable.vao.id);
-		for (auto & drawable: mesh.element_drawables)
-			vao_ids.push_back(drawable.vao.id);
-		for (auto & drawable: mesh.primitives)
-			vao_ids.push_back(drawable.vertex_array.id);
-
+		if (mesh.primitives.empty())
 		{
-			std::stringstream ss;
-			for (auto id : vao_ids)
-				ss << id << ", ";
-			LabelText("VAO ids", "%s", ss.str().data());
+			Text("Mesh has no primitives");
 		}
-
-		if (not mesh.primitives.empty())
+		else
 		{
+			{
+				vector<u32> vao_ids;
+				for (auto & drawable: mesh.primitives)
+					vao_ids.push_back(drawable.vertex_array.id);
+
+				std::stringstream ss;
+				for (auto id : vao_ids)
+					ss << id << ", ";
+				LabelText("VAO ids", "%s", ss.str().data());
+			}
+
 			{
 				bool any_vertex_array_loaded = false;
 				for (auto const & primitive: mesh.primitives)
@@ -171,10 +171,6 @@ struct Editor : IRenderer
 		BulletText("Material");
 
 		vector<u32> material_indices;
-		for (auto & drawable: mesh.array_drawables)
-			material_indices.push_back(drawable.material_ptr.index);
-		for (auto & drawable: mesh.element_drawables)
-			material_indices.push_back(drawable.material_ptr.index);
 		for (auto & drawable: mesh.primitives)
 			material_indices.push_back(drawable.material_ptr.index);
 
@@ -193,26 +189,10 @@ struct Editor : IRenderer
 		));
 
 		{
-			static i32 current_item = 0;
 			if (Checkbox("Visualize Attribute of Mesh", &visualize_attribute))
 			{
-				GL::glUseProgram(visualize_attribute ? attribute_visualizers[current_item].id : program.id);
-			}
-
-			if (visualize_attribute)
-			{
-				static auto const elements = []()
-				{
-					array<char const*, GL::ATTRIBUTE_LOCATION::SIZE> array;
-					for (auto i = 0; i < GL::ATTRIBUTE_LOCATION::SIZE; ++i)
-						array[i] = GL::ATTRIBUTE_LOCATION::ToString(i);
-					return array;
-				}();
-
-				if (Combo("Attribute", &current_item, elements.data(), elements.size()))
-				{
-					GL::glUseProgram(attribute_visualizers[current_item].id);
-				}
+				// TODO(bekorn): attribute debugging
+				Text("Currently not available...");
 			}
 		}
 
@@ -241,6 +221,8 @@ struct Editor : IRenderer
 		End();
 	}
 
+	// TODO(bekorn): attribute debugging
+	/*
 	array<GL::ShaderProgram, GL::ATTRIBUTE_LOCATION::SIZE> attribute_visualizers;
 
 	void load_attribute_visualizers()
@@ -270,7 +252,6 @@ struct Editor : IRenderer
 					.stage = GL::GL_VERTEX_SHADER,
 					.sources = {
 						GL::GLSL_VERSION_MACRO.c_str(),
-						GL::GLSL_ATTRIBUTE_LOCATION_MACROS.c_str(),
 						attribute_location.c_str(),
 						vert_source.c_str(),
 					},
@@ -287,6 +268,7 @@ struct Editor : IRenderer
 			);
 		}
 	}
+	*/
 
 	GL::ShaderProgram program;
 	std::string program_info;
@@ -306,7 +288,6 @@ struct Editor : IRenderer
 				.stage = GL::GL_VERTEX_SHADER,
 				.sources = {
 					GL::GLSL_VERSION_MACRO.c_str(),
-					GL::GLSL_ATTRIBUTE_LOCATION_MACROS.c_str(),
 					vert_source.c_str(),
 				},
 			}
@@ -323,7 +304,6 @@ struct Editor : IRenderer
 				.stage = GL::GL_FRAGMENT_SHADER,
 				.sources = {
 					GL::GLSL_VERSION_MACRO.c_str(),
-					GL::GLSL_ATTRIBUTE_LOCATION_MACROS.c_str(),
 					frag_source.c_str(),
 				},
 			}
@@ -421,7 +401,8 @@ struct Editor : IRenderer
 
 	void create() final
 	{
-		load_attribute_visualizers();
+		// TODO(bekorn): attribute debugging
+//		load_attribute_visualizers();
 		try_to_reload_shader();
 	}
 

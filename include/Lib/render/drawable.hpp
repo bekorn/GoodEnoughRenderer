@@ -8,20 +8,6 @@
 
 namespace Render
 {
-	// TODO(bekorn): deprecate
-	struct ArrayDrawable
-	{
-		GL::VAO_ArrayDraw vao;
-		index_ptr<vector<unique_ptr<IMaterial>>> material_ptr;
-	};
-
-	// TODO(bekorn): deprecate
-	struct ElementDrawable
-	{
-		GL::VAO_ElementDraw vao;
-		index_ptr<vector<unique_ptr<IMaterial>>> material_ptr;
-	};
-
 	struct Primitive
 	{
 		index_ptr<vector<Geometry::Primitive>> primitive_ptr;
