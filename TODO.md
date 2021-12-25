@@ -1,0 +1,15 @@
+- Asset management
+    - able to contain any type of asset (geometry::primitive, gl::buffer, etc)
+    - items can be accessed with consistent ids or some kind of indexed_ptr
+- Scene hierarchy
+- Camera
+- Attribute debugging
+- Mouse input for game
+- A border shader to indicate selection
+- Transform gizmos
+- Material data
+- Uniform buffers
+- Instanced rendering
+  - Particles and foliage
+- Configure OpenGL into a Z-up right-handed coordinate system
+- Logging
