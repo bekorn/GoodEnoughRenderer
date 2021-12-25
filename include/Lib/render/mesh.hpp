@@ -23,9 +23,9 @@ namespace Render
 		f32x3 rotation{0, 0, 0};
 		f32 scale{1};
 
-		Mesh() noexcept = default;
-		Mesh(Mesh const &) noexcept = delete;
-		Mesh(Mesh &&) noexcept = default;
+		CTOR(Mesh, default)
+		COPY(Mesh, delete)
+		MOVE(Mesh, default)
 
 		glm::mat4x4 CalculateTransform() const
 		{

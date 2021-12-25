@@ -59,6 +59,10 @@ namespace GL
 
 	struct ShaderStage : OpenGLObject
 	{
+		CTOR(ShaderStage, default)
+		COPY(ShaderStage, delete)
+		MOVE(ShaderStage, default)
+
 		~ShaderStage()
 		{
 			glDeleteShader(id);
@@ -99,9 +103,9 @@ namespace GL
 
 	struct ShaderProgram : OpenGLObject
 	{
-		ShaderProgram() noexcept = default;
-		ShaderProgram(ShaderProgram &&) noexcept = default;
-		ShaderProgram & operator=(ShaderProgram &&) noexcept = default;
+		CTOR(ShaderProgram, default)
+		COPY(ShaderProgram, delete)
+		MOVE(ShaderProgram, default)
 
 		~ShaderProgram()
 		{

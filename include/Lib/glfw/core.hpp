@@ -11,7 +11,9 @@ namespace GLFW
 			std::cerr << "GLFW Error " << error << ": " << description << '\n';
 		}
 
-		Context() = default;
+		CTOR(Context, default)
+		COPY(Context, delete)
+		MOVE(Context, default)
 
 		void create()
 		{
@@ -33,7 +35,9 @@ namespace GLFW
 	{
 		GLFWwindow* glfw_window = nullptr;
 
-		Window() = default;
+		CTOR(Window, default)
+		COPY(Window, delete)
+		MOVE(Window, default)
 
 		operator GLFWwindow*() const
 		{

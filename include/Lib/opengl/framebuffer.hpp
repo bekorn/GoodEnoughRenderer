@@ -6,8 +6,9 @@ namespace GL
 {
 	struct FrameBuffer : OpenGLObject
 	{
-		FrameBuffer() noexcept = default;
-		FrameBuffer(FrameBuffer &&) noexcept = default;
+		CTOR(FrameBuffer, default)
+		COPY(FrameBuffer, delete)
+		MOVE(FrameBuffer, default)
 
 		~FrameBuffer()
 		{

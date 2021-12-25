@@ -6,8 +6,9 @@ namespace GL
 {
 	struct Texture2D : OpenGLObject
 	{
-		Texture2D() noexcept = default;
-		Texture2D(Texture2D &&) noexcept = default;
+		CTOR(Texture2D, default)
+		COPY(Texture2D, delete)
+		MOVE(Texture2D, default)
 
 		~Texture2D()
 		{
