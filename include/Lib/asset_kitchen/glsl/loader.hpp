@@ -19,23 +19,23 @@ namespace GLSL
 		vector<std::string_view> include_strings;
 	};
 
-	Data Load(Description const & description)
+	LoadedData Load(Description const & description)
 	{
-		Data data;
+		LoadedData loaded;
 
-		data.stages.reserve(description.stages.size());
+		loaded.stages.reserve(description.stages.size());
 		for (auto const & [stage, path]: description.stages)
-			data.stages.emplace_back(Stage{
+			loaded.stages.emplace_back(Stage{
 				.type = stage,
 				.source = File::LoadAsString(path),
 			});
 
-		data.includes.reserve(description.include_paths.size() + description.include_strings.size());
+		loaded.includes.reserve(description.include_paths.size() + description.include_strings.size());
 		for (auto const & path: description.include_paths)
-			data.includes.emplace_back(File::LoadAsString(path));
+			loaded.includes.emplace_back(File::LoadAsString(path));
 		for (auto const & sv: description.include_strings)
-			data.includes.emplace_back(sv);
+			loaded.includes.emplace_back(sv);
 
-		return data;
+		return loaded;
 	}
 }

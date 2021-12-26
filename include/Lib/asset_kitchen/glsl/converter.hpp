@@ -25,25 +25,25 @@ namespace GLSL
 		}
 	}
 
-	Expected<GL::ShaderProgram, std::string> Convert(Data const & data)
+	Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded)
 	{
 		using namespace Helpers;
 
 		std::stringstream error_log;
 
 		vector<const char*> includes;
-		includes.resize(data.includes.size() + 1); // +1 for the stage source
-		for (auto i = 0; i < data.includes.size(); ++i)
-			includes[i] = data.includes[i].data();
+		includes.resize(loaded.includes.size() + 1); // +1 for the stage source
+		for (auto i = 0; i < loaded.includes.size(); ++i)
+			includes[i] = loaded.includes[i].data();
 
 		bool all_stages_compiled = true;
 
 		vector<GL::ShaderStage> stages;
-		stages.resize(data.stages.size());
+		stages.resize(loaded.stages.size());
 		for (auto i = 0; i < stages.size(); ++i)
 		{
 			auto & stage = stages[i];
-			auto const & data_stage = data.stages[i];
+			auto const & data_stage = loaded.stages[i];
 
 			includes.back() = data_stage.source.data(); // put shader source to the last one
 

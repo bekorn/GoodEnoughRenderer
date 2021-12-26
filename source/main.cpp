@@ -14,26 +14,27 @@ i32 main(i32 argc, char** argv)
 	GLFW::Window window;
 	Imgui::Context imgui_context;
 
-	try
+	if (auto error = glfw_context.create())
 	{
-		glfw_context.create();
-		window.create(
-			{
-				.title = "Good Enough Renderer",
-				.size = {860, 860},
-				.vsync = true,
-				.gl_major = GL::VERSION_MAJOR, .gl_minor = GL::VERSION_MINOR,
-			}
-		);
-		imgui_context.create({.window = window});
-
-		std::clog << GL::GetContextInfo() << std::endl;
-	}
-	catch (std::runtime_error & error)
-	{
-		std::cerr << error.what();
+		std::cerr << error.value();
 		std::exit(1);
 	}
+
+	if (auto error = window.create(
+		{
+			.title = "Good Enough Renderer",
+			.size = {860, 860},
+			.vsync = true,
+			.gl_major = GL::VERSION_MAJOR, .gl_minor = GL::VERSION_MINOR,
+		}
+	))
+	{
+		std::cerr << error.value();
+		std::exit(1);
+	}
+
+	imgui_context.create({.window = window});
+	std::clog << GL::GetContextInfo() << std::endl;
 
 
 	vector<unique_ptr<IRenderer>> renderers;

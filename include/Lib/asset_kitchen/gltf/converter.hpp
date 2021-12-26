@@ -93,7 +93,7 @@ namespace GLTF
 	}
 
 	void Convert(
-		GLTFData const & gltf_data,
+		LoadedData const & loaded,
 		vector<GL::Texture2D> & textures,
 		vector<unique_ptr<Render::IMaterial>> & materials,
 		vector<Geometry::Primitive> & primitives, vector<Render::Mesh> & meshes
@@ -102,18 +102,18 @@ namespace GLTF
 		using namespace Helpers;
 
 		// Load Textures
-		auto new_textures = Grow(textures, gltf_data.textures.size());
-		for (auto i = 0; i < gltf_data.textures.size(); ++i)
+		auto new_textures = Grow(textures, loaded.textures.size());
+		for (auto i = 0; i < loaded.textures.size(); ++i)
 		{
-			auto const & texture = gltf_data.textures[i];
+			auto const & texture = loaded.textures[i];
 
 			// TODO(bekorn) have a default image
 			auto const & image = texture.image_index.has_value()
-								 ? gltf_data.images[texture.image_index.value()]
+								 ? loaded.images[texture.image_index.value()]
 								 : throw std::runtime_error("not implemented");
 
 			auto const & sampler = texture.sampler_index.has_value()
-								   ? gltf_data.samplers[texture.sampler_index.value()]
+								   ? loaded.samplers[texture.sampler_index.value()]
 								   : GLTF::SamplerDefault;
 
 			new_textures[i].create(
@@ -132,10 +132,10 @@ namespace GLTF
 		}
 
 		// Load materials
-		auto new_materials = Grow(materials, gltf_data.materials.size());
-		for (auto i = 0; i < gltf_data.materials.size(); ++i)
+		auto new_materials = Grow(materials, loaded.materials.size());
+		for (auto i = 0; i < loaded.materials.size(); ++i)
 		{
-			auto const & gltf_mat = gltf_data.materials[i];
+			auto const & gltf_mat = loaded.materials[i];
 			if (gltf_mat.pbr_metallic_roughness)
 			{
 				auto const & pbr_mat = gltf_mat.pbr_metallic_roughness.value();
@@ -168,10 +168,10 @@ namespace GLTF
 		}
 
 		// Load meshes
-		auto new_meshes = Grow(meshes, gltf_data.meshes.size());
-		for (auto i = 0; i < gltf_data.meshes.size(); ++i)
+		auto new_meshes = Grow(meshes, loaded.meshes.size());
+		for (auto i = 0; i < loaded.meshes.size(); ++i)
 		{
-			auto const & gltf_mesh = gltf_data.meshes[i];
+			auto const & gltf_mesh = loaded.meshes[i];
 			auto & mesh = new_meshes[i];
 
 			mesh.name = gltf_mesh.name;
@@ -188,8 +188,8 @@ namespace GLTF
 				for (auto i = 0; i < attribute_size; ++i)
 				{
 					auto const & attribute = gltf_primitive.attributes[i];
-					auto const & accessor = gltf_data.accessors[attribute.accessor_index];
-					auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
+					auto const & accessor = loaded.accessors[attribute.accessor_index];
+					auto const & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
 					Geometry::Attribute::Data data{
 						.type = IntoAttributeType(accessor.vector_data_type, accessor.normalized),
@@ -203,7 +203,7 @@ namespace GLTF
 					{
 						// strided access
 						auto const source_stride = buffer_view.stride.value();
-						auto source = gltf_data.buffers[buffer_view.buffer_index]
+						auto source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<byte>(buffer_view.offset + accessor.byte_offset, source_stride * accessor.count);
 
 						auto source_ptr = source.data();
@@ -219,7 +219,7 @@ namespace GLTF
 					else
 					{
 						// contiguous access (tightly packed data)
-						auto source = gltf_data.buffers[buffer_view.buffer_index]
+						auto source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<byte>(buffer_view.offset + accessor.byte_offset, data.buffer.size);
 
 						std::memcpy(data.buffer.begin(), source.data(), data.buffer.size);
@@ -233,14 +233,14 @@ namespace GLTF
 
 				if (gltf_primitive.indices_accessor_index.has_value())
 				{
-					auto const & accessor = gltf_data.accessors[gltf_primitive.indices_accessor_index.value()];
-					auto const & buffer_view = gltf_data.buffer_views[accessor.buffer_view_index];
+					auto const & accessor = loaded.accessors[gltf_primitive.indices_accessor_index.value()];
+					auto const & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
 					auto index_type = IntoAttributeType(accessor.vector_data_type, accessor.normalized);
 
 					if (index_type == Geometry::Attribute::Type::U8)
 					{
-						auto const source = gltf_data.buffers[buffer_view.buffer_index]
+						auto const source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<u8>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
 
 						primitive.indices.resize(source.size());
@@ -249,7 +249,7 @@ namespace GLTF
 					}
 					else if (index_type == Geometry::Attribute::Type::U16)
 					{
-						auto const source = gltf_data.buffers[buffer_view.buffer_index]
+						auto const source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<u16>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
 
 						primitive.indices.resize(source.size());
@@ -258,7 +258,7 @@ namespace GLTF
 					}
 					else if (index_type == Geometry::Attribute::Type::U32)
 					{
-						auto const source = gltf_data.buffers[buffer_view.buffer_index]
+						auto const source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<u32>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
 
 						// buffers other than vertex attributes are always tightly packed
@@ -270,7 +270,7 @@ namespace GLTF
 				else
 				{
 					// assuming all the attributes have the same count
-					auto const & accessor = gltf_data.accessors[gltf_primitive.attributes[0].accessor_index];
+					auto const & accessor = loaded.accessors[gltf_primitive.attributes[0].accessor_index];
 					auto vertex_count = accessor.count;
 
 					primitive.indices.resize(vertex_count);

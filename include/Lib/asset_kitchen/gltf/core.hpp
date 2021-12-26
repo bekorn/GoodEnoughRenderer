@@ -109,7 +109,7 @@ namespace GLTF
 		bool double_sided;
 	};
 
-	struct GLTFData
+	struct LoadedData
 	{
 		vector<ByteBuffer> buffers;
 		vector<BufferView> buffer_views;

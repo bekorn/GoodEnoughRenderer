@@ -9,13 +9,13 @@
 
 namespace GLTF
 {
-	GLTFData Load(std::filesystem::path const & file)
+	LoadedData Load(std::filesystem::path const & file)
 	{
 		using namespace rapidjson;
 		using namespace File;
 		using namespace File::JSON;
 
-		GLTFData gltf_data;
+		LoadedData loaded;
 
 		Document document;
 		document.Parse(LoadAsString(file).c_str());
@@ -30,7 +30,7 @@ namespace GLTF
 			auto file_size = buffer["byteLength"].GetUint64();
 			auto file_name = buffer["uri"].GetString();
 			// Limitation: only loads separate file binaries
-			gltf_data.buffers.emplace_back(LoadAsBytes(file_dir / file_name, file_size));
+			loaded.buffers.emplace_back(LoadAsBytes(file_dir / file_name, file_size));
 		}
 
 		// Parse buffer views
@@ -38,7 +38,7 @@ namespace GLTF
 		{
 			auto const & buffer_view = item.GetObject();
 
-			gltf_data.buffer_views.push_back(
+			loaded.buffer_views.push_back(
 				{
 					.buffer_index = GetU32(buffer_view, "buffer"),
 					.offset = GetU32(buffer_view, "byteOffset", 0),
@@ -52,11 +52,11 @@ namespace GLTF
 		if (auto const member = document.FindMember("images"); member != document.MemberEnd())
 		{
 			auto const & items = member->value.GetArray();
-			gltf_data.images.resize(items.Size());
+			loaded.images.resize(items.Size());
 			std::transform(
 				std::execution::par_unseq,
 				items.Begin(), items.End(),
-				gltf_data.images.data(),
+				loaded.images.data(),
 				[&file_dir](Document::Array::ValueType const & item) -> GLTF::Image
 				{
 					auto const & image = item.GetObject();
@@ -100,7 +100,7 @@ namespace GLTF
 				auto const & sampler = item.GetObject();
 
 				// Min/Mag filters have no default values in the spec, I picked the values
-				gltf_data.samplers.push_back(
+				loaded.samplers.push_back(
 					{
 						.min_filter = GetU32(sampler, "minFilter", SamplerDefault.min_filter),
 						.mag_filter = GetU32(sampler, "magFilter", SamplerDefault.mag_filter),
@@ -118,7 +118,7 @@ namespace GLTF
 			{
 				auto const & texture = item.GetObject();
 
-				gltf_data.textures.push_back(
+				loaded.textures.push_back(
 					{
 						.image_index = GetOptionalU32(texture, "source"),
 						.sampler_index = GetOptionalU32(texture, "sampler"),
@@ -143,7 +143,7 @@ namespace GLTF
 
 			auto const & accessor = item.GetObject();
 
-			gltf_data.accessors.push_back(
+			loaded.accessors.push_back(
 				{
 					.buffer_view_index = accessor["bufferView"].GetUint(),
 					.byte_offset = GetU32(accessor, "byteOffset", 0),
@@ -187,7 +187,7 @@ namespace GLTF
 				);
 			}
 
-			gltf_data.meshes.push_back(
+			loaded.meshes.push_back(
 				{
 					.primitives = primitives,
 					.name = GetString(mesh, "name", "<no-name>") // TODO(bekorn): find a default name
@@ -240,9 +240,9 @@ namespace GLTF
 				};
 			}
 
-			gltf_data.materials.push_back(mat);
+			loaded.materials.push_back(mat);
 		}
 
-		return gltf_data;
+		return loaded;
 	}
 }

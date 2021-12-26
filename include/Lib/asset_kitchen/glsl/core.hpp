@@ -10,7 +10,7 @@ namespace GLSL
 		std::string source;
 	};
 
-	struct Data
+	struct LoadedData
 	{
 		vector<Stage> stages;
 		vector<std::string> includes;

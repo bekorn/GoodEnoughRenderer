@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Lib/core/expected.hpp"
+
 #include ".pch.hpp"
 
 namespace GLFW
@@ -15,14 +17,17 @@ namespace GLFW
 		COPY(Context, delete)
 		MOVE(Context, default)
 
-		void create()
+		[[nodiscard]]
+		optional<std::string> create()
 		{
 			glfwSetErrorCallback(error_callback);
 
 			if (glfwInit())
-				std::clog << "GLFW initialized" << '\n';
+				std::clog << "GLFW initialized\n";
 			else
-				throw std::runtime_error("GLFW failed to initialize");
+				return "GLFW failed to initialize";
+
+			return {};
 		}
 
 		~Context()
@@ -59,7 +64,8 @@ namespace GLFW
 			i32 const & gl_minor;
 		};
 
-		void create(Description const & description)
+		[[nodiscard]]
+		optional<std::string> create(Description const & description)
 		{
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, description.gl_major);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, description.gl_minor);
@@ -74,9 +80,9 @@ namespace GLFW
 			);
 
 			if (glfw_window != nullptr)
-				std::clog << "GLFW Window created" << '\n';
+				std::clog << "GLFW Window created\n";
 			else
-				throw std::runtime_error("GLFW Window failed to create");
+				return "GLFW Window failed to create";
 
 			glfwMakeContextCurrent(glfw_window);
 
@@ -97,11 +103,13 @@ namespace GLFW
 
 				glEnable(GL_DEBUG_OUTPUT);
 				glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-				glDebugMessageCallback(debug_callback, nullptr);
+				glDebugMessageCallback(DebugCallback, nullptr);
 				glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 			}
 
 			glfwSetWindowSizeCallback(glfw_window, resize_callback);
+
+			return {};
 		}
 
 		~Window()
