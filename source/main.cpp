@@ -5,6 +5,7 @@
 #include "Lib/glfw/.hpp"
 #include "Lib/imgui/.hpp"
 
+#include "assets.hpp"
 #include "game.hpp"
 #include "editor.hpp"
 
@@ -36,12 +37,14 @@ i32 main(i32 argc, char** argv)
 	imgui_context.create({.window = window});
 	std::clog << GL::GetContextInfo() << std::endl;
 
+	Assets assets;
 
 	vector<unique_ptr<IRenderer>> renderers;
 	{
-		auto scene = make_unique<Game>();
-		auto editor = make_unique<Editor>(*scene);
-		renderers.emplace_back(move(scene));
+		auto game = make_unique<Game>(assets);
+		auto editor = make_unique<Editor>(assets, *game);
+
+		renderers.emplace_back(move(game));
 		renderers.emplace_back(move(editor));
 	}
 

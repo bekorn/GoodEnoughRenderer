@@ -10,12 +10,13 @@
 #include "renderer.hpp"
 #include "game.hpp"
 
-struct Editor : IRenderer
+struct Editor final : IRenderer
 {
+	Assets & assets;
 	Game & game;
 
-	explicit Editor(Game & game) :
-		game(game)
+	explicit Editor(Assets & assets, Game & game) :
+		assets(assets), game(game)
 	{}
 
 	std::string status;
@@ -80,11 +81,11 @@ struct Editor : IRenderer
 		static u64 mesh_index;
 		{
 			static u64 min_index = 0, max_index;
-			max_index = game.meshes.size() - 1;
+			max_index = assets.meshes.size() - 1;
 			SliderScalar("Mesh Index", ImGuiDataType_U64, &mesh_index, &min_index, &max_index);
 		}
 
-		auto & mesh = game.meshes[mesh_index];
+		auto & mesh = assets.meshes[mesh_index];
 
 		LabelText("Name", "%s", mesh.name.c_str());
 
@@ -120,7 +121,7 @@ struct Editor : IRenderer
 				{
 					if (Button("Load all primitives"))
 						for (auto & primitive: mesh.primitives)
-							primitive.load(game.program);
+							primitive.load(assets.program);
 				}
 			}
 
@@ -179,7 +180,7 @@ struct Editor : IRenderer
 			Combo("Material Index", &material_index, ss.str().c_str());
 		}
 
-		auto const & material = game.materials[material_index];
+		auto const & material = assets.materials[material_index];
 
 		ColorEdit4("Base Color", begin(
 			dynamic_cast<Render::Material_gltf_pbrMetallicRoughness*>(material.get())->base_color_factor
@@ -195,11 +196,11 @@ struct Editor : IRenderer
 		Begin("Assets");
 
 		static u64 texture_index = 0, min_index = 0;
-		u64 const max_index = game.textures.size() - 1;
+		u64 const max_index = assets.textures.size() - 1;
 
 		SliderScalar("Index", ImGuiDataType_U64, &texture_index, &min_index, &max_index);
 
-		auto const id = game.textures[texture_index].id;
+		auto const id = assets.textures[texture_index].id;
 		LabelText("id", "%d", id);
 
 		Image(
@@ -210,37 +211,7 @@ struct Editor : IRenderer
 		End();
 	}
 
-	std::string program_info;
-
-	void try_to_reload_shader()
-	{
-		program_info.clear();
-
-		// TODO(bekorn): code duplication with the game
-		auto const glsl_data = GLSL::Load(
-			{
-				.stages = {
-					{GL::GL_VERTEX_SHADER,   global_state.test_assets / "gltf_pbrMetallicRoughness.vert.glsl"},
-					{GL::GL_FRAGMENT_SHADER, global_state.test_assets / "gltf_pbrMetallicRoughness.frag.glsl"},
-				},
-				.include_paths = {},
-				.include_strings = {
-					GL::GLSL_VERSION_MACRO,
-				}
-			}
-		);
-
-		if (auto expected = GLSL::Convert(glsl_data))
-		{
-			game.program = expected.into_result();
-			game.program.update_interface_mapping();
-			GL::glUseProgram(game.program.id);
-		}
-		else
-		{
-			program_info = expected.into_error();
-		}
-	}
+	std::string program_error;
 
 	void shader_window()
 	{
@@ -249,17 +220,20 @@ struct Editor : IRenderer
 		Begin("Shader Info", nullptr, ImGuiWindowFlags_NoCollapse);
 
 		if (Button("Reload Shader"))
-			try_to_reload_shader();
+			if (auto error = assets.load_program())
+				program_error = error.value();
 
-		if (not program_info.empty())
-			SameLine(), TextColored({255, 0, 0, 255}, "%s", program_info.c_str());
+		if (not program_error.empty())
+			SameLine(), TextColored({255, 0, 0, 255}, "%s", program_error.data());
+
+		auto const & program = assets.program;
 
 		if (BeginTable("uniform_mappings", 3, ImGuiTableFlags_BordersInnerH))
 		{
 			TableSetupColumn("Uniform Location"), TableSetupColumn("Type"), TableSetupColumn("Name");
 			TableHeadersRow();
 
-			for (auto const & mapping : game.program.uniform_mappings)
+			for (auto const & mapping : program.uniform_mappings)
 			{
 				TableNextRow();
 				TableNextColumn();
@@ -277,7 +251,7 @@ struct Editor : IRenderer
 			TableSetupColumn("Attribute Location"), TableSetupColumn("Type"), TableSetupColumn("Name");
 			TableHeadersRow();
 
-			for (auto const & mapping : game.program.attribute_mappings)
+			for (auto const & mapping : program.attribute_mappings)
 			{
 				TableNextRow();
 				TableNextColumn();
@@ -293,11 +267,11 @@ struct Editor : IRenderer
 		End();
 	}
 
-	void create() final
+	void create()
 	{
 	}
 
-	void render(GLFW::Window const & window) final
+	void render(GLFW::Window const & window)
 	{
 		metrics_window();
 		game_window();
