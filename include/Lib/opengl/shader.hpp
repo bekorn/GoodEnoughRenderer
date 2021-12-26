@@ -84,20 +84,31 @@ namespace GL
 
 		bool is_compiled() const
 		{
-			i32 success;
+			GLsizei success;
 			glGetShaderiv(id, GL_COMPILE_STATUS, &success);
-			return success;
+			return success != 0;
 		}
 
 		std::string get_log() const
 		{
-			i32 log_size;
+			GLsizei log_size;
 			glGetShaderiv(id, gl::GL_INFO_LOG_LENGTH, &log_size);
 
 			std::string log(log_size, '\0');
 			glGetShaderInfoLog(id, log_size, nullptr, log.data());
 
 			return log;
+		}
+
+		std::string get_source() const
+		{
+			GLsizei source_size;
+			glGetShaderiv(id, GL_SHADER_SOURCE_LENGTH, &source_size);
+
+			std::string shader_source(source_size, '\0');
+			glGetShaderSource(id, source_size, &source_size, shader_source.data());
+
+			return shader_source;
 		}
 	};
 

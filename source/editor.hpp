@@ -56,9 +56,6 @@ struct Editor : IRenderer
 		End();
 	}
 
-	bool visualize_attribute = false;
-	bool visualize_texture = false;
-
 	void game_settings_window()
 	{
 		using namespace ImGui;
@@ -123,7 +120,7 @@ struct Editor : IRenderer
 				{
 					if (Button("Load all primitives"))
 						for (auto & primitive: mesh.primitives)
-							primitive.load(program);
+							primitive.load(game.program);
 				}
 			}
 
@@ -188,14 +185,6 @@ struct Editor : IRenderer
 			dynamic_cast<Render::Material_gltf_pbrMetallicRoughness*>(material.get())->base_color_factor
 		));
 
-		{
-			if (Checkbox("Visualize Attribute of Mesh", &visualize_attribute))
-			{
-				// TODO(bekorn): attribute debugging
-				Text("Currently not available...");
-			}
-		}
-
 		End();
 	}
 
@@ -221,127 +210,36 @@ struct Editor : IRenderer
 		End();
 	}
 
-	// TODO(bekorn): attribute debugging
-	/*
-	array<GL::ShaderProgram, GL::ATTRIBUTE_LOCATION::SIZE> attribute_visualizers;
-
-	void load_attribute_visualizers()
-	{
-		// Limitation: only works with vectors
-		auto const vert_source = File::LoadAsString(global_state.test_assets / "debug/single_attributes.vert.glsl");
-		auto const frag_source = File::LoadAsString(global_state.test_assets / "debug/single_attribute.frag.glsl");
-
-		GL::ShaderStage frag_shader;
-		frag_shader.create(
-			{
-				.stage = GL::GL_FRAGMENT_SHADER,
-				.sources = {
-					GL::GLSL_VERSION_MACRO.c_str(),
-					frag_source.c_str(),
-				},
-			}
-		);
-
-		for (auto i = 0; i < attribute_visualizers.size(); ++i)
-		{
-			auto const attribute_location = "#define ATTRIBUTE_LOCATION_VISUALIZE " + std::to_string(i) + "\n";
-
-			GL::ShaderStage vert_shader;
-			vert_shader.create(
-				{
-					.stage = GL::GL_VERTEX_SHADER,
-					.sources = {
-						GL::GLSL_VERSION_MACRO.c_str(),
-						attribute_location.c_str(),
-						vert_source.c_str(),
-					},
-				}
-			);
-
-			attribute_visualizers[i].create(
-				{
-					.shader_stages = {
-						&vert_shader,
-						&frag_shader
-					}
-				}
-			);
-		}
-	}
-	*/
-
-	GL::ShaderProgram program;
 	std::string program_info;
 
 	void try_to_reload_shader()
 	{
 		program_info.clear();
 
-		auto const vert_source = File::LoadAsString(global_state.test_assets / "gltf_pbrMetallicRoughness.vert.glsl");
-		auto const frag_source = File::LoadAsString(global_state.test_assets / "gltf_pbrMetallicRoughness.frag.glsl");
-
-		bool shader_stage_error = false;
-
-		GL::ShaderStage vert_shader;
-		vert_shader.create(
+		// TODO(bekorn): code duplication with the game
+		auto const glsl_data = GLSL::Load(
 			{
-				.stage = GL::GL_VERTEX_SHADER,
-				.sources = {
-					GL::GLSL_VERSION_MACRO.c_str(),
-					vert_source.c_str(),
+				.stages = {
+					{GL::GL_VERTEX_SHADER,   global_state.test_assets / "gltf_pbrMetallicRoughness.vert.glsl"},
+					{GL::GL_FRAGMENT_SHADER, global_state.test_assets / "gltf_pbrMetallicRoughness.frag.glsl"},
 				},
-			}
-		);
-		if (not vert_shader.is_compiled())
-		{
-			shader_stage_error = true;
-			program_info += "Vert Shader: " + vert_shader.get_log();
-		}
-
-		GL::ShaderStage frag_shader;
-		frag_shader.create(
-			{
-				.stage = GL::GL_FRAGMENT_SHADER,
-				.sources = {
-					GL::GLSL_VERSION_MACRO.c_str(),
-					frag_source.c_str(),
-				},
-			}
-		);
-		if (not frag_shader.is_compiled())
-		{
-			shader_stage_error = true;
-			program_info += "Frag Shader: " + frag_shader.get_log();
-		}
-
-		if (shader_stage_error)
-		{
-			program_info = "Compilation failed! " + program_info;
-			return;
-		}
-
-
-		GL::ShaderProgram new_program;
-		new_program.create(
-			{
-				.shader_stages = {
-					&vert_shader,
-					&frag_shader
+				.include_paths = {},
+				.include_strings = {
+					GL::GLSL_VERSION_MACRO,
 				}
 			}
 		);
 
-		if (not new_program.is_linked())
+		if (auto expected = GLSL::Convert(glsl_data))
 		{
-			program_info = "Compilation failed! Linking Error:\n" + new_program.get_log();
-			return;
+			game.program = expected.into_result();
+			game.program.update_interface_mapping();
+			GL::glUseProgram(game.program.id);
 		}
-
-		program = move(new_program);
-
-		program.update_interface_mapping();
-
-		GL::glUseProgram(program.id);
+		else
+		{
+			program_info = expected.into_error();
+		}
 	}
 
 	void shader_window()
@@ -358,12 +256,10 @@ struct Editor : IRenderer
 
 		if (BeginTable("uniform_mappings", 3, ImGuiTableFlags_BordersInnerH))
 		{
-			TableSetupColumn("Uniform Location");
-			TableSetupColumn("Type");
-			TableSetupColumn("Name");
+			TableSetupColumn("Uniform Location"), TableSetupColumn("Type"), TableSetupColumn("Name");
 			TableHeadersRow();
 
-			for (auto const & mapping : program.uniform_mappings)
+			for (auto const & mapping : game.program.uniform_mappings)
 			{
 				TableNextRow();
 				TableNextColumn();
@@ -378,12 +274,10 @@ struct Editor : IRenderer
 
 		if (BeginTable("attribute_mappings", 3, ImGuiTableFlags_BordersInnerH))
 		{
-			TableSetupColumn("Attribute Location");
-			TableSetupColumn("Type");
-			TableSetupColumn("Name");
+			TableSetupColumn("Attribute Location"), TableSetupColumn("Type"), TableSetupColumn("Name");
 			TableHeadersRow();
 
-			for (auto const & mapping : program.attribute_mappings)
+			for (auto const & mapping : game.program.attribute_mappings)
 			{
 				TableNextRow();
 				TableNextColumn();
@@ -401,9 +295,6 @@ struct Editor : IRenderer
 
 	void create() final
 	{
-		// TODO(bekorn): attribute debugging
-//		load_attribute_visualizers();
-		try_to_reload_shader();
 	}
 
 	void render(GLFW::Window const & window) final

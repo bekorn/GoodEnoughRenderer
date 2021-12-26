@@ -7,7 +7,7 @@
 
 namespace GLTF
 {
-	namespace
+	namespace Helpers
 	{
 		// Pattern: String into Geometry::Attribute::Key
 		Geometry::Attribute::Key IntoAttributeKey(std::string_view name)
@@ -99,6 +99,8 @@ namespace GLTF
 		vector<Geometry::Primitive> & primitives, vector<Render::Mesh> & meshes
 	)
 	{
+		using namespace Helpers;
+
 		// Load Textures
 		auto new_textures = Grow(textures, gltf_data.textures.size());
 		for (auto i = 0; i < gltf_data.textures.size(); ++i)

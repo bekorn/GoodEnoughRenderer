@@ -4,6 +4,8 @@
 #include "Lib/geometry/core.hpp"
 
 #include "core.hpp"
+#include "buffer.hpp"
+#include "shader.hpp"
 #include "glue.hpp"
 
 namespace GL
