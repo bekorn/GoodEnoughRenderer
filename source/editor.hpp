@@ -19,23 +19,28 @@ struct Editor final : IRenderer
 		assets(assets), game(game)
 	{}
 
-	std::string status;
-
-	void metrics_window()
+	void metrics_window(FrameInfo const & frame_info)
 	{
 		using namespace ImGui;
 
 		SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
 		Begin("Metrics", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
 
-		Text(
-			"Application average %.3f ms/frame (%.1f FPS)",
-			1000.f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate
-		);
+		{
+			static array<f64, 30> deltas{};
+			static usize delta_idx = 0;
 
-		Separator();
+			deltas[delta_idx] = frame_info.seconds_since_last_frame;
+			delta_idx = (delta_idx + 1) % deltas.size();
+			f64 average_delta = 0;
+			for (auto const & delta: deltas)
+				average_delta += delta;
+			average_delta /= deltas.size();
 
-		Text("|> %s", status.c_str());
+			Text("Average frame takes %-6.4f ms, (%06.1f fps)", average_delta, 1. / average_delta);
+		}
+
+		Text("Frame: %06llu, Time: %g", frame_info.idx, frame_info.seconds_since_start);
 
 		End();
 	}
@@ -88,6 +93,8 @@ struct Editor final : IRenderer
 		auto & mesh = assets.meshes[mesh_index];
 
 		LabelText("Name", "%s", mesh.name.c_str());
+
+		Spacing(), Separator(), Text("Primitives");
 
 		if (mesh.primitives.empty())
 		{
@@ -158,15 +165,13 @@ struct Editor final : IRenderer
 			}
 		}
 
+		Spacing(), Separator(), Text("Transform");
 
-		NewLine();
-		BulletText("Transform");
 		SliderFloat3("Position", begin(mesh.position), -2, 2, "%.2f");
 		SliderFloat3("Rotation", begin(mesh.rotation), 0, 360, "%.2f");
 		SliderFloat("Scale", &mesh.scale, 0.001, 10, "%.2f");
 
-		NewLine();
-		BulletText("Material");
+		Spacing(), Separator(), Text("Material");
 
 		vector<u32> material_indices;
 		for (auto & drawable: mesh.primitives)
@@ -300,13 +305,13 @@ struct Editor final : IRenderer
 		End();
 	}
 
-	void create()
+	void create() final
 	{
 	}
 
-	void render(GLFW::Window const & window)
+	void render(GLFW::Window const & window, FrameInfo const & frame_data) final
 	{
-		metrics_window();
+		metrics_window(frame_data);
 		game_window();
 		game_settings_window();
 		mesh_settings_window();

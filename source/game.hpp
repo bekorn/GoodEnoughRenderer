@@ -74,10 +74,9 @@ struct Game final : IRenderer
 		assets.load_gltf_assets();
 	}
 
-	void create() override
+	void create() final
 	{
 		create_framebuffer();
-		load_assets();
 
 		camera = PerspectiveCamera{
 			.position = {0, 0, -5},
@@ -90,7 +89,7 @@ struct Game final : IRenderer
 		};
 	}
 
-	void render(const GLFW::Window & w) override
+	void render(GLFW::Window const & window, FrameInfo const & frame_data) final
 	{
 		using namespace GL;
 

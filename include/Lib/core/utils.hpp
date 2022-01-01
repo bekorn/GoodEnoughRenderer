@@ -21,22 +21,36 @@ struct Timer
 		wall_last(wall_clock::now())
 	{}
 
-	void timeit(std::string_view tag)
+	struct TimeElapsed
+	{
+		cpu_clock::duration cpu;
+		wall_clock::duration wall;
+	};
+
+	TimeElapsed timeit()
 	{
 		auto cpu_now = cpu_clock::now();
 		auto cpu_diff = std::chrono::duration_cast<std::chrono::microseconds>(cpu_now - cpu_last);
+
 		auto wall_now = wall_clock::now();
 		auto wall_diff = std::chrono::duration_cast<std::chrono::microseconds>(wall_now - wall_last);
 
-		std::cout << std::right
-				  << std::setw(32) << tag
-				  << " | CPU:" << std::setw(16) << cpu_diff
-				  << " | Wall:" << std::setw(16) << wall_diff
-				  << '\n' << std::left;
-
 		cpu_last = cpu_now;
 		wall_last = wall_now;
+
+		return { cpu_diff, wall_diff };
 	};
+
+	void timeit(std::ostream & out, std::string_view tag)
+	{
+		auto time_elapsed = timeit();
+
+		out << std::right
+			<< std::setw(32) << tag
+			<< " | CPU:" << std::setw(16) << time_elapsed.cpu
+			<< " | Wall:" << std::setw(16) << time_elapsed.wall
+			<< '\n' << std::left;
+	}
 };
 
 // TODO(bekorn): this is demonstrative but still much better than depending on macros

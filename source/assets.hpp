@@ -22,6 +22,12 @@ struct Assets
 	COPY(Assets, delete)
 	MOVE(Assets, delete)
 
+	void create()
+	{
+		load_program();
+		load_gltf_assets();
+	}
+
 	optional<std::string> load_program()
 	{
 		auto const glsl_data = GLSL::Load(

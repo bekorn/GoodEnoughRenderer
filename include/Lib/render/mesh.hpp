@@ -27,9 +27,9 @@ namespace Render
 		COPY(Mesh, delete)
 		MOVE(Mesh, default)
 
-		glm::mat4x4 CalculateTransform() const
+		f32x4x4 CalculateTransform() const
 		{
-			glm::mat4x4 transform(1);
+			f32x4x4 transform(1);
 			transform *= glm::translate(position);
 			transform *= glm::orientate4(glm::radians(rotation));
 			transform *= glm::scale(f32x3(scale));

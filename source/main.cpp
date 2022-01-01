@@ -38,6 +38,7 @@ i32 main(i32 argc, char** argv)
 	std::clog << GL::GetContextInfo() << std::endl;
 
 	Assets assets;
+	assets.create();
 
 	vector<unique_ptr<IRenderer>> renderers;
 	{
@@ -51,10 +52,20 @@ i32 main(i32 argc, char** argv)
 	for (auto & renderer: renderers)
 		renderer->create();
 
+	FrameInfo frame_info;
+	FrameInfo previous_frame_info{
+		.idx = 0,
+		.seconds_since_start = glfwGetTime(),
+		.seconds_since_last_frame = 0,
+	};
 
 	while (not glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
+
+		frame_info.seconds_since_start = glfwGetTime();
+		frame_info.seconds_since_last_frame = frame_info.seconds_since_start - previous_frame_info.seconds_since_start;
+		frame_info.idx = previous_frame_info.idx + 1;
 
 		// Start ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
@@ -62,7 +73,7 @@ i32 main(i32 argc, char** argv)
 		ImGui::NewFrame();
 
 		for (auto & renderer: renderers)
-			renderer->render(window);
+			renderer->render(window, frame_info);
 
 		{
 			using namespace GL;
@@ -88,6 +99,8 @@ i32 main(i32 argc, char** argv)
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		glfwSwapBuffers(window);
+
+		previous_frame_info = frame_info;
 	}
 
 	return 0;
