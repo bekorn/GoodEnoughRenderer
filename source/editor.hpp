@@ -267,6 +267,39 @@ struct Editor final : IRenderer
 		End();
 	}
 
+	void camera_window()
+	{
+		using namespace ImGui;
+
+		Begin("Camera Info", nullptr, ImGuiWindowFlags_NoCollapse);
+
+		if (std::holds_alternative<PerspectiveCamera>(game.camera))
+		{
+			auto & camera = std::get<PerspectiveCamera>(game.camera);
+			Text("Perspective camera");
+			DragFloat3("Position", begin(camera.position));
+			DragFloat3("Up", begin(camera.up));
+			DragFloat3("Target", begin(camera.target));
+			DragFloat("FOV", &camera.fov);
+			DragFloat("Near", &camera.near);
+			DragFloat("Far", &camera.far);
+		}
+		else if (std::holds_alternative<OrthographicCamera>(game.camera))
+		{
+			auto & camera = std::get<OrthographicCamera>(game.camera);
+			Text("Orthographic camera");
+			DragFloat3("Position", begin(camera.position));
+			DragFloat3("Up", begin(camera.up));
+			DragFloat3("Target", begin(camera.target));
+			DragFloat("Left", &camera.left);
+			DragFloat("Right", &camera.right);
+			DragFloat("Bottom", &camera.bottom);
+			DragFloat("Top", &camera.top);
+		}
+
+		End();
+	}
+
 	void create()
 	{
 	}
@@ -279,5 +312,6 @@ struct Editor final : IRenderer
 		mesh_settings_window();
 		assets_window();
 		shader_window();
+		camera_window();
 	}
 };

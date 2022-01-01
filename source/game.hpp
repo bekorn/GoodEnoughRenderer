@@ -8,6 +8,7 @@
 
 #include "assets.hpp"
 #include "renderer.hpp"
+#include "camera.hpp"
 
 struct Game final : IRenderer
 {
@@ -26,6 +27,8 @@ struct Game final : IRenderer
 	i32x2 resolution{720, 720};
 	GL::FrameBuffer framebuffer;
 	vector<GL::Texture2D> framebuffer_attachments;
+
+	variant<PerspectiveCamera, OrthographicCamera> camera;
 
 	void create_framebuffer()
 	{
@@ -75,6 +78,16 @@ struct Game final : IRenderer
 	{
 		create_framebuffer();
 		load_assets();
+
+		camera = PerspectiveCamera{
+			.position = {0, 0, -5},
+			.up = {0, 1, 0},
+			.target = {0, 0, 0},
+			.fov = 45,
+			.near = 0.1,
+			.far = 10,
+			.aspect_ratio = f32(resolution.x) / f32(resolution.y),
+		};
 	}
 
 	void render(const GLFW::Window & w) override
@@ -89,9 +102,14 @@ struct Game final : IRenderer
 
 		glEnable(GL_DEPTH_TEST);
 
+		auto const view = visit([](Camera auto const & c){ return c.get_view(); }, camera);
+		auto const projection = visit([](Camera auto const & c){ return c.get_projection(); }, camera);
+		auto const view_projection = projection * view;
+
 		for (auto const & mesh: assets.meshes)
 		{
-			auto transform = mesh.CalculateTransform();
+			auto const model = mesh.CalculateTransform();
+			auto const transform = view_projection * model;
 			// TODO(bekorn): find a proper location
 			glUniformMatrix4fv(10, 1, false, begin(transform));
 
