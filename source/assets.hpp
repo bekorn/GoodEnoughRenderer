@@ -12,11 +12,11 @@ struct Assets
 {
 	// GL resources
 	GL::ShaderProgram program; // will be a vector<shader> later
-	vector<GL::Texture2D> textures;
+	Managed<GL::Texture2D> textures;
 	// Render resources
-	vector<Geometry::Primitive> primitives;
-	vector<unique_ptr<Render::IMaterial>> materials;
-	vector<Render::Mesh> meshes;
+	Managed<Geometry::Primitive> primitives;
+	Managed<unique_ptr<Render::IMaterial>> materials;
+	Managed<Render::Mesh> meshes;
 
 	CTOR(Assets, default)
 	COPY(Assets, delete)
@@ -58,11 +58,11 @@ struct Assets
 
 	void load_gltf_assets()
 	{
-		auto const gltf_data = GLTF::Load(global_state.test_assets / "helmet/DamagedHelmet.gltf");
-//		auto const gltf_data = GLTF::Load(global_state.test_assets / "avocado/Avocado.gltf");
-//		auto const gltf_data = GLTF::Load(global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
-//		auto const gltf_data = GLTF::Load(global_state.test_assets / "sponza/Sponza.gltf");
-//		auto const gltf_data = GLTF::Load(global_state.test_assets / "flight_helmet/FlightHelmet.gltf");
+//		auto const gltf_data = GLTF::Load("DamagedHelmet", global_state.test_assets / "helmet/DamagedHelmet.gltf");
+//		auto const gltf_data = GLTF::Load("Avocado", global_state.test_assets / "avocado/Avocado.gltf");
+//		auto const gltf_data = GLTF::Load("ElectricGuitar", global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
+		auto const gltf_data = GLTF::Load("Sponza", global_state.test_assets / "sponza/Sponza.gltf");
+//		auto const gltf_data = GLTF::Load("FlightHelmet", global_state.test_assets / "flight_helmet/FlightHelmet.gltf");
 
 		GLTF::Convert(gltf_data, textures, materials, primitives, meshes);
 	}

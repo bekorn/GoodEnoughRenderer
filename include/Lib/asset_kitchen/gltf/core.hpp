@@ -52,6 +52,7 @@ namespace GLTF
 
 	struct Texture
 	{
+		std::string name;
 		optional<u32> image_index;
 		optional<u32> sampler_index;
 	};
@@ -65,6 +66,7 @@ namespace GLTF
 	// Equivalent of a draw call
 	struct Primitive
 	{
+		std::string name;
 		vector<Attribute> attributes;
 		optional<u32> indices_accessor_index;
 		optional<u32> material_index;
@@ -72,12 +74,14 @@ namespace GLTF
 
 	struct Mesh
 	{
-		vector<Primitive> primitives;
 		std::string name;
+		vector<Primitive> primitives;
 	};
 
 	struct Material
 	{
+		std::string name;
+
 		struct TexInfo
 		{
 			u32 texture_index;

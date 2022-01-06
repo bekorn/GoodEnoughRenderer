@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Lib/core/index_ptr.hpp"
 #include "Lib/opengl/vao.hpp"
 #include "Lib/geometry/core.hpp"
 
@@ -8,10 +7,10 @@
 
 namespace Render
 {
-	struct Primitive
+	struct Drawable
 	{
-		index_ptr<vector<Geometry::Primitive>> primitive_ptr;
-		index_ptr<vector<unique_ptr<IMaterial>>> material_ptr;
+		Geometry::Primitive const & primitive;
+		Named<unique_ptr<IMaterial>> const named_material;
 
 		GL::VertexArray vertex_array;
 
@@ -21,9 +20,9 @@ namespace Render
 		}
 
 		// TODO(bekorn): ShaderProgram should be accessible from the material
-		void load(GL::ShaderProgram const & shader)
+		void load(GL::ShaderProgram const & program)
 		{
-			vertex_array.create(*primitive_ptr, shader);
+			vertex_array.create(primitive, program);
 		}
 
 		void unload()

@@ -105,19 +105,19 @@ struct Game final : IRenderer
 		auto const projection = visit([](Camera auto const & c){ return c.get_projection(); }, camera);
 		auto const view_projection = projection * view;
 
-		for (auto const & mesh: assets.meshes)
+		for (auto const & [key, mesh]: assets.meshes.resources)
 		{
 			auto const model = mesh.CalculateTransform();
 			auto const transform = view_projection * model;
 			// TODO(bekorn): find a proper location
 			glUniformMatrix4fv(10, 1, false, begin(transform));
 
-			for (auto const & [_, material_ref, vertex_array]: mesh.primitives)
+			for (auto const & drawable: mesh.drawables)
 			{
-				material_ref->get()->set_uniforms();
+				drawable.named_material.data->set_uniforms();
 
-				glBindVertexArray(vertex_array.id);
-				glDrawElements(GL_TRIANGLES, vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+				glBindVertexArray(drawable.vertex_array.id);
+				glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
 			}
 		}
 	}

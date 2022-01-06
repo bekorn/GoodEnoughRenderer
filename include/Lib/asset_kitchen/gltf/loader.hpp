@@ -9,7 +9,7 @@
 
 namespace GLTF
 {
-	LoadedData Load(std::filesystem::path const & file)
+	LoadedData Load(std::string const & name, std::filesystem::path const & file)
 	{
 		using namespace rapidjson;
 		using namespace File;
@@ -112,6 +112,7 @@ namespace GLTF
 		}
 
 		// Parse textures
+		NameGenerator texture_name_generator{.prefix = name + ":texture:"};
 		if (auto const member = document.FindMember("textures"); member != document.MemberEnd())
 		{
 			for (auto const & item: member->value.GetArray())
@@ -120,6 +121,7 @@ namespace GLTF
 
 				loaded.textures.push_back(
 					{
+						.name = texture_name_generator.get(texture, "name"),
 						.image_index = GetOptionalU32(texture, "source"),
 						.sampler_index = GetOptionalU32(texture, "sampler"),
 					}
@@ -156,6 +158,8 @@ namespace GLTF
 		}
 
 		// Parse meshes
+		NameGenerator mesh_name_generator{.prefix = name + ":mesh:"};
+		NameGenerator primitive_name_generator{.prefix = name + ":primitive:"};
 		for (auto const & item: document["meshes"].GetArray())
 		{
 			auto const & mesh = item.GetObject();
@@ -180,6 +184,7 @@ namespace GLTF
 
 				primitives.push_back(
 					{
+						.name = primitive_name_generator.get(primitive, "name"),
 						.attributes = attributes,
 						.indices_accessor_index = GetOptionalU32(primitive, "indices"),
 						.material_index = GetOptionalU32(primitive, "material"),
@@ -189,13 +194,14 @@ namespace GLTF
 
 			loaded.meshes.push_back(
 				{
+					.name = mesh_name_generator.get(mesh, "name"),
 					.primitives = primitives,
-					.name = GetString(mesh, "name", "<no-name>") // TODO(bekorn): find a default name
 				}
 			);
 		}
 
 		// Parse materials
+		NameGenerator material_name_generator{.prefix = name + ":material:"};
 		for (auto const & item: document["materials"].GetArray())
 		{
 			auto const get_tex_info = [](JSONObj material, Key key) -> optional<Material::TexInfo>
@@ -215,6 +221,8 @@ namespace GLTF
 
 			auto const & material = item.GetObject();
 			Material mat{
+				.name = material_name_generator.get(material, "name"),
+
 				.normal_texture = get_tex_info(material, "normalTexture"),
 
 				.occlusion_texture = get_tex_info(material, "occlusionTexture"),

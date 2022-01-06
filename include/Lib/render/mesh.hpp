@@ -13,10 +13,8 @@ namespace Render
 	// TODO(bekorn): Mesh should only reference geometry and material resources
 	struct Mesh
 	{
-		std::string name; // just for debug purposes
-
 		// Vertex attributes + material index
-		vector<Primitive> primitives;
+		vector<Drawable> drawables;
 
 		// Transform data
 		f32x3 position{0, 0, 0};
@@ -31,7 +29,7 @@ namespace Render
 		{
 			f32x4x4 transform(1);
 			transform *= glm::translate(position);
-			transform *= glm::orientate4(glm::radians(rotation));
+			transform *= glm::orientate4(rotation);
 			transform *= glm::scale(f32x3(scale));
 			return transform;
 		}

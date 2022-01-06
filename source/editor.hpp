@@ -83,109 +83,109 @@ struct Editor final : IRenderer
 
 		Begin("Mesh Settings", nullptr, ImGuiWindowFlags_NoCollapse);
 
-		static u64 mesh_index;
+		static Name mesh_name;
+		if (BeginCombo("Mesh", mesh_name.string.data()))
 		{
-			static u64 min_index = 0, max_index;
-			max_index = assets.meshes.size() - 1;
-			SliderScalar("Mesh Index", ImGuiDataType_U64, &mesh_index, &min_index, &max_index);
+			for (auto const & [name, mesh]: assets.meshes.resources)
+				if (Selectable(name.string.data()))
+					mesh_name = name;
+
+			EndCombo();
 		}
-
-		auto & mesh = assets.meshes[mesh_index];
-
-		LabelText("Name", "%s", mesh.name.c_str());
-
-		Spacing(), Separator(), Text("Primitives");
-
-		if (mesh.primitives.empty())
+		if (not assets.meshes.resources.contains(mesh_name))
 		{
-			Text("Mesh has no primitives");
+			Text("Pick a mesh");
+			End();
+			return;
 		}
-		else
-		{
-			{
-				vector<u32> vao_ids;
-				for (auto & drawable: mesh.primitives)
-					vao_ids.push_back(drawable.vertex_array.id);
+		auto & mesh = assets.meshes.get(mesh_name);
 
-				std::stringstream ss;
-				for (auto id : vao_ids)
-					ss << id << ", ";
-				LabelText("VAO ids", "%s", ss.str().data());
-			}
-
-			{
-				bool any_vertex_array_loaded = false;
-				for (auto const & primitive: mesh.primitives)
-					any_vertex_array_loaded |= primitive.is_loaded();
-
-				if (any_vertex_array_loaded)
-				{
-					if (Button("Unload all primitives"))
-						for (auto & primitive: mesh.primitives)
-							primitive.unload();
-				}
-				else
-				{
-					if (Button("Load all primitives"))
-						for (auto & primitive: mesh.primitives)
-							primitive.load(assets.program);
-				}
-			}
-
-
-			static u64 primitive_index;
-			{
-				static u64 min_index = 0, max_index;
-				max_index = mesh.primitives.size() - 1;
-				SliderScalar("Primitive Index", ImGuiDataType_U64, &primitive_index, &min_index, &max_index);
-			}
-
-			auto const & primitive = *mesh.primitives[primitive_index].primitive_ptr;
-
-			if (BeginTable("Attributes", 3, ImGuiTableFlags_BordersInnerH))
-			{
-				TableSetupColumn("Key"), TableSetupColumn("Data"), TableSetupColumn("Size");
-				TableHeadersRow();
-
-				std::ostringstream ss;
-				for (auto const &[key, data]: primitive.attributes)
-				{
-					TableNextRow();
-
-					TableNextColumn(); ss << key;
-					TextUnformatted(ss.str().data()), ss.str({});
-
-					TableNextColumn(); ss << data.type << 'x' << (u32)data.dimension;
-					TextUnformatted(ss.str().data()), ss.str({});
-
-					TableNextColumn(); ss << data.buffer.size / (data.type.size() * data.dimension);
-					TextUnformatted(ss.str().data()), ss.str({});
-				}
-				EndTable();
-			}
-		}
 
 		Spacing(), Separator(), Text("Transform");
 
 		SliderFloat3("Position", begin(mesh.position), -2, 2, "%.2f");
-		SliderFloat3("Rotation", begin(mesh.rotation), 0, 360, "%.2f");
-		SliderFloat("Scale", &mesh.scale, 0.001, 10, "%.2f");
+		auto rotation_in_degrees = glm::degrees(mesh.rotation);
+		SliderFloat3("Rotation", begin(rotation_in_degrees), 0, 360, "%.2f");
+		mesh.rotation = glm::radians(rotation_in_degrees);
+		SliderFloat("Scale", &mesh.scale, 0.001, 10, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+
+
+		Spacing(), Separator(), Text("Drawables");
+
+		if (mesh.drawables.empty())
+		{
+			Text("Mesh has no drawables");
+			End();
+			return;
+		}
+
+		{
+			std::stringstream ss;
+			for (auto & drawable: mesh.drawables)
+				ss << drawable.vertex_array.id << ", ";
+			LabelText("VertexArrays", "%s", ss.str().data());
+		}
+
+		{
+			bool any_vertex_array_loaded = false;
+			for (auto const & drawable: mesh.drawables)
+				any_vertex_array_loaded |= drawable.is_loaded();
+
+			if (any_vertex_array_loaded)
+			{
+				if (Button("Unload all drawables"))
+					for (auto & drawable: mesh.drawables)
+						drawable.unload();
+			}
+			else
+			{
+				if (Button("Load all drawables"))
+					for (auto & drawable: mesh.drawables)
+						drawable.load(assets.program);
+			}
+		}
+
+		static u64 drawable_index;
+		{
+			static u64 min_index = 0, max_index;
+			max_index = mesh.drawables.size() - 1;
+			SliderScalar("Drawable Index", ImGuiDataType_U64, &drawable_index, &min_index, &max_index);
+		}
+		auto const & drawable = mesh.drawables[drawable_index];
+
+
+		Spacing(), Separator(), Text("Primitive");
+
+		auto const & primitive = drawable.primitive;
+
+		if (BeginTable("Attributes", 3, ImGuiTableFlags_BordersInnerH))
+		{
+			TableSetupColumn("Key"), TableSetupColumn("Data"), TableSetupColumn("Size");
+			TableHeadersRow();
+
+			std::ostringstream ss;
+			for (auto const &[key, data]: primitive.attributes)
+			{
+				TableNextRow();
+
+				TableNextColumn(); ss << key;
+				TextUnformatted(ss.str().data()), ss.str({});
+
+				TableNextColumn(); ss << data.type << 'x' << (u32)data.dimension;
+				TextUnformatted(ss.str().data()), ss.str({});
+
+				TableNextColumn(); ss << data.buffer.size / (data.type.size() * data.dimension);
+				TextUnformatted(ss.str().data()), ss.str({});
+			}
+			EndTable();
+		}
+
 
 		Spacing(), Separator(), Text("Material");
 
-		vector<u32> material_indices;
-		for (auto & drawable: mesh.primitives)
-			material_indices.push_back(drawable.material_ptr.index);
+		LabelText("Name", "%s", drawable.named_material.name.string.data());
 
-		static i32 material_index;
-		{
-			std::stringstream ss;
-			for (auto & i: material_indices)
-				ss << i << '\0';
-			Combo("Material Index", &material_index, ss.str().c_str());
-		}
-
-		auto const & material = assets.materials[material_index];
+		auto & material = drawable.named_material.data;
 
 		ColorEdit4("Base Color", begin(
 			dynamic_cast<Render::Material_gltf_pbrMetallicRoughness*>(material.get())->base_color_factor
@@ -194,24 +194,35 @@ struct Editor final : IRenderer
 		End();
 	}
 
-	void assets_window()
+	void textures_window()
 	{
 		using namespace ImGui;
 
-		Begin("Assets");
+		Begin("Textures");
 
-		static u64 texture_index = 0, min_index = 0;
-		u64 const max_index = assets.textures.size() - 1;
+		static Name texture_name;
+		if (BeginCombo("Texture", texture_name.string.data()))
+		{
+			for (auto & [name, texture]: assets.textures.resources)
+				if (Selectable(name.string.data()))
+					texture_name = name;
 
-		SliderScalar("Index", ImGuiDataType_U64, &texture_index, &min_index, &max_index);
+			EndCombo();
+		}
+		if (auto maybe = assets.textures.find(texture_name))
+		{
+			auto & texture = *maybe;
+			LabelText("id", "%d", texture.id);
 
-		auto const id = assets.textures[texture_index].id;
-		LabelText("id", "%d", id);
-
-		Image(
-			reinterpret_cast<void*>(i64(id)),
-			{240, 240}
-		);
+			Image(
+				reinterpret_cast<void*>(i64(texture.id)),
+				{240, 240}
+			);
+		}
+		else
+		{
+			Text("Pick a texture");
+		}
 
 		End();
 	}
@@ -315,7 +326,7 @@ struct Editor final : IRenderer
 		game_window();
 		game_settings_window();
 		mesh_settings_window();
-		assets_window();
+		textures_window();
 		shader_window();
 		camera_window();
 	}

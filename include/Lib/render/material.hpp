@@ -18,7 +18,7 @@ namespace Render
 	};
 
 	// for now, here is an example concrete Material
-	struct Material_gltf_pbrMetallicRoughness : IMaterial
+	struct Material_gltf_pbrMetallicRoughness final : IMaterial
 	{
 		u32 base_color_texture;
 		f32x4 base_color_factor;
@@ -32,7 +32,7 @@ namespace Render
 		u32 occlusion_texture;
 		u32 normal_texture;
 
-		void set_uniforms() override
+		void set_uniforms() final
 		{
 			using namespace GL;
 

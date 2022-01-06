@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Lib/core/index_ptr.hpp"
+#include "Lib/core/named.hpp"
 #include "Lib/render/.hpp"
 
 #include "core.hpp"
@@ -94,19 +94,17 @@ namespace GLTF
 
 	void Convert(
 		LoadedData const & loaded,
-		vector<GL::Texture2D> & textures,
-		vector<unique_ptr<Render::IMaterial>> & materials,
-		vector<Geometry::Primitive> & primitives, vector<Render::Mesh> & meshes
+		Managed<GL::Texture2D> & textures,
+		Managed<unique_ptr<Render::IMaterial>> & materials,
+		Managed<Geometry::Primitive> & primitives,
+		Managed<Render::Mesh> & meshes
 	)
 	{
 		using namespace Helpers;
 
-		// Load Textures
-		auto new_textures = Grow(textures, loaded.textures.size());
-		for (auto i = 0; i < loaded.textures.size(); ++i)
+		// Convert Textures
+		for (auto const & texture: loaded.textures)
 		{
-			auto const & texture = loaded.textures[i];
-
 			// TODO(bekorn) have a default image
 			auto const & image = texture.image_index.has_value()
 								 ? loaded.images[texture.image_index.value()]
@@ -116,7 +114,7 @@ namespace GLTF
 								   ? loaded.samplers[texture.sampler_index.value()]
 								   : GLTF::SamplerDefault;
 
-			new_textures[i].create(
+			textures.generate(texture.name).data.create(
 				GL::Texture2D::ImageDescription{
 					.dimensions = image.dimensions,
 					.has_alpha = image.channels == 4,
@@ -131,11 +129,9 @@ namespace GLTF
 			);
 		}
 
-		// Load materials
-		auto new_materials = Grow(materials, loaded.materials.size());
-		for (auto i = 0; i < loaded.materials.size(); ++i)
+		// Convert materials
+		for (auto const & gltf_mat: loaded.materials)
 		{
-			auto const & gltf_mat = loaded.materials[i];
 			if (gltf_mat.pbr_metallic_roughness)
 			{
 				auto const & pbr_mat = gltf_mat.pbr_metallic_roughness.value();
@@ -143,55 +139,43 @@ namespace GLTF
 
 				// TODO: use texcoord indices as well
 				if (pbr_mat.base_color_texture)
-					mat->base_color_texture = new_textures[pbr_mat.base_color_texture->texture_index].id;
+					mat->base_color_texture = textures.get(loaded.textures[pbr_mat.base_color_texture->texture_index].name).id;
 				else
 					mat->base_color_factor = pbr_mat.base_color_factor;
 
 				if (pbr_mat.metallic_roughness_texture)
-					mat->metallic_roughness_texture = new_textures[pbr_mat.metallic_roughness_texture->texture_index].id;
+					mat->metallic_roughness_texture = textures.get(loaded.textures[pbr_mat.metallic_roughness_texture->texture_index].name).id;
 				else
 					mat->metallic_roughness_factor = {pbr_mat.metallic_factor, pbr_mat.roughness_factor};
 
 				if (gltf_mat.emissive_texture)
-					mat->emissive_texture = new_textures[gltf_mat.emissive_texture->texture_index].id;
+					mat->emissive_texture = textures.get(loaded.textures[gltf_mat.emissive_texture->texture_index].name).id;
 				else
 					mat->emissive_factor = gltf_mat.emissive_factor;
 
 				if (gltf_mat.occlusion_texture)
-					mat->occlusion_texture = new_textures[gltf_mat.occlusion_texture->texture_index].id;
+					mat->occlusion_texture = textures.get(loaded.textures[gltf_mat.occlusion_texture->texture_index].name).id;
 
 				if (gltf_mat.normal_texture)
-					mat->normal_texture = new_textures[gltf_mat.normal_texture->texture_index].id;
+					mat->normal_texture = textures.get(loaded.textures[gltf_mat.normal_texture->texture_index].name).id;
 
-				new_materials[i] = move(mat);
+				materials.generate(gltf_mat.name).data = move(mat);
 			}
 		}
 
-		// Load meshes
-		auto new_meshes = Grow(meshes, loaded.meshes.size());
-		for (auto i = 0; i < loaded.meshes.size(); ++i)
-		{
-			auto const & gltf_mesh = loaded.meshes[i];
-			auto & mesh = new_meshes[i];
-
-			mesh.name = gltf_mesh.name;
-
-			// Load Primitives
-			auto new_primitives = Grow(primitives, gltf_mesh.primitives.size());
-			for (auto primitive_index = 0; primitive_index < gltf_mesh.primitives.size(); ++primitive_index)
+		// Convert primitives
+		for (auto const & mesh: loaded.meshes)
+			for (auto const & gltf_primitive: mesh.primitives)
 			{
-				auto const & gltf_primitive = gltf_mesh.primitives[primitive_index];
-				auto const attribute_size = gltf_primitive.attributes.size();
+				auto & primitive = primitives.generate(Name(gltf_primitive.name)).data;
 
-				auto & primitive = new_primitives[primitive_index];
-				primitive.attributes.reserve(attribute_size);
-				for (auto i = 0; i < attribute_size; ++i)
+				primitive.attributes.reserve(gltf_primitive.attributes.size());
+				for (auto const & attribute: gltf_primitive.attributes)
 				{
-					auto const & attribute = gltf_primitive.attributes[i];
 					auto const & accessor = loaded.accessors[attribute.accessor_index];
 					auto const & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
-					Geometry::Attribute::Data data{
+					auto data = Geometry::Attribute::Data{
 						.type = IntoAttributeType(accessor.vector_data_type, accessor.normalized),
 						.dimension = static_cast<u8>(accessor.vector_dimension),
 					};
@@ -225,10 +209,7 @@ namespace GLTF
 						std::memcpy(data.buffer.begin(), source.data(), data.buffer.size);
 					}
 
-					primitive.attributes.emplace(std::piecewise_construct,
-						std::make_tuple(IntoAttributeKey(attribute.name)),
-						std::make_tuple(move(data))
-					);
+					primitive.attributes.emplace(IntoAttributeKey(attribute.name), move(data));
 				}
 
 				if (gltf_primitive.indices_accessor_index.has_value())
@@ -277,16 +258,27 @@ namespace GLTF
 					for (u32 i = 0; i < vertex_count; ++i)
 						primitive.indices[i] = i;
 				}
+			}
 
+		// Convert meshes
+		for (auto const & gltf_mesh: loaded.meshes)
+		{
+			auto & mesh = meshes.generate(gltf_mesh.name).data;
+
+			// Create Drawables
+			for (const auto & gltf_primitive : gltf_mesh.primitives)
+			{
 				//	TODO(bekorn): have a default material
 				auto const material_index = gltf_primitive.material_index.has_value()
 											? gltf_primitive.material_index.value()
 											: throw std::runtime_error("not implemented");
 
-				mesh.primitives.push_back(
+				auto & material_name = loaded.materials[material_index].name;
+
+				mesh.drawables.push_back(
 					{
-						.primitive_ptr = index_ptr(primitives, &primitive),
-						.material_ptr = index_ptr(materials, &new_materials[material_index]),
+						.primitive = primitives.get(gltf_primitive.name),
+						.named_material = materials.get_named(material_name),
 					}
 				);
 			}

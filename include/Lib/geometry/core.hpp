@@ -5,6 +5,7 @@
 
 #include "Lib/core/core.hpp"
 #include "Lib/core/intrinsics.hpp"
+#include "Lib/core/named.hpp"
 
 namespace Geometry
 {

@@ -90,5 +90,20 @@ namespace File
 			else
 				return def_value;
 		}
+
+		struct NameGenerator
+		{
+			std::string const prefix;
+			u64 counter = 0;
+
+			std::string get(JSONObj obj, Key key)
+			{
+				auto member = obj.FindMember(key.data());
+				if (member != obj.MemberEnd())
+					return prefix + member->value.GetString();
+				else
+					return prefix + std::to_string(counter++);
+			}
+		};
 	}
 }
