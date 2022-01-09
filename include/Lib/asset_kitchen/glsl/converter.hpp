@@ -45,7 +45,7 @@ namespace GLSL
 			auto & stage = stages[i];
 			auto const & data_stage = loaded.stages[i];
 
-			includes.back() = data_stage.source.data(); // put shader source to the last one
+			includes.back() = data_stage.source.data(); // put stage source as the last one
 
 			stage.create(
 				{
@@ -83,6 +83,7 @@ namespace GLSL
 			return {error_log.str()};
 		}
 
+		program.update_interface_mapping();
 		return {move(program)};
 	}
 }

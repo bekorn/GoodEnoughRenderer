@@ -66,14 +66,6 @@ struct Game final : IRenderer
 		);
 	}
 
-	void load_assets()
-	{
-		if (auto error = assets.load_program())
-			std::cerr << error.value();
-
-		assets.load_gltf_assets();
-	}
-
 	void create() final
 	{
 		create_framebuffer();
@@ -104,6 +96,8 @@ struct Game final : IRenderer
 		auto const view = visit([](Camera auto const & c){ return c.get_view(); }, camera);
 		auto const projection = visit([](Camera auto const & c){ return c.get_projection(); }, camera);
 		auto const view_projection = projection * view;
+
+		glUseProgram(assets.programs.get(GLTF::pbrMetallicRoughness_program_name).id);
 
 		for (auto const & [key, mesh]: assets.meshes.resources)
 		{

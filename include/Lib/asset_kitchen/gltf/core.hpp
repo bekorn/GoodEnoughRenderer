@@ -126,4 +126,6 @@ namespace GLTF
 		vector<Mesh> meshes;
 		vector<Material> materials;
 	};
+
+	auto const pbrMetallicRoughness_program_name = "gltf_pbrMetallicRoughness"_name;
 }

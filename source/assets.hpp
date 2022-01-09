@@ -6,64 +6,54 @@
 #include "Lib/asset_kitchen/glsl/.hpp"
 #include "Lib/asset_kitchen/gltf/.hpp"
 
-#include "globals.hpp"
+#include "descriptions.hpp"
 
 struct Assets
 {
+	Desriptions const & desriptions;
+
 	// GL resources
-	GL::ShaderProgram program; // will be a vector<shader> later
+	Managed<GL::ShaderProgram> programs;
+	Managed<std::string> program_errors;
 	Managed<GL::Texture2D> textures;
 	// Render resources
 	Managed<Geometry::Primitive> primitives;
 	Managed<unique_ptr<Render::IMaterial>> materials;
 	Managed<Render::Mesh> meshes;
 
-	CTOR(Assets, default)
+	explicit Assets(Desriptions const & desriptions) :
+		desriptions(desriptions)
+	{}
+
 	COPY(Assets, delete)
 	MOVE(Assets, delete)
 
 	void create()
 	{
-		load_program();
-		load_gltf_assets();
+		load_glsl(GLTF::pbrMetallicRoughness_program_name);
+		load_gltf("Sponza"_name);
 	}
 
-	optional<std::string> load_program()
+	void load_glsl(Name const & name)
 	{
-		auto const glsl_data = GLSL::Load(
-			{
-				.stages = {
-					{GL::GL_VERTEX_SHADER,   global_state.test_assets / "gltf_pbrMetallicRoughness.vert.glsl"},
-					{GL::GL_FRAGMENT_SHADER, global_state.test_assets / "gltf_pbrMetallicRoughness.frag.glsl"},
-				},
-				.include_paths = {},
-				.include_strings = {
-					GL::GLSL_VERSION_MACRO,
-				}
-			}
-		);
+		auto const glsl_data = GLSL::Load(desriptions.glsl.get(name));
 
+		// TODO(bekorn): remove .resource accesses, Manager should have sufficial API
 		if (auto expected = GLSL::Convert(glsl_data))
 		{
-			program = expected.into_result();
-			program.update_interface_mapping();
-			GL::glUseProgram(program.id);
-			return nullopt;
+			programs.resources[name] = expected.into_result();
+			program_errors.resources[name] = {};
 		}
 		else
 		{
-			return expected.into_error();
+			programs.resources[name] = {};
+			program_errors.resources[name] = expected.into_error();
 		}
 	}
 
-	void load_gltf_assets()
+	void load_gltf(Name const & name)
 	{
-//		auto const gltf_data = GLTF::Load("DamagedHelmet", global_state.test_assets / "helmet/DamagedHelmet.gltf");
-//		auto const gltf_data = GLTF::Load("Avocado", global_state.test_assets / "avocado/Avocado.gltf");
-//		auto const gltf_data = GLTF::Load("ElectricGuitar", global_state.test_assets / "electric_guitar_fender_strat_plus/model.gltf");
-		auto const gltf_data = GLTF::Load("Sponza", global_state.test_assets / "sponza/Sponza.gltf");
-//		auto const gltf_data = GLTF::Load("FlightHelmet", global_state.test_assets / "flight_helmet/FlightHelmet.gltf");
-
+		auto const gltf_data = GLTF::Load(desriptions.gltf.get(name));
 		GLTF::Convert(gltf_data, textures, materials, primitives, meshes);
 	}
 };

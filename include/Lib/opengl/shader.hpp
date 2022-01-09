@@ -177,59 +177,59 @@ namespace GL
 		};
 		vector<AttributeMapping> attribute_mappings;
 
+		// returns UniformMapping as a common denominator
+		static vector<UniformMapping> query_interface_mapping(ShaderProgram const & program, GLenum const interface)
+		{
+			vector<UniformMapping> mappings;
+
+			array const query_props{
+				GL_LOCATION,
+				GL_TYPE,
+			};
+			array<i32, query_props.size()> query_results;
+
+			i32 max_name_size;
+			glGetProgramInterfaceiv(program.id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
+			std::string name_buffer(max_name_size, 0);
+
+			i32 attribute_size;
+			glGetProgramInterfaceiv(program.id, interface, GL_ACTIVE_RESOURCES, &attribute_size);
+
+			mappings.reserve(attribute_size);
+			for (auto i = 0; i < attribute_size; ++i)
+			{
+				glGetProgramResourceiv(
+					program.id, interface, i,
+					query_props.size(), query_props.data(),
+					query_props.size(), nullptr, query_results.data()
+				);
+
+				i32 name_size;
+				glGetProgramResourceName(
+					program.id, interface, i,
+					name_buffer.size(), &name_size, name_buffer.data()
+				);
+
+				mappings.emplace_back(
+					UniformMapping{
+						.location = static_cast<u32>(query_results[0]),
+						.glsl_type = static_cast<GLenum>(query_results[1]),
+						.key = name_buffer.substr(0, name_size),
+					}
+				);
+			}
+
+			return mappings;
+		};
+
 		void update_interface_mapping()
 		{
-			// returns UniformMapping as a common denominator
-			static auto const query_interface_mapping = [this](GLenum const interface) -> vector<UniformMapping>
-			{
-				vector<UniformMapping> mappings;
-
-				array const query_props{
-					GL_LOCATION,
-					GL_TYPE,
-				};
-				array<i32, query_props.size()> query_results;
-
-				i32 max_name_size;
-				glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
-				std::string name_buffer(max_name_size, 0);
-
-				i32 attribute_size;
-				glGetProgramInterfaceiv(id, interface, GL_ACTIVE_RESOURCES, &attribute_size);
-
-				mappings.reserve(attribute_size);
-				for (auto i = 0; i < attribute_size; ++i)
-				{
-					glGetProgramResourceiv(
-						id, interface, i,
-						query_props.size(), query_props.data(),
-						query_props.size(), nullptr, query_results.data()
-					);
-
-					i32 name_size;
-					glGetProgramResourceName(
-						id, interface, i,
-						name_buffer.size(), &name_size, name_buffer.data()
-					);
-
-					mappings.emplace_back(
-						UniformMapping{
-							.location = static_cast<u32>(query_results[0]),
-							.glsl_type = static_cast<GLenum>(query_results[1]),
-							.key = name_buffer.substr(0, name_size),
-						}
-					);
-				}
-
-				return mappings;
-			};
-
 			uniform_mappings.clear();
-			for (auto && mapping : query_interface_mapping(GL_UNIFORM))
+			for (auto && mapping : query_interface_mapping(*this, GL_UNIFORM))
 				uniform_mappings.emplace_back(move(mapping));
 
 			attribute_mappings.clear();
-			for (auto && mapping : query_interface_mapping(GL_PROGRAM_INPUT))
+			for (auto && mapping : query_interface_mapping(*this, GL_PROGRAM_INPUT))
 				attribute_mappings.emplace_back(AttributeMapping{
 					.location = mapping.location,
 					.glsl_type = mapping.glsl_type,

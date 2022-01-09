@@ -37,7 +37,10 @@ i32 main(i32 argc, char** argv)
 	imgui_context.create({.window = window});
 	std::clog << GL::GetContextInfo() << std::endl;
 
-	Assets assets;
+	Desriptions desriptions;
+	desriptions.create(R"(E:\Users\Berk\Desktop\Projeler\Portfolio\GoodEnoughRenderer\test_assets)");
+
+	Assets assets(desriptions);
 	assets.create();
 
 	vector<unique_ptr<IRenderer>> renderers;

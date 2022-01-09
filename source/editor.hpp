@@ -70,10 +70,6 @@ struct Editor final : IRenderer
 
 		ColorEdit3("Clear color", begin(game.clear_color));
 
-		i32 current_program;
-		GL::glGetIntegerv(GL::GL_CURRENT_PROGRAM, &current_program);
-		Text("Current Program id: %d", current_program);
-
 		End();
 	}
 
@@ -86,7 +82,8 @@ struct Editor final : IRenderer
 		static Name mesh_name;
 		if (BeginCombo("Mesh", mesh_name.string.data()))
 		{
-			for (auto const & [name, mesh]: assets.meshes.resources)
+			// TODO(bekorn): remove .resources access, Managed should provide an API for this
+			for (auto const & [name, _]: assets.meshes.resources)
 				if (Selectable(name.string.data()))
 					mesh_name = name;
 
@@ -141,7 +138,7 @@ struct Editor final : IRenderer
 			{
 				if (Button("Load all drawables"))
 					for (auto & drawable: mesh.drawables)
-						drawable.load(assets.program);
+						drawable.load(assets.programs.get(GLTF::pbrMetallicRoughness_program_name));
 			}
 		}
 
@@ -149,9 +146,10 @@ struct Editor final : IRenderer
 		{
 			static u64 min_index = 0, max_index;
 			max_index = mesh.drawables.size() - 1;
-			SliderScalar("Drawable Index", ImGuiDataType_U64, &drawable_index, &min_index, &max_index);
+			SliderScalar("Drawable", ImGuiDataType_U64, &drawable_index, &min_index, &max_index);
 		}
 		auto const & drawable = mesh.drawables[drawable_index];
+		SameLine(), Text("(id: %d)", drawable.vertex_array.id);
 
 
 		Spacing(), Separator(), Text("Primitive");
@@ -203,7 +201,8 @@ struct Editor final : IRenderer
 		static Name texture_name;
 		if (BeginCombo("Texture", texture_name.string.data()))
 		{
-			for (auto & [name, texture]: assets.textures.resources)
+			// TODO(bekorn): remove .resources access, Managed should provide an API for this
+			for (auto & [name, _]: assets.textures.resources)
 				if (Selectable(name.string.data()))
 					texture_name = name;
 
@@ -212,7 +211,7 @@ struct Editor final : IRenderer
 		if (auto maybe = assets.textures.find(texture_name))
 		{
 			auto & texture = *maybe;
-			LabelText("id", "%d", texture.id);
+			SameLine(), Text("(id %d)", texture.id);
 
 			Image(
 				reinterpret_cast<void*>(i64(texture.id)),
@@ -227,29 +226,44 @@ struct Editor final : IRenderer
 		End();
 	}
 
-	std::string program_error;
-
-	void shader_window()
+	void program_window()
 	{
 		using namespace ImGui;
 
-		Begin("Shader Info", nullptr, ImGuiWindowFlags_NoCollapse);
+		Begin("Program Info", nullptr, ImGuiWindowFlags_NoCollapse);
 
-		if (Button("Reload Shader"))
-			if (auto error = assets.load_program())
-				program_error = error.value();
+		static Name program_name;
+		if (BeginCombo("Program", program_name.string.data()))
+		{
+			// TODO(bekorn): remove .resources access, Managed should provide an API for this
+			for (auto const & [name, _]: assets.programs.resources)
+				if (Selectable(name.string.data()))
+					program_name = name;
 
-		if (not program_error.empty())
-			SameLine(), TextColored({255, 0, 0, 255}, "%s", program_error.data());
+			EndCombo();
+		}
+		if (not assets.programs.resources.contains(program_name))
+		{
+			Text("Pick a program");
+			End();
+			return;
+		}
+		auto named_program = assets.programs.get_named(program_name);
 
-		auto const & program = assets.program;
+		SameLine(), Text("(id: %d)", named_program.data.id);
+
+		if (Button("Reload"))
+			assets.load_glsl(named_program.name);
+
+		if (auto const & error = assets.program_errors.get(program_name); not error.empty())
+			TextColored({255, 0, 0, 255}, "%s", error.data());
 
 		if (BeginTable("uniform_mappings", 3, ImGuiTableFlags_BordersInnerH))
 		{
 			TableSetupColumn("Uniform Location"), TableSetupColumn("Type"), TableSetupColumn("Name");
 			TableHeadersRow();
 
-			for (auto const & mapping : program.uniform_mappings)
+			for (auto const & mapping : named_program.data.uniform_mappings)
 			{
 				TableNextRow();
 				TableNextColumn();
@@ -267,7 +281,7 @@ struct Editor final : IRenderer
 			TableSetupColumn("Attribute Location"), TableSetupColumn("Type"), TableSetupColumn("Name");
 			TableHeadersRow();
 
-			for (auto const & mapping : program.attribute_mappings)
+			for (auto const & mapping : named_program.data.attribute_mappings)
 			{
 				TableNextRow();
 				TableNextColumn();
@@ -327,7 +341,7 @@ struct Editor final : IRenderer
 		game_settings_window();
 		mesh_settings_window();
 		textures_window();
-		shader_window();
+		program_window();
 		camera_window();
 	}
 };

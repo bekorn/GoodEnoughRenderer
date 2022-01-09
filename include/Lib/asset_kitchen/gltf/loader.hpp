@@ -9,7 +9,13 @@
 
 namespace GLTF
 {
-	LoadedData Load(std::string const & name, std::filesystem::path const & file)
+	struct Description
+	{
+		std::string name;
+		std::filesystem::path path;
+	};
+
+	LoadedData Load(Description const & description)
 	{
 		using namespace rapidjson;
 		using namespace File;
@@ -18,9 +24,9 @@ namespace GLTF
 		LoadedData loaded;
 
 		Document document;
-		document.Parse(LoadAsString(file).c_str());
+		document.Parse(LoadAsString(description.path).c_str());
 
-		auto const file_dir = file.parent_path();
+		auto const file_dir = description.path.parent_path();
 
 		// Parse buffers
 		for (auto const & item: document["buffers"].GetArray())
@@ -112,7 +118,7 @@ namespace GLTF
 		}
 
 		// Parse textures
-		NameGenerator texture_name_generator{.prefix = name + ":texture:"};
+		NameGenerator texture_name_generator{.prefix = description.name + ":texture:"};
 		if (auto const member = document.FindMember("textures"); member != document.MemberEnd())
 		{
 			for (auto const & item: member->value.GetArray())
@@ -158,8 +164,8 @@ namespace GLTF
 		}
 
 		// Parse meshes
-		NameGenerator mesh_name_generator{.prefix = name + ":mesh:"};
-		NameGenerator primitive_name_generator{.prefix = name + ":primitive:"};
+		NameGenerator mesh_name_generator{.prefix = description.name + ":mesh:"};
+		NameGenerator primitive_name_generator{.prefix = description.name + ":primitive:"};
 		for (auto const & item: document["meshes"].GetArray())
 		{
 			auto const & mesh = item.GetObject();
@@ -201,7 +207,7 @@ namespace GLTF
 		}
 
 		// Parse materials
-		NameGenerator material_name_generator{.prefix = name + ":material:"};
+		NameGenerator material_name_generator{.prefix = description.name + ":material:"};
 		for (auto const & item: document["materials"].GetArray())
 		{
 			auto const get_tex_info = [](JSONObj material, Key key) -> optional<Material::TexInfo>

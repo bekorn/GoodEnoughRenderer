@@ -21,8 +21,8 @@ struct Name
 		hash(std::hash<std::string_view>{}(sv)), string(sv)
 	{}
 
-	Name(std::string const & sv) :
-		hash(std::hash<std::string>{}(sv)), string(sv)
+	Name(std::string const & str) :
+		hash(std::hash<std::string>{}(str)), string(str)
 	{}
 
 	bool operator==(Name const & other) const
@@ -37,6 +37,11 @@ struct Name
 	friend std::ostream & operator<<(std::ostream & out, Name const & name)
 	{ return out << std::right << std::setw(20) << name.hash << std::left << '|' << name.string; }
 };
+
+Name operator""_name (const char * literal, usize size)
+{
+	return std::string_view(literal, size);
+}
 
 template<typename T>
 struct Named
@@ -65,6 +70,9 @@ struct Managed
 	{ resources.erase(name); }
 
 	T & get(Name const & name)
+	{ return resources.at(name); }
+
+	T const & get(Name const & name) const
 	{ return resources.at(name); }
 
 	Named<T> get_named(Name const & name)
