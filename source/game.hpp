@@ -101,7 +101,7 @@ struct Game final : IRenderer
 
 		for (auto const & [key, mesh]: assets.meshes.resources)
 		{
-			auto const model = mesh.CalculateTransform();
+			auto const model = mesh.transform.calculate_transform();
 			auto const transform = view_projection * model;
 			// TODO(bekorn): find a proper location
 			glUniformMatrix4fv(10, 1, false, begin(transform));

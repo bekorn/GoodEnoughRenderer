@@ -99,12 +99,13 @@ struct Editor final : IRenderer
 
 
 		Spacing(), Separator(), Text("Transform");
+		auto & transform = mesh.transform;
 
-		SliderFloat3("Position", begin(mesh.position), -2, 2, "%.2f");
-		auto rotation_in_degrees = glm::degrees(mesh.rotation);
+		SliderFloat3("Position", begin(transform.position), -2, 2, "%.2f");
+		auto rotation_in_degrees = glm::degrees(transform.rotation);
 		SliderFloat3("Rotation", begin(rotation_in_degrees), 0, 360, "%.2f");
-		mesh.rotation = glm::radians(rotation_in_degrees);
-		SliderFloat("Scale", &mesh.scale, 0.001, 10, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+		transform.rotation = glm::radians(rotation_in_degrees);
+		SliderFloat("Scale", &transform.scale, 0.001, 10, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 
 
 		Spacing(), Separator(), Text("Drawables");
