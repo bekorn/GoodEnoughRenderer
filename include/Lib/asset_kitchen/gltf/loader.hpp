@@ -257,6 +257,48 @@ namespace GLTF
 			loaded.materials.push_back(mat);
 		}
 
+		// Parse nodes
+		NameGenerator node_name_generator{.prefix = description.name + ":node:"};
+		if (auto const member = document.FindMember("nodes"); member != document.MemberEnd())
+		{
+			for (auto const & item: member->value.GetArray())
+			{
+				auto const & gltf_node = item.GetObject();
+
+				Node node{
+					.name = node_name_generator.get(gltf_node, "name"),
+					.mesh_index = GetU32(gltf_node, "mesh"),
+				};
+
+				if (auto member = gltf_node.FindMember("matrix"); member != gltf_node.MemberEnd())
+				{
+					f32x4x4 matrix;
+					auto const & arr = member->value.GetArray();
+					for (auto i = 0; i < 4; ++i)
+						for (auto j = 0; j < 4; ++j)
+							matrix[i][j] = arr[i * 4 + j].GetFloat();
+
+					f32x3 skew;
+					f32x4 perspective;
+					glm::decompose(matrix, node.scale, node.rotation, node.translation, skew, perspective);
+
+					// appearently glm decompose works incorrectly, https://stackoverflow.com/a/56587367/2073225
+					node.rotation = glm::conjugate(node.rotation);
+				}
+				else
+				{
+					node.translation = GetF32x3(gltf_node, "translation", {0, 0, 0});
+					auto rotation = GetF32x4(gltf_node, "rotation", {0, 0, 0, 1});			 // gltf order (x, y, z, w)
+					node.rotation = f32quat(rotation.w, rotation.x, rotation.y, rotation.z); // glm  order (w, x, y, z)
+					node.scale = GetF32x3(gltf_node, "scale", f32x3{1, 1, 1});
+
+					glm::quat();
+				}
+
+				loaded.nodes.push_back(node);
+			}
+		}
+
 		return loaded;
 	}
 }

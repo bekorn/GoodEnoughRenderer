@@ -82,14 +82,6 @@ namespace GLTF
 
 			throw std::runtime_error("Unknown type or combination :(");
 		}
-
-		// Pattern: Resize the vec and get resized portion
-		template<typename T>
-		span<T> Grow(vector<T> & vec, usize size)
-		{
-			vec.resize(vec.size() + size);
-			return span(vec.end() - size, vec.end());
-		}
 	}
 
 	void Convert(
@@ -97,44 +89,45 @@ namespace GLTF
 		Managed<GL::Texture2D> & textures,
 		Managed<unique_ptr<Render::IMaterial>> & materials,
 		Managed<Geometry::Primitive> & primitives,
-		Managed<Render::Mesh> & meshes
+		Managed<Render::Mesh> & meshes,
+		Managed<Scene::Transform> & transforms
 	)
 	{
 		using namespace Helpers;
 
 		// Convert Textures
-		for (auto const & texture: loaded.textures)
+		for (auto & loaded_texture: loaded.textures)
 		{
 			// TODO(bekorn) have a default image
-			auto const & image = texture.image_index.has_value()
-								 ? loaded.images[texture.image_index.value()]
-								 : throw std::runtime_error("not implemented");
+			auto & loaded_image = loaded_texture.image_index.has_value()
+								  ? loaded.images[loaded_texture.image_index.value()]
+								  : throw std::runtime_error("not implemented");
 
-			auto const & sampler = texture.sampler_index.has_value()
-								   ? loaded.samplers[texture.sampler_index.value()]
-								   : GLTF::SamplerDefault;
+			auto & loaded_sampler = loaded_texture.sampler_index.has_value()
+									? loaded.samplers[loaded_texture.sampler_index.value()]
+									: GLTF::SamplerDefault;
 
-			textures.generate(texture.name).data.create(
+			textures.generate(loaded_texture.name).data.create(
 				GL::Texture2D::ImageDescription{
-					.dimensions = image.dimensions,
-					.has_alpha = image.channels == 4,
+					.dimensions = loaded_image.dimensions,
+					.has_alpha = loaded_image.channels == 4,
 
-					.min_filter = GL::GLenum(sampler.min_filter),
-					.mag_filter = GL::GLenum(sampler.mag_filter),
-					.wrap_s = GL::GLenum(sampler.wrap_s),
-					.wrap_t = GL::GLenum(sampler.wrap_t),
+					.min_filter = GL::GLenum(loaded_sampler.min_filter),
+					.mag_filter = GL::GLenum(loaded_sampler.mag_filter),
+					.wrap_s = GL::GLenum(loaded_sampler.wrap_s),
+					.wrap_t = GL::GLenum(loaded_sampler.wrap_t),
 
-					.data = image.data.span_as<byte>(),
+					.data = loaded_image.data.span_as<byte>(),
 				}
 			);
 		}
 
 		// Convert materials
-		for (auto const & gltf_mat: loaded.materials)
+		for (auto & loaded_mat: loaded.materials)
 		{
-			if (gltf_mat.pbr_metallic_roughness)
+			if (loaded_mat.pbr_metallic_roughness.has_value())
 			{
-				auto const & pbr_mat = gltf_mat.pbr_metallic_roughness.value();
+				auto & pbr_mat = loaded_mat.pbr_metallic_roughness.value();
 				auto mat = make_unique<Render::Material_gltf_pbrMetallicRoughness>();
 
 				// TODO: use texcoord indices as well
@@ -148,32 +141,32 @@ namespace GLTF
 				else
 					mat->metallic_roughness_factor = {pbr_mat.metallic_factor, pbr_mat.roughness_factor};
 
-				if (gltf_mat.emissive_texture)
-					mat->emissive_texture = textures.get(loaded.textures[gltf_mat.emissive_texture->texture_index].name).id;
+				if (loaded_mat.emissive_texture)
+					mat->emissive_texture = textures.get(loaded.textures[loaded_mat.emissive_texture->texture_index].name).id;
 				else
-					mat->emissive_factor = gltf_mat.emissive_factor;
+					mat->emissive_factor = loaded_mat.emissive_factor;
 
-				if (gltf_mat.occlusion_texture)
-					mat->occlusion_texture = textures.get(loaded.textures[gltf_mat.occlusion_texture->texture_index].name).id;
+				if (loaded_mat.occlusion_texture)
+					mat->occlusion_texture = textures.get(loaded.textures[loaded_mat.occlusion_texture->texture_index].name).id;
 
-				if (gltf_mat.normal_texture)
-					mat->normal_texture = textures.get(loaded.textures[gltf_mat.normal_texture->texture_index].name).id;
+				if (loaded_mat.normal_texture)
+					mat->normal_texture = textures.get(loaded.textures[loaded_mat.normal_texture->texture_index].name).id;
 
-				materials.generate(gltf_mat.name).data = move(mat);
+				materials.generate(loaded_mat.name).data = move(mat);
 			}
 		}
 
 		// Convert primitives
-		for (auto const & mesh: loaded.meshes)
-			for (auto const & gltf_primitive: mesh.primitives)
+		for (auto & loaded_mesh: loaded.meshes)
+			for (auto & loaded_primitive: loaded_mesh.primitives)
 			{
-				auto & primitive = primitives.generate(Name(gltf_primitive.name)).data;
+				auto & primitive = primitives.generate(Name(loaded_primitive.name)).data;
 
-				primitive.attributes.reserve(gltf_primitive.attributes.size());
-				for (auto const & attribute: gltf_primitive.attributes)
+				primitive.attributes.reserve(loaded_primitive.attributes.size());
+				for (auto & attribute: loaded_primitive.attributes)
 				{
-					auto const & accessor = loaded.accessors[attribute.accessor_index];
-					auto const & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
+					auto & accessor = loaded.accessors[attribute.accessor_index];
+					auto & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
 					auto data = Geometry::Attribute::Data{
 						.type = IntoAttributeType(accessor.vector_data_type, accessor.normalized),
@@ -186,7 +179,7 @@ namespace GLTF
 					if (buffer_view.stride.has_value())
 					{
 						// strided access
-						auto const source_stride = buffer_view.stride.value();
+						auto source_stride = buffer_view.stride.value();
 						auto source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<byte>(buffer_view.offset + accessor.byte_offset, source_stride * accessor.count);
 
@@ -212,16 +205,16 @@ namespace GLTF
 					primitive.attributes.emplace(IntoAttributeKey(attribute.name), move(data));
 				}
 
-				if (gltf_primitive.indices_accessor_index.has_value())
+				if (loaded_primitive.indices_accessor_index.has_value())
 				{
-					auto const & accessor = loaded.accessors[gltf_primitive.indices_accessor_index.value()];
-					auto const & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
+					auto & accessor = loaded.accessors[loaded_primitive.indices_accessor_index.value()];
+					auto & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
 					auto index_type = IntoAttributeType(accessor.vector_data_type, accessor.normalized);
 
 					if (index_type == Geometry::Attribute::Type::U8)
 					{
-						auto const source = loaded.buffers[buffer_view.buffer_index]
+						auto source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<u8>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
 
 						primitive.indices.resize(source.size());
@@ -230,7 +223,7 @@ namespace GLTF
 					}
 					else if (index_type == Geometry::Attribute::Type::U16)
 					{
-						auto const source = loaded.buffers[buffer_view.buffer_index]
+						auto source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<u16>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
 
 						primitive.indices.resize(source.size());
@@ -239,7 +232,7 @@ namespace GLTF
 					}
 					else if (index_type == Geometry::Attribute::Type::U32)
 					{
-						auto const source = loaded.buffers[buffer_view.buffer_index]
+						auto source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<u32>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
 
 						// buffers other than vertex attributes are always tightly packed
@@ -251,7 +244,7 @@ namespace GLTF
 				else
 				{
 					// assuming all the attributes have the same count
-					auto const & accessor = loaded.accessors[gltf_primitive.attributes[0].accessor_index];
+					auto & accessor = loaded.accessors[loaded_primitive.attributes[0].accessor_index];
 					auto vertex_count = accessor.count;
 
 					primitive.indices.resize(vertex_count);
@@ -261,27 +254,42 @@ namespace GLTF
 			}
 
 		// Convert meshes
-		for (auto const & gltf_mesh: loaded.meshes)
+		for (auto & loaded_mesh: loaded.meshes)
 		{
-			auto & mesh = meshes.generate(gltf_mesh.name).data;
+			auto & mesh = meshes.generate(loaded_mesh.name).data;
 
 			// Create Drawables
-			for (const auto & gltf_primitive : gltf_mesh.primitives)
+			for (auto & loaded_primitive : loaded_mesh.primitives)
 			{
 				//	TODO(bekorn): have a default material
-				auto const material_index = gltf_primitive.material_index.has_value()
-											? gltf_primitive.material_index.value()
-											: throw std::runtime_error("not implemented");
+				auto material_index = loaded_primitive.material_index.has_value()
+									  ? loaded_primitive.material_index.value()
+									  : throw std::runtime_error("not implemented");
 
 				auto & material_name = loaded.materials[material_index].name;
 
 				mesh.drawables.push_back(
 					{
-						.primitive = primitives.get(gltf_primitive.name),
+						.primitive = primitives.get(loaded_primitive.name),
 						.named_material = materials.get_named(material_name),
 					}
 				);
 			}
+		}
+
+		// TODO(bekorn): Convert nodes
+		//  currently only using the transform,use parent and mesh as well
+		for (auto & loaded_node: loaded.nodes)
+		{
+			transforms.generate(loaded_node.name, Scene::Transform{
+				.position = loaded_node.translation,
+				.rotation = loaded_node.rotation,
+				.scale = loaded_node.scale,
+			});
+
+			// TODO(bekorn): !!! very temporary, the relation between node and mesh will be reversed next commit
+			auto & mesh_name = loaded.meshes[loaded_node.mesh_index].name;
+			meshes.get(mesh_name).transform = transforms.get(loaded_node.name);
 		}
 	}
 }

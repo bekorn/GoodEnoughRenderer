@@ -66,6 +66,10 @@ using f32x3x3 = glm::f32mat3x3;
 using f64x3x3 = glm::f64mat3x3;
 
 
+using f32quat = glm::f32quat;
+using f64quat = glm::f64quat;
+
+
 // Handy std stuff
 using std::move;
 using std::vector, std::array, std::span;

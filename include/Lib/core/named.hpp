@@ -58,12 +58,13 @@ struct Managed
 {
 	std::unordered_map<Name, T, Name::Hasher> resources;
 
-	Named<T> generate(Name const & name)
+	template<typename... Args>
+	Named<T> generate(Name const & name, Args && ... args)
 	{
-		auto [it, is_emplaced] = resources.try_emplace(name);
+		auto [it, is_emplaced] = resources.try_emplace(name, std::forward<Args>(args)...);
 		if (not is_emplaced)
 			std::cerr << "!! Resource is not emplaced: " << name << '\n';
-		return { it->first, it->second };
+		return {it->first, it->second};
 	}
 
 	void erase(Name const & name)

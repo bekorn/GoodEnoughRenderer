@@ -80,12 +80,13 @@ struct Editor final : IRenderer
 		Begin("Mesh Settings", nullptr, ImGuiWindowFlags_NoCollapse);
 
 		static Name mesh_name;
+		bool mesh_changed = false;
 		if (BeginCombo("Mesh", mesh_name.string.data()))
 		{
 			// TODO(bekorn): remove .resources access, Managed should provide an API for this
 			for (auto const & [name, _]: assets.meshes.resources)
 				if (Selectable(name.string.data()))
-					mesh_name = name;
+					mesh_name = name, mesh_changed = true;
 
 			EndCombo();
 		}
@@ -102,11 +103,21 @@ struct Editor final : IRenderer
 		auto & transform = mesh.transform;
 
 		SliderFloat3("Position", begin(transform.position), -2, 2, "%.2f");
-		auto rotation_in_degrees = glm::degrees(transform.rotation);
-		SliderFloat3("Rotation", begin(rotation_in_degrees), 0, 360, "%.2f");
-		transform.rotation = glm::radians(rotation_in_degrees);
-		SliderFloat("Scale", &transform.scale, 0.001, 10, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 
+		static f32x3 mesh_orientation;
+		if (mesh_changed)
+		{
+			mesh_orientation = glm::degrees(glm::eulerAngles(mesh.transform.rotation));
+			mesh_orientation = glm::mod(mesh_orientation, 360.f);
+		}
+		if (SliderFloat3("Rotation", begin(mesh_orientation), 0, 360, "%.2f"))
+		{
+			transform.rotation = glm::quat(glm::radians(mesh_orientation));
+		}
+
+		auto scalar_scale = transform.scale.x;
+		SliderFloat("Scale", &scalar_scale, 0.001, 10, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+		transform.scale = f32x3(scalar_scale);
 
 		Spacing(), Separator(), Text("Drawables");
 

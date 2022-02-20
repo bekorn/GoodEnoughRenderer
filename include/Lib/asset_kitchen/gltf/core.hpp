@@ -113,6 +113,15 @@ namespace GLTF
 		bool double_sided;
 	};
 
+	struct Node
+	{
+		std::string name;
+		u32 mesh_index;
+		f32x3 translation;
+		f32quat rotation;
+		f32x3 scale;
+	};
+
 	struct LoadedData
 	{
 		vector<ByteBuffer> buffers;
@@ -125,6 +134,8 @@ namespace GLTF
 
 		vector<Mesh> meshes;
 		vector<Material> materials;
+
+		vector<Node> nodes;
 	};
 
 	auto const pbrMetallicRoughness_program_name = "gltf_pbrMetallicRoughness"_name;

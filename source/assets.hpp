@@ -3,6 +3,7 @@
 #include "Lib/core/core.hpp"
 #include "Lib/opengl/.hpp"
 #include "Lib/render/.hpp"
+#include "Lib/scene/.hpp"
 #include "Lib/asset_kitchen/glsl/.hpp"
 #include "Lib/asset_kitchen/gltf/.hpp"
 
@@ -20,6 +21,8 @@ struct Assets
 	Managed<Geometry::Primitive> primitives;
 	Managed<unique_ptr<Render::IMaterial>> materials;
 	Managed<Render::Mesh> meshes;
+	// Scene resources
+	Managed<Scene::Transform> transforms;
 
 	explicit Assets(Desriptions const & desriptions) :
 		desriptions(desriptions)
@@ -54,6 +57,6 @@ struct Assets
 	void load_gltf(Name const & name)
 	{
 		auto const gltf_data = GLTF::Load(desriptions.gltf.get(name));
-		GLTF::Convert(gltf_data, textures, materials, primitives, meshes);
+		GLTF::Convert(gltf_data, textures, materials, primitives, meshes, transforms);
 	}
 };
