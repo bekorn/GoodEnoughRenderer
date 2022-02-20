@@ -79,6 +79,11 @@ struct Game final : IRenderer
 			.far = 10,
 			.aspect_ratio = f32(resolution.x) / f32(resolution.y),
 		};
+
+		// load all the meshes to the gpu
+		for (auto & [_, mesh] : assets.meshes.resources)
+			for (auto & drawable : mesh.drawables)
+				drawable.load(assets.programs.get(GLTF::pbrMetallicRoughness_program_name));
 	}
 
 	void render(GLFW::Window const & window, FrameInfo const & frame_data) final
@@ -93,20 +98,23 @@ struct Game final : IRenderer
 
 		glEnable(GL_DEPTH_TEST);
 
-		auto const view = visit([](Camera auto const & c){ return c.get_view(); }, camera);
-		auto const projection = visit([](Camera auto const & c){ return c.get_projection(); }, camera);
-		auto const view_projection = projection * view;
+		auto view = visit([](Camera auto & c){ return c.get_view(); }, camera);
+		auto projection = visit([](Camera auto & c){ return c.get_projection(); }, camera);
+		auto view_projection = projection * view;
 
 		glUseProgram(assets.programs.get(GLTF::pbrMetallicRoughness_program_name).id);
 
-		for (auto const & [key, mesh]: assets.meshes.resources)
+		for (auto & [key, node]: assets.nodes.resources)
 		{
-			auto const model = mesh.transform.calculate_transform();
-			auto const transform = view_projection * model;
+			if (node.mesh == nullptr)
+				continue;
+
+			auto model = node.transform.calculate_transform();
+			auto transform = view_projection * model;
 			// TODO(bekorn): find a proper location
 			glUniformMatrix4fv(10, 1, false, begin(transform));
 
-			for (auto const & drawable: mesh.drawables)
+			for (auto & drawable: node.mesh->drawables)
 			{
 				drawable.named_material.data->set_uniforms();
 

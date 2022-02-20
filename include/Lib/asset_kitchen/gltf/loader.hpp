@@ -267,7 +267,7 @@ namespace GLTF
 
 				Node node{
 					.name = node_name_generator.get(gltf_node, "name"),
-					.mesh_index = GetU32(gltf_node, "mesh"),
+					.mesh_index = GetOptionalU32(gltf_node, "mesh"),
 				};
 
 				if (auto member = gltf_node.FindMember("matrix"); member != gltf_node.MemberEnd())
@@ -281,9 +281,6 @@ namespace GLTF
 					f32x3 skew;
 					f32x4 perspective;
 					glm::decompose(matrix, node.scale, node.rotation, node.translation, skew, perspective);
-
-					// appearently glm decompose works incorrectly, https://stackoverflow.com/a/56587367/2073225
-					node.rotation = glm::conjugate(node.rotation);
 				}
 				else
 				{
@@ -291,8 +288,6 @@ namespace GLTF
 					auto rotation = GetF32x4(gltf_node, "rotation", {0, 0, 0, 1});			 // gltf order (x, y, z, w)
 					node.rotation = f32quat(rotation.w, rotation.x, rotation.y, rotation.z); // glm  order (w, x, y, z)
 					node.scale = GetF32x3(gltf_node, "scale", f32x3{1, 1, 1});
-
-					glm::quat();
 				}
 
 				loaded.nodes.push_back(node);

@@ -73,6 +73,59 @@ struct Editor final : IRenderer
 		End();
 	}
 
+	void node_settings_window()
+	{
+		using namespace ImGui;
+
+		Begin("Node Settings", nullptr, ImGuiWindowFlags_NoCollapse);
+
+		static Name node_name;
+		bool node_changed = false;
+		if (BeginCombo("Node", node_name.string.data()))
+		{
+			// TODO(bekorn): remove .resources access, Managed should provide an API for this
+			for (auto const & [name, _]: assets.nodes.resources)
+				if (Selectable(name.string.data()))
+					node_name = name, node_changed = true;
+
+			EndCombo();
+		}
+		if (not assets.nodes.resources.contains(node_name))
+		{
+			Text("Pick a node");
+			End();
+			return;
+		}
+		auto & node = assets.nodes.get(node_name);
+
+
+		LabelText("Parent", "<TODO>");
+		LabelText("Mesh", "<TODO>");
+
+
+		Spacing(), Separator(), Text("Transform");
+		auto & transform = node.transform;
+
+		SliderFloat3("Position", begin(transform.position), -2, 2, "%.2f");
+
+		static f32x3 mesh_orientation;
+		if (node_changed)
+		{
+			mesh_orientation = glm::degrees(glm::eulerAngles(node.transform.rotation));
+			mesh_orientation = glm::mod(mesh_orientation, 360.f);
+		}
+		if (SliderFloat3("Rotation", begin(mesh_orientation), 0, 360, "%.2f"))
+		{
+			transform.rotation = glm::quat(glm::radians(mesh_orientation));
+		}
+
+		auto scalar_scale = transform.scale.x;
+		SliderFloat("Scale", &scalar_scale, 0.001, 10, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+		transform.scale = f32x3(scalar_scale);
+
+		End();
+	}
+
 	void mesh_settings_window()
 	{
 		using namespace ImGui;
@@ -80,13 +133,12 @@ struct Editor final : IRenderer
 		Begin("Mesh Settings", nullptr, ImGuiWindowFlags_NoCollapse);
 
 		static Name mesh_name;
-		bool mesh_changed = false;
 		if (BeginCombo("Mesh", mesh_name.string.data()))
 		{
 			// TODO(bekorn): remove .resources access, Managed should provide an API for this
 			for (auto const & [name, _]: assets.meshes.resources)
 				if (Selectable(name.string.data()))
-					mesh_name = name, mesh_changed = true;
+					mesh_name = name;
 
 			EndCombo();
 		}
@@ -98,26 +150,6 @@ struct Editor final : IRenderer
 		}
 		auto & mesh = assets.meshes.get(mesh_name);
 
-
-		Spacing(), Separator(), Text("Transform");
-		auto & transform = mesh.transform;
-
-		SliderFloat3("Position", begin(transform.position), -2, 2, "%.2f");
-
-		static f32x3 mesh_orientation;
-		if (mesh_changed)
-		{
-			mesh_orientation = glm::degrees(glm::eulerAngles(mesh.transform.rotation));
-			mesh_orientation = glm::mod(mesh_orientation, 360.f);
-		}
-		if (SliderFloat3("Rotation", begin(mesh_orientation), 0, 360, "%.2f"))
-		{
-			transform.rotation = glm::quat(glm::radians(mesh_orientation));
-		}
-
-		auto scalar_scale = transform.scale.x;
-		SliderFloat("Scale", &scalar_scale, 0.001, 10, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
-		transform.scale = f32x3(scalar_scale);
 
 		Spacing(), Separator(), Text("Drawables");
 
@@ -137,7 +169,7 @@ struct Editor final : IRenderer
 
 		{
 			bool any_vertex_array_loaded = false;
-			for (auto const & drawable: mesh.drawables)
+			for (auto & drawable: mesh.drawables)
 				any_vertex_array_loaded |= drawable.is_loaded();
 
 			if (any_vertex_array_loaded)
@@ -343,14 +375,14 @@ struct Editor final : IRenderer
 	}
 
 	void create() final
-	{
-	}
+	{}
 
 	void render(GLFW::Window const & window, FrameInfo const & frame_data) final
 	{
 		metrics_window(frame_data);
 		game_window();
 		game_settings_window();
+		node_settings_window();
 		mesh_settings_window();
 		textures_window();
 		program_window();

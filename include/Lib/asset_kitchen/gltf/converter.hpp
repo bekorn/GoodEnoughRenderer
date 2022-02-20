@@ -90,7 +90,7 @@ namespace GLTF
 		Managed<unique_ptr<Render::IMaterial>> & materials,
 		Managed<Geometry::Primitive> & primitives,
 		Managed<Render::Mesh> & meshes,
-		Managed<Scene::Transform> & transforms
+		Managed<Scene::Node> & nodes
 	)
 	{
 		using namespace Helpers;
@@ -278,18 +278,20 @@ namespace GLTF
 		}
 
 		// TODO(bekorn): Convert nodes
-		//  currently only using the transform,use parent and mesh as well
+		//  currently only using the transform and mesh, use parent as well
 		for (auto & loaded_node: loaded.nodes)
 		{
-			transforms.generate(loaded_node.name, Scene::Transform{
-				.position = loaded_node.translation,
-				.rotation = loaded_node.rotation,
-				.scale = loaded_node.scale,
+			nodes.generate(loaded_node.name, Scene::Node{
+				.parent = nullptr,
+				.transform = {
+					.position = loaded_node.translation,
+					.rotation = loaded_node.rotation,
+					.scale = loaded_node.scale,
+				},
+				.mesh = loaded_node.mesh_index.has_value()
+						? &meshes.get(loaded.meshes[loaded_node.mesh_index.value()].name)
+						: nullptr,
 			});
-
-			// TODO(bekorn): !!! very temporary, the relation between node and mesh will be reversed next commit
-			auto & mesh_name = loaded.meshes[loaded_node.mesh_index].name;
-			meshes.get(mesh_name).transform = transforms.get(loaded_node.name);
 		}
 	}
 }

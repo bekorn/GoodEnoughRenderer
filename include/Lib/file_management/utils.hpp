@@ -100,7 +100,7 @@ namespace File
 			{
 				auto member = obj.FindMember(key.data());
 				if (member != obj.MemberEnd())
-					return prefix + member->value.GetString();
+					return prefix + std::to_string(counter++) + ':' + member->value.GetString();
 				else
 					return prefix + std::to_string(counter++);
 			}

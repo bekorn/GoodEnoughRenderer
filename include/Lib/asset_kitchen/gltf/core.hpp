@@ -116,7 +116,7 @@ namespace GLTF
 	struct Node
 	{
 		std::string name;
-		u32 mesh_index;
+		optional<u32> mesh_index;
 		f32x3 translation;
 		f32quat rotation;
 		f32x3 scale;

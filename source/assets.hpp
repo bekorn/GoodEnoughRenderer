@@ -22,7 +22,7 @@ struct Assets
 	Managed<unique_ptr<Render::IMaterial>> materials;
 	Managed<Render::Mesh> meshes;
 	// Scene resources
-	Managed<Scene::Transform> transforms;
+	Managed<Scene::Node> nodes;
 
 	explicit Assets(Desriptions const & desriptions) :
 		desriptions(desriptions)
@@ -57,6 +57,6 @@ struct Assets
 	void load_gltf(Name const & name)
 	{
 		auto const gltf_data = GLTF::Load(desriptions.gltf.get(name));
-		GLTF::Convert(gltf_data, textures, materials, primitives, meshes, transforms);
+		GLTF::Convert(gltf_data, textures, materials, primitives, meshes, nodes);
 	}
 };
