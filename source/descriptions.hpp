@@ -43,8 +43,8 @@ struct Desriptions
 		gltf.generate("OrientationTest"_name).data = {
 			.name = "OrientationTest", .path = test_assets / "orientation test/OrientationTest.gltf"
 		};
-		gltf.generate("Three of Swords"_name).data = {
-			.name = "Three of Swords", .path = test_assets / "Three of Swords/scene.gltf"
+		gltf.generate("ThreeOfSwords"_name).data = {
+			.name = "ThreeOfSwords", .path = test_assets / "Three of Swords/scene.gltf"
 		};
 	}
 };

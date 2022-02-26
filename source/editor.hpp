@@ -83,24 +83,38 @@ struct Editor final : IRenderer
 		bool node_changed = false;
 		if (BeginCombo("Node", node_name.string.data()))
 		{
-			// TODO(bekorn): remove .resources access, Managed should provide an API for this
-			for (auto const & [name, _]: assets.nodes.resources)
-				if (Selectable(name.string.data()))
-					node_name = name, node_changed = true;
+			f32 indent = ImGui::GetStyle().IndentSpacing;
+			for (auto & node: assets.scene_tree.depth_first())
+			{
+				if (node.depth) Indent(indent * node.depth);
+
+				if (Selectable(node.name.string.data()))
+					node_name = node.name, node_changed = true;
+
+				if (node.depth) ImGui::Unindent(indent * node.depth);
+			}
 
 			EndCombo();
 		}
-		if (not assets.nodes.resources.contains(node_name))
+		if (not assets.scene_tree.named_indices.resources.contains(node_name))
 		{
 			Text("Pick a node");
 			End();
 			return;
 		}
-		auto & node = assets.nodes.get(node_name);
+		auto & node_index = assets.scene_tree.named_indices.get(node_name);
+		auto & node = assets.scene_tree.get(node_index);
 
 
-		LabelText("Parent", "<TODO>");
-		LabelText("Mesh", "<TODO>");
+		auto const & parent_name = node.depth == 0
+								   ? "-"
+								   : assets.scene_tree.get({node.depth - 1, node.parent_index}).name.string.data();
+		LabelText("Parent", "%s", parent_name);
+
+		auto const & mesh_name = node.mesh == nullptr
+								 ? "-"
+								 : "<TODO>";
+		LabelText("Mesh", "%s", mesh_name);
 
 
 		Spacing(), Separator(), Text("Transform");

@@ -290,9 +290,33 @@ namespace GLTF
 					node.scale = GetF32x3(gltf_node, "scale", f32x3{1, 1, 1});
 				}
 
+				if (auto member = gltf_node.FindMember("children"); member != gltf_node.MemberEnd())
+					for (auto & child_index : member->value.GetArray())
+						node.child_indices.push_back(child_index.GetUint());
+
 				loaded.nodes.push_back(node);
 			}
 		}
+
+		// Parse scene
+		if (auto const member = document.FindMember("scenes"); member != document.MemberEnd())
+		{
+			u32 scene_index = 0;
+			if (auto member = document.FindMember("scene"); member != document.MemberEnd())
+				scene_index = member->value.GetUint();
+
+			auto const & gltf_scene = member->value.GetArray()[scene_index].GetObject();
+
+			if (auto member = gltf_scene.FindMember("nodes"); member != gltf_scene.MemberEnd())
+				for (auto & node_index : member->value.GetArray())
+					loaded.scene.node_indices.push_back(node_index.GetUint());
+		}
+		else
+		{
+			for (auto i = 0; i < loaded.nodes.size(); i++)
+				loaded.scene.node_indices.push_back(i);
+		}
+		loaded.scene.name = description.name + ":scene";
 
 		return loaded;
 	}

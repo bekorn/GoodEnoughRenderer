@@ -1,4 +1,3 @@
-- Scene hierarchy
 - Camera
 - Attribute debugging
 - Mouse input for game

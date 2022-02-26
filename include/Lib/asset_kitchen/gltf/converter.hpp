@@ -90,7 +90,7 @@ namespace GLTF
 		Managed<unique_ptr<Render::IMaterial>> & materials,
 		Managed<Geometry::Primitive> & primitives,
 		Managed<Render::Mesh> & meshes,
-		Managed<Scene::Node> & nodes
+		::Scene::Tree & scene_tree
 	)
 	{
 		using namespace Helpers;
@@ -212,12 +212,14 @@ namespace GLTF
 
 					auto index_type = IntoAttributeType(accessor.vector_data_type, accessor.normalized);
 
+					// buffers other than vertex attributes are always tightly packed
+					// see spec section 3.6.2.1. Overview, paragraph 2
 					if (index_type == Geometry::Attribute::Type::U8)
 					{
 						auto source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<u8>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
 
-						primitive.indices.resize(source.size());
+						primitive.indices.reserve(source.size());
 						for (auto index: source)
 							primitive.indices.emplace_back(index);
 					}
@@ -226,7 +228,7 @@ namespace GLTF
 						auto source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<u16>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
 
-						primitive.indices.resize(source.size());
+						primitive.indices.reserve(source.size());
 						for (auto index: source)
 							primitive.indices.emplace_back(index);
 					}
@@ -235,10 +237,9 @@ namespace GLTF
 						auto source = loaded.buffers[buffer_view.buffer_index]
 							.span_as<u32>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
 
-						// buffers other than vertex attributes are always tightly packed
-						// see spec section 3.6.2.1. Overview, paragraph 2
-						primitive.indices.resize(source.size());
-						std::memcpy(primitive.indices.data(), source.data(), source.size());
+						primitive.indices.reserve(source.size());
+						for (auto index: source)
+							primitive.indices.emplace_back(index);
 					}
 				}
 				else
@@ -277,21 +278,45 @@ namespace GLTF
 			}
 		}
 
-		// TODO(bekorn): Convert nodes
-		//  currently only using the transform and mesh, use parent as well
-		for (auto & loaded_node: loaded.nodes)
+		// Convert scene
 		{
-			nodes.generate(loaded_node.name, Scene::Node{
-				.parent = nullptr,
-				.transform = {
-					.position = loaded_node.translation,
-					.rotation = loaded_node.rotation,
-					.scale = loaded_node.scale,
-				},
-				.mesh = loaded_node.mesh_index.has_value()
-						? &meshes.get(loaded.meshes[loaded_node.mesh_index.value()].name)
-						: nullptr,
-			});
+			struct NodeToAdd
+			{
+				u32 loaded_index; // in loaded
+				u32 parent_index; // in scene_tree
+				u32 depth;
+			};
+			std::queue<NodeToAdd> queue;
+
+			for (auto & node_index: loaded.scene.node_indices)
+				queue.push({.loaded_index = node_index, .parent_index = 0, .depth = 0});
+
+			while (not queue.empty())
+			{
+				auto [loaded_index, parent_index, depth] = queue.front();
+				queue.pop();
+
+				auto & loaded_node = loaded.nodes[loaded_index];
+
+				auto [_, index] = scene_tree.add({
+					.name = loaded_node.name,
+					.depth = depth,
+					.parent_index = parent_index,
+					.transform = {
+						.position = loaded_node.translation,
+						.rotation = loaded_node.rotation,
+						.scale = loaded_node.scale,
+					},
+					.mesh = loaded_node.mesh_index.has_value()
+							? &meshes.get(loaded.meshes[loaded_node.mesh_index.value()].name)
+							: nullptr,
+				});
+
+				for (auto & child_index: loaded_node.child_indices)
+					queue.push({.loaded_index = child_index, .parent_index = index, .depth = depth + 1});
+			}
+
+			scene_tree.update_transforms();
 		}
 	}
 }

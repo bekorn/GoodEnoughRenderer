@@ -116,10 +116,17 @@ namespace GLTF
 	struct Node
 	{
 		std::string name;
-		optional<u32> mesh_index;
 		f32x3 translation;
 		f32quat rotation;
 		f32x3 scale;
+		optional<u32> mesh_index;
+		vector<u32> child_indices;
+	};
+
+	struct Scene
+	{
+		std::string name;
+		vector<u32> node_indices;
 	};
 
 	struct LoadedData
@@ -136,6 +143,7 @@ namespace GLTF
 		vector<Material> materials;
 
 		vector<Node> nodes;
+		Scene scene;
 	};
 
 	auto const pbrMetallicRoughness_program_name = "gltf_pbrMetallicRoughness"_name;

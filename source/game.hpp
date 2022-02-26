@@ -104,23 +104,25 @@ struct Game final : IRenderer
 
 		glUseProgram(assets.programs.get(GLTF::pbrMetallicRoughness_program_name).id);
 
-		for (auto & [key, node]: assets.nodes.resources)
-		{
-			if (node.mesh == nullptr)
-				continue;
+		assets.scene_tree.update_transforms();
 
-			auto model = node.transform.calculate_transform();
-			auto transform = view_projection * model;
-			// TODO(bekorn): find a proper location
-			glUniformMatrix4fv(10, 1, false, begin(transform));
-
-			for (auto & drawable: node.mesh->drawables)
+		for (auto & depth: assets.scene_tree.nodes)
+			for (auto & node: depth)
 			{
-				drawable.named_material.data->set_uniforms();
+				if (node.mesh == nullptr)
+					continue;
 
-				glBindVertexArray(drawable.vertex_array.id);
-				glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+				auto transform = view_projection * node.matrix;
+				// TODO(bekorn): find a proper location
+				glUniformMatrix4fv(10, 1, false, begin(transform));
+
+				for (auto & drawable: node.mesh->drawables)
+				{
+					drawable.named_material.data->set_uniforms();
+
+					glBindVertexArray(drawable.vertex_array.id);
+					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+				}
 			}
-		}
 	}
 };
