@@ -10,7 +10,7 @@ namespace Render
 	struct Drawable
 	{
 		Geometry::Primitive const & primitive;
-		Named<unique_ptr<IMaterial>> const named_material;
+		Named<unique_one<IMaterial>> const named_material;
 
 		GL::VertexArray vertex_array;
 

@@ -19,7 +19,7 @@ struct Assets
 	Managed<GL::Texture2D> textures;
 	// Render resources
 	Managed<Geometry::Primitive> primitives;
-	Managed<unique_ptr<Render::IMaterial>> materials;
+	Managed<unique_one<Render::IMaterial>> materials;
 	Managed<Render::Mesh> meshes;
 	// Scene resources
 	Scene::Tree scene_tree;
@@ -41,16 +41,15 @@ struct Assets
 	{
 		auto const glsl_data = GLSL::Load(desriptions.glsl.get(name));
 
-		// TODO(bekorn): remove .resource accesses, Manager should have sufficial API
 		if (auto expected = GLSL::Convert(glsl_data))
 		{
-			programs.resources[name] = expected.into_result();
-			program_errors.resources[name] = {};
+			programs.get_or_generate(name) = expected.into_result();
+			program_errors.get_or_generate(name) = {};
 		}
 		else
 		{
-			programs.resources[name] = {};
-			program_errors.resources[name] = expected.into_error();
+			programs.get_or_generate(name) = {};
+			program_errors.get_or_generate(name) = expected.into_error();
 		}
 	}
 

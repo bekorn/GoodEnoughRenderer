@@ -87,7 +87,7 @@ namespace GLTF
 	void Convert(
 		LoadedData const & loaded,
 		Managed<GL::Texture2D> & textures,
-		Managed<unique_ptr<Render::IMaterial>> & materials,
+		Managed<unique_one<Render::IMaterial>> & materials,
 		Managed<Geometry::Primitive> & primitives,
 		Managed<Render::Mesh> & meshes,
 		::Scene::Tree & scene_tree
@@ -128,7 +128,7 @@ namespace GLTF
 			if (loaded_mat.pbr_metallic_roughness.has_value())
 			{
 				auto & pbr_mat = loaded_mat.pbr_metallic_roughness.value();
-				auto mat = make_unique<Render::Material_gltf_pbrMetallicRoughness>();
+				auto mat = make_unique_one<Render::Material_gltf_pbrMetallicRoughness>();
 
 				// TODO: use texcoord indices as well
 				if (pbr_mat.base_color_texture)

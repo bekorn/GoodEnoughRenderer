@@ -75,19 +75,29 @@ using std::move;
 using std::vector, std::array, std::span;
 using std::optional, std::nullopt;
 using std::variant;
-using std::unique_ptr, std::make_unique;
 
+template<typename T>
+using unique_one = std::unique_ptr<T>;
+template<typename T>
+using unique_array = std::unique_ptr<T[]>;
+
+template<typename T, typename... Args>
+auto inline make_unique_one(Args && ... args)
+{ return std::make_unique<T, Args...>(std::forward<Args>(args)...); }
+template<typename T, typename... Args>
+auto inline make_unique_array(Args && ... args)
+{ return std::make_unique<T[], Args...>(std::forward<Args>(args)...); }
 
 // Simple byte buffer
 struct ByteBuffer
 {
-	unique_ptr<byte[]> data;
+	unique_array<byte> data;
 	usize size;
 
 	ByteBuffer() = default;
 
 	explicit ByteBuffer(usize size) :
-		data(make_unique<byte[]>(size)),
+		data(new byte[size]),
 		size(size)
 	{}
 
@@ -126,9 +136,7 @@ struct ByteBuffer
 
 	template<typename T>
 	auto data_as() const
-	{
-		return reinterpret_cast<T*>(data.get());
-	}
+	{ return reinterpret_cast<T*>(data.get()); }
 };
 
 // shortcuts

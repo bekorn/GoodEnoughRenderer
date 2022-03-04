@@ -81,7 +81,7 @@ struct Game final : IRenderer
 		};
 
 		// load all the meshes to the gpu
-		for (auto & [_, mesh] : assets.meshes.resources)
+		for (auto & [_, mesh] : assets.meshes)
 			for (auto & drawable : mesh.drawables)
 				drawable.load(assets.programs.get(GLTF::pbrMetallicRoughness_program_name));
 	}

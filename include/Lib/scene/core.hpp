@@ -84,7 +84,7 @@ namespace Scene
 		struct DepthFirst
 		{
 			u32 version;
-			std::unique_ptr<Node *[]> traversal;
+			unique_array<Node *> traversal;
 			Node ** traversal_end;
 
 			explicit DepthFirst(Tree & tree):
@@ -110,35 +110,21 @@ namespace Scene
 						node2iter.emplace(&node, node_iter);
 					}
 
-				std::copy(linked_traversal.begin(), linked_traversal.end(), traversal.get());
+				std::ranges::copy(linked_traversal, traversal.get());
 			}
 
-			struct Iterator
-			{
-				Node ** current;
-
-				void operator++()
-				{ current++; }
-
-				Node & operator*()
-				{ return **current; }
-
-				bool operator!=(Iterator const & other)
-				{ return current != other.current; }
-			};
-
-			Iterator begin() const
+			PointerIterator<Node> begin() const
 			{ return {traversal.get()}; }
 
-			Iterator end() const
+			PointerIterator<Node> end() const
 			{ return {traversal_end}; }
 		};
 
-		unique_ptr<DepthFirst> _cached_depth_first;
+		unique_one<DepthFirst> _cached_depth_first;
 		DepthFirst const & depth_first()
 		{
 			if (_cached_depth_first == nullptr || _cached_depth_first->version != version)
-				_cached_depth_first = std::make_unique<DepthFirst>(*this);
+				_cached_depth_first.reset(new DepthFirst(*this));
 
 			return *_cached_depth_first;
 		}

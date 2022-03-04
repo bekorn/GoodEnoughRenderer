@@ -6,7 +6,6 @@
 #include "core.hpp"
 
 // inspired by https://github.com/skypjack/entt/blob/master/src/entt/core/hashed_string.hpp
-// TODO(bekorn): make this constexpr (remove string hashing as much as possible)
 // TODO(bekorn): Name.string should only be present when Editing, Game should not care about human readability
 struct Name
 {
@@ -38,7 +37,7 @@ struct Name
 	{ return out << std::right << std::setw(20) << name.hash << std::left << '|' << name.string; }
 };
 
-Name operator""_name (const char * literal, usize size)
+Name operator ""_name(char const * literal, usize size)
 {
 	return std::string_view(literal, size);
 }
@@ -61,7 +60,7 @@ struct Managed
 	template<typename... Args>
 	Named<T> generate(Name const & name, Args && ... args)
 	{
-		auto [it, is_emplaced] = resources.try_emplace(name, std::forward<Args>(args)...);
+		auto[it, is_emplaced] = resources.try_emplace(name, std::forward<Args>(args)...);
 		if (not is_emplaced)
 			std::cerr << "!! Resource is not emplaced: " << name << '\n';
 		return {it->first, it->second};
@@ -79,18 +78,21 @@ struct Managed
 	Named<T> get_named(Name const & name)
 	{
 		auto it = resources.find(name);
-		return { it->first, it->second };
+		return {it->first, it->second};
 	}
 
-	// TODO(bekorn): there could be a better way of this, returned value does not tell anything valuable,
-	//  the caller has to do the same branching on the call site, maybe just copy this code to all the call sites
-	//  having begin, end, and find can shorten the call stie code as this one
-	T * find(Name const & name)
-	{
-		auto it = resources.find(name);
-		if (it == resources.end())
-			return nullptr;
-		else
-			return &it->second;
-	}
+	T & get_or_generate(Name const & name)
+	{ return resources[name]; }
+
+	auto contains(Name const & name) const
+	{ return resources.contains(name); }
+
+	auto find(Name const & name) const
+	{ return resources.find(name); }
+
+	auto begin()
+	{ return resources.begin(); }
+
+	auto end()
+	{ return resources.end(); }
 };

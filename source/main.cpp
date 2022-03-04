@@ -43,10 +43,10 @@ i32 main(i32 argc, char** argv)
 	Assets assets(desriptions);
 	assets.create();
 
-	vector<unique_ptr<IRenderer>> renderers;
+	vector<unique_one<IRenderer>> renderers;
 	{
-		auto game = make_unique<Game>(assets);
-		auto editor = make_unique<Editor>(assets, *game);
+		auto game = make_unique_one<Game>(assets);
+		auto editor = make_unique_one<Editor>(assets, *game);
 
 		renderers.emplace_back(move(game));
 		renderers.emplace_back(move(editor));

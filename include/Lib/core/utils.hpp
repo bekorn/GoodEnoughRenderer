@@ -53,6 +53,23 @@ struct Timer
 	}
 };
 
+
+// use this iterator to iterate an array of pointers as references
+template<typename T>
+struct PointerIterator
+{
+	T ** current;
+
+	void operator++()
+	{ current++; }
+
+	T & operator*()
+	{ return **current; }
+
+	bool operator!=(PointerIterator const & other)
+	{ return current != other.current; }
+};
+
 // TODO(bekorn): this is demonstrative but still much better than depending on macros
 void log(std::string_view message, std::source_location const location = std::source_location::current())
 {

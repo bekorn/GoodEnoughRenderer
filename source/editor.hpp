@@ -6,7 +6,6 @@
 #include "Lib/render/.hpp"
 #include "Lib/imgui/.hpp"
 
-#include "globals.hpp"
 #include "renderer.hpp"
 #include "game.hpp"
 
@@ -83,7 +82,7 @@ struct Editor final : IRenderer
 		bool node_changed = false;
 		if (BeginCombo("Node", node_name.string.data()))
 		{
-			f32 indent = ImGui::GetStyle().IndentSpacing;
+			auto indent = ImGui::GetStyle().IndentSpacing;
 			for (auto & node: assets.scene_tree.depth_first())
 			{
 				if (node.depth) Indent(indent * node.depth);
@@ -96,7 +95,7 @@ struct Editor final : IRenderer
 
 			EndCombo();
 		}
-		if (not assets.scene_tree.named_indices.resources.contains(node_name))
+		if (not assets.scene_tree.named_indices.contains(node_name))
 		{
 			Text("Pick a node");
 			End();
@@ -149,14 +148,13 @@ struct Editor final : IRenderer
 		static Name mesh_name;
 		if (BeginCombo("Mesh", mesh_name.string.data()))
 		{
-			// TODO(bekorn): remove .resources access, Managed should provide an API for this
-			for (auto const & [name, _]: assets.meshes.resources)
+			for (auto const & [name, _]: assets.meshes)
 				if (Selectable(name.string.data()))
 					mesh_name = name;
 
 			EndCombo();
 		}
-		if (not assets.meshes.resources.contains(mesh_name))
+		if (not assets.meshes.contains(mesh_name))
 		{
 			Text("Pick a mesh");
 			End();
@@ -259,16 +257,15 @@ struct Editor final : IRenderer
 		static Name texture_name;
 		if (BeginCombo("Texture", texture_name.string.data()))
 		{
-			// TODO(bekorn): remove .resources access, Managed should provide an API for this
-			for (auto & [name, _]: assets.textures.resources)
+			for (auto & [name, _]: assets.textures)
 				if (Selectable(name.string.data()))
 					texture_name = name;
 
 			EndCombo();
 		}
-		if (auto maybe = assets.textures.find(texture_name))
+		if (auto it = assets.textures.find(texture_name); it != assets.textures.end())
 		{
-			auto & texture = *maybe;
+			auto & [_, texture] = *it;
 			SameLine(), Text("(id %d)", texture.id);
 
 			Image(
@@ -293,14 +290,13 @@ struct Editor final : IRenderer
 		static Name program_name;
 		if (BeginCombo("Program", program_name.string.data()))
 		{
-			// TODO(bekorn): remove .resources access, Managed should provide an API for this
-			for (auto const & [name, _]: assets.programs.resources)
+			for (auto const & [name, _]: assets.programs)
 				if (Selectable(name.string.data()))
 					program_name = name;
 
 			EndCombo();
 		}
-		if (not assets.programs.resources.contains(program_name))
+		if (not assets.programs.contains(program_name))
 		{
 			Text("Pick a program");
 			End();
