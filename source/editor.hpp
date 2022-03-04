@@ -177,9 +177,8 @@ struct Editor final : IRenderer
 			for (auto & drawable: mesh.drawables)
 				ss << drawable.vertex_array.id << ", ";
 			LabelText("VertexArrays", "%s", ss.str().data());
-		}
 
-		{
+
 			bool any_vertex_array_loaded = false;
 			for (auto & drawable: mesh.drawables)
 				any_vertex_array_loaded |= drawable.is_loaded();
@@ -235,11 +234,34 @@ struct Editor final : IRenderer
 		}
 
 
-		Spacing(), Separator(), Text("Material");
+		Spacing(), Separator();
+		LabelText("Material", "%s", drawable.named_material.name.string.data());
 
-		LabelText("Name", "%s", drawable.named_material.name.string.data());
+		End();
+	}
 
-		auto & material = drawable.named_material.data;
+	void material_settings_window()
+	{
+		using namespace ImGui;
+
+		Begin("Material Settings", nullptr, ImGuiWindowFlags_NoCollapse);
+
+		static Name material_name;
+		if (BeginCombo("Material", material_name.string.data()))
+		{
+			for (auto const & [name, _]: assets.materials)
+				if (Selectable(name.string.data()))
+					material_name = name;
+
+			EndCombo();
+		}
+		if (not assets.materials.contains(material_name))
+		{
+			Text("Pick a material");
+			End();
+			return;
+		}
+		auto & material = assets.materials.get(material_name);
 
 		ColorEdit4("Base Color", begin(
 			dynamic_cast<Render::Material_gltf_pbrMetallicRoughness*>(material.get())->base_color_factor
@@ -394,6 +416,7 @@ struct Editor final : IRenderer
 		game_settings_window();
 		node_settings_window();
 		mesh_settings_window();
+		material_settings_window();
 		textures_window();
 		program_window();
 		camera_window();
