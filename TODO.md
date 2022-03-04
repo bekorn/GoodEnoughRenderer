@@ -1,11 +1,25 @@
+Editor
 - Camera
-- Attribute debugging
-- Mouse input for game
-- A border shader to indicate selection
+- Mouse input
+- Visualizing geometry attributes
+- An outline shader to indicate selection
+- Object picking with mouse
 - Transform gizmos
-- Material data
+
+Rendering
+- Material data blocks
+- GLTF materials
 - Uniform buffers
+- Deferred rendering
 - Instanced rendering
-  - Particles and foliage
-- Configure OpenGL into a Z-up right-handed coordinate system
+  - Particles
+  - Foliage
+- Z-up right-handed coordinate system
+- Mesh shaders
+
+Core
+- Entity Component System (or some equilevent)
 - Logging
+- Profiling (flame chart)
+- Compute shaders
+- Project restructure
