@@ -1,7 +1,11 @@
-in vec3 vertex_position;
-in vec3 vertex_normal;
-in vec3 vertex_color;
-in vec2 vertex_texcoord;
+in Vertex
+{
+    vec3 position;
+    vec3 normal;
+    vec3 color;
+    vec2 texcoord;
+} vertex;
+
 
 layout(binding = 0)  uniform sampler2D base_color_sampler;
 layout(location = 0) uniform vec4      base_color_factor;
@@ -38,7 +42,7 @@ vec3 get_base_color()
 
     if (is_sampler_bound(base_color_sampler))
     {
-        base_color *= texture(base_color_sampler, vertex_texcoord).rgb;
+        base_color *= texture(base_color_sampler, vertex.texcoord).rgb;
     }
 
     // TODO(bekorn): gltf specifies that baseColor.a is used for actual alpha values, so this check does not work on baseColor
@@ -54,7 +58,7 @@ vec3 get_emission()
 {
     if (is_sampler_bound(emissive_sampler))
     {
-        return texture(emissive_sampler, vertex_texcoord).rgb;
+        return texture(emissive_sampler, vertex.texcoord).rgb;
     }
     else
     {
@@ -66,7 +70,7 @@ float get_occlusion()
 {
     if (is_sampler_bound(occlusion_sampler))
     {
-        return texture(occlusion_sampler, vertex_texcoord).r;
+        return texture(occlusion_sampler, vertex.texcoord).r;
     }
     else
     {
@@ -76,11 +80,11 @@ float get_occlusion()
 
 vec3 get_normal()
 {
-    vec3 normal = normalize(vertex_normal);
+    vec3 normal = normalize(vertex.normal);
 
     if (is_sampler_bound(normal_sampler))
     {
-        //        vec3 normal_tex = normalize(texture(normal_sampler, vertex_texcoord).rgb * 2 - 1);
+        //        vec3 normal_tex = normalize(texture(normal_sampler, vertex.texcoord).rgb * 2 - 1);
         // TODO(bekorn): implement normal mapping (prerequisite: bi/tangent space attributes)
     }
 
@@ -93,7 +97,7 @@ void main()
 
     vec3 base_color = get_base_color();
 
-    vec3 light_dir = normalize(light_pos - vertex_position);
+    vec3 light_dir = normalize(light_pos - vertex.position);
 
     float light_intensity = dot(normal, light_dir);
     light_intensity *= get_occlusion();

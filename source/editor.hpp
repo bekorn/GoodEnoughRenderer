@@ -334,38 +334,96 @@ struct Editor final : IRenderer
 		if (auto const & error = assets.program_errors.get(program_name); not error.empty())
 			TextColored({255, 0, 0, 255}, "%s", error.data());
 
-		if (BeginTable("uniform_mappings", 3, ImGuiTableFlags_BordersInnerH))
+		if (BeginTable("attribute_mappings", 4, ImGuiTableFlags_BordersInnerH))
 		{
-			TableSetupColumn("Uniform Location"), TableSetupColumn("Type"), TableSetupColumn("Name");
+			TableSetupColumn("Attribute");
+			TableSetupColumn("Per Patch", ImGuiTableColumnFlags_WidthFixed);
+			TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100);
+			TableSetupColumn("Location", ImGuiTableColumnFlags_WidthFixed);
 			TableHeadersRow();
 
-			for (auto const & mapping : named_program.data.uniform_mappings)
+			for (auto const & attribute : named_program.data.attribute_mappings)
 			{
 				TableNextRow();
 				TableNextColumn();
-				Text("%d", mapping.location);
+				Text("%s", (std::stringstream() << attribute.key).str().data());
 				TableNextColumn();
-				Text("%s", GL::GLSLTypeToString(mapping.glsl_type).data());
+				Text("%s", attribute.per_patch ? "true" : "false");
 				TableNextColumn();
-				Text("%s", mapping.key.data());
+				Text("%s", GL::GLSLTypeToString(attribute.glsl_type).data());
+				TableNextColumn();
+				Text("%d", attribute.location);
 			}
 			EndTable();
 		}
 
-		if (BeginTable("attribute_mappings", 3, ImGuiTableFlags_BordersInnerH))
+		if (BeginTable("uniform_mappings", 3, ImGuiTableFlags_BordersInnerH))
 		{
-			TableSetupColumn("Attribute Location"), TableSetupColumn("Type"), TableSetupColumn("Name");
+			TableSetupColumn("Uniform");
+			TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100);
+			TableSetupColumn("Location", ImGuiTableColumnFlags_WidthFixed);
 			TableHeadersRow();
 
-			for (auto const & mapping : named_program.data.attribute_mappings)
+			for (auto const & uniform : named_program.data.uniform_mappings)
 			{
 				TableNextRow();
 				TableNextColumn();
-				Text("%d", mapping.location);
+				Text("%s", uniform.key.data());
 				TableNextColumn();
-				Text("%s", GL::GLSLTypeToString(mapping.glsl_type).data());
+				Text("%s", GL::GLSLTypeToString(uniform.glsl_type).data());
 				TableNextColumn();
-				Text("%s", (std::stringstream() << mapping.key).str().data());
+				Text("%d", uniform.location);
+			}
+			EndTable();
+		}
+
+		if (BeginTable("uniform_block_mappings", 2, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp))
+		{
+			TableSetupColumn("Uniform Block");
+			TableSetupColumn("Variables");
+			TableHeadersRow();
+
+			for (auto const & uniform_block : named_program.data.uniform_block_mappings)
+			{
+				TableNextRow();
+				TableNextColumn();
+				if (BeginTable("uniform_block", 3, ImGuiTableFlags_BordersInnerH))
+				{
+					TableSetupColumn("Name");
+					TableSetupColumn("Location", ImGuiTableColumnFlags_WidthFixed);
+					TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
+					TableHeadersRow();
+
+					TableNextRow();
+					TableNextColumn();
+					Text("%s", uniform_block.key.data());
+					TableNextColumn();
+					Text("%d", uniform_block.location);
+					TableNextColumn();
+					Text("%d", uniform_block.data_size);
+
+					EndTable();
+				}
+				TableNextColumn();
+				if (BeginTable("block_uniforms", 3, ImGuiTableFlags_BordersInnerH))
+				{
+					TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
+					TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100);
+					TableSetupColumn("Name");
+					TableHeadersRow();
+
+					for (auto const & uniform : uniform_block.uniforms)
+					{
+						TableNextRow();
+						TableNextColumn();
+						Text("%d", uniform.offset);
+						TableNextColumn();
+						Text("%s", GL::GLSLTypeToString(uniform.glsl_type).data());
+						TableNextColumn();
+						Text("%s", uniform.key.data());
+					}
+					EndTable();
+				}
 			}
 			EndTable();
 		}
@@ -407,11 +465,13 @@ struct Editor final : IRenderer
 	}
 
 	void create() final
-	{}
-
-	void render(GLFW::Window const & window, FrameInfo const & frame_data) final
 	{
-		metrics_window(frame_data);
+		ImGui::GetStyle().CellPadding.x = 6;
+	}
+
+	void render(GLFW::Window const & window, FrameInfo const & frame_info) final
+	{
+		metrics_window(frame_info);
 		game_window();
 		game_settings_window();
 		node_settings_window();
@@ -420,5 +480,7 @@ struct Editor final : IRenderer
 		textures_window();
 		program_window();
 		camera_window();
+
+//		ImGui::ShowDemoWindow();
 	}
 };

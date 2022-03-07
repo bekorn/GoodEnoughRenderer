@@ -161,6 +161,61 @@ namespace GL
 
 		// https://www.khronos.org/opengl/wiki/Program_Introspection#Interface_query
 
+		struct AttributeMapping
+		{
+			u32 location;
+			GLenum glsl_type; // just for debug purposes
+			bool per_patch;
+			Geometry::Attribute::Key key;
+		};
+		vector<AttributeMapping> attribute_mappings;
+
+		void update_attribute_mapping()
+		{
+			auto const interface = GL_PROGRAM_INPUT;
+
+			array const query_props{
+				GL_LOCATION,
+				GL_TYPE,
+				GL_IS_PER_PATCH,
+			};
+			array<i32, query_props.size()> query_results;
+
+			attribute_mappings.clear();
+
+			i32 max_name_size;
+			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
+			std::string name_buffer(max_name_size, 0);
+
+			i32 resource_size;
+			glGetProgramInterfaceiv(id, interface, GL_ACTIVE_RESOURCES, &resource_size);
+
+			attribute_mappings.reserve(resource_size);
+			for (auto i = 0; i < resource_size; ++i)
+			{
+				glGetProgramResourceiv(
+					id, interface, i,
+					query_props.size(), query_props.data(),
+					query_props.size(), nullptr, query_results.data()
+				);
+
+				i32 name_size;
+				glGetProgramResourceName(
+					id, interface, i,
+					name_buffer.size(), &name_size, name_buffer.data()
+				);
+
+				attribute_mappings.emplace_back(
+					AttributeMapping{
+						.location = static_cast<u32>(query_results[0]),
+						.glsl_type = static_cast<GLenum>(query_results[1]),
+						.per_patch = static_cast<bool>(query_results[2]),
+						.key = IntoAttributeKey(std::string_view(name_buffer.data(), name_size)),
+					}
+				);
+			}
+		};
+
 		struct UniformMapping
 		{
 			u32 location;
@@ -169,18 +224,9 @@ namespace GL
 		};
 		vector<UniformMapping> uniform_mappings;
 
-		struct AttributeMapping
+		void update_uniform_mapping()
 		{
-			u32 location;
-			GLenum glsl_type; // just for debug purposes
-			Geometry::Attribute::Key key;
-		};
-		vector<AttributeMapping> attribute_mappings;
-
-		// returns UniformMapping as a common denominator
-		static vector<UniformMapping> query_interface_mapping(ShaderProgram const & program, GLenum const interface)
-		{
-			vector<UniformMapping> mappings;
+			auto const interface = GL_UNIFORM;
 
 			array const query_props{
 				GL_LOCATION,
@@ -189,28 +235,34 @@ namespace GL
 			array<i32, query_props.size()> query_results;
 
 			i32 max_name_size;
-			glGetProgramInterfaceiv(program.id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
+			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
 			std::string name_buffer(max_name_size, 0);
 
-			i32 attribute_size;
-			glGetProgramInterfaceiv(program.id, interface, GL_ACTIVE_RESOURCES, &attribute_size);
+			i32 resource_size;
+			glGetProgramInterfaceiv(id, interface, GL_ACTIVE_RESOURCES, &resource_size);
 
-			mappings.reserve(attribute_size);
-			for (auto i = 0; i < attribute_size; ++i)
+			uniform_mappings.clear();
+
+			uniform_mappings.reserve(resource_size);
+			for (auto i = 0; i < resource_size; ++i)
 			{
 				glGetProgramResourceiv(
-					program.id, interface, i,
+					id, interface, i,
 					query_props.size(), query_props.data(),
 					query_props.size(), nullptr, query_results.data()
 				);
 
+				// Skip block uniform
+				if (query_results[0] == -1)
+					continue;
+
 				i32 name_size;
 				glGetProgramResourceName(
-					program.id, interface, i,
+					id, interface, i,
 					name_buffer.size(), &name_size, name_buffer.data()
 				);
 
-				mappings.emplace_back(
+				uniform_mappings.emplace_back(
 					UniformMapping{
 						.location = static_cast<u32>(query_results[0]),
 						.glsl_type = static_cast<GLenum>(query_results[1]),
@@ -218,23 +270,127 @@ namespace GL
 					}
 				);
 			}
-
-			return mappings;
 		};
+
+		struct UniformBlockMapping
+		{
+			u32 location;
+			u32 data_size;
+			std::string key;
+
+			struct Uniform
+			{
+				u32 offset;
+				GLenum glsl_type; // just for debug purposes
+				std::string key;
+			};
+			vector<Uniform> uniforms;
+		};
+		vector<UniformBlockMapping> uniform_block_mappings;
+
+		void update_uniform_block_mapping()
+		{
+			auto const interface = GL_UNIFORM_BLOCK;
+
+			array const query_props{
+				GL_BUFFER_BINDING,
+				GL_BUFFER_DATA_SIZE,
+				GL_NUM_ACTIVE_VARIABLES,
+			};
+			array<i32, query_props.size()> query_results;
+
+			uniform_block_mappings.clear();
+
+			i32 max_name_size;
+			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
+			std::string name_buffer(max_name_size, 0);
+
+			i32 resource_size;
+			glGetProgramInterfaceiv(id, interface, GL_ACTIVE_RESOURCES, &resource_size);
+
+			uniform_block_mappings.reserve(resource_size);
+			for (auto i = 0; i < resource_size; ++i)
+			{
+				glGetProgramResourceiv(
+					id, interface, i,
+					query_props.size(), query_props.data(),
+					query_props.size(), nullptr, query_results.data()
+				);
+
+				i32 name_size;
+				glGetProgramResourceName(
+					id, interface, i,
+					name_buffer.size(), &name_size, name_buffer.data()
+				);
+
+				uniform_block_mappings.emplace_back(
+					UniformBlockMapping{
+						.location = static_cast<u32>(query_results[0]),
+						.data_size = static_cast<u32>(query_results[1]),
+						.key = name_buffer.substr(0, name_size),
+						.uniforms = query_block_uniforms(i, static_cast<u32>(query_results[2])),
+					}
+				);
+			}
+		};
+
+		vector<UniformBlockMapping::Uniform> query_block_uniforms(u32 block_idx, u32 uniform_count)
+		{
+			vector<i32> uniform_indices;
+			uniform_indices.resize(uniform_count);
+
+			glGetProgramResourceiv(
+				id, GL_UNIFORM_BLOCK, block_idx,
+				1, &GL_ACTIVE_VARIABLES,
+				uniform_count, nullptr, uniform_indices.data()
+			);
+
+			auto const interface = GL_UNIFORM;
+
+			array const query_props{
+				GL_OFFSET,
+				GL_TYPE,
+			};
+			array<i32, query_props.size()> query_results;
+
+			i32 max_name_size;
+			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
+			std::string name_buffer(max_name_size, 0);
+
+			vector<UniformBlockMapping::Uniform> uniforms;
+			uniforms.reserve(uniform_count);
+
+			for (auto i: uniform_indices)
+			{
+				glGetProgramResourceiv(
+					id, interface, i,
+					query_props.size(), query_props.data(),
+					query_props.size(), nullptr, query_results.data()
+				);
+
+				i32 name_size;
+				glGetProgramResourceName(
+					id, interface, i,
+					name_buffer.size(), &name_size, name_buffer.data()
+				);
+
+				uniforms.emplace_back(UniformBlockMapping::Uniform{
+					.offset = static_cast<u32>(query_results[0]),
+					.glsl_type = static_cast<GLenum>(query_results[1]),
+					.key = name_buffer.substr(0, name_size),
+				});
+			}
+
+			std::ranges::sort(uniforms, std::ranges::less{}, &UniformBlockMapping::Uniform::offset);
+
+			return uniforms;
+		}
 
 		void update_interface_mapping()
 		{
-			uniform_mappings.clear();
-			for (auto && mapping : query_interface_mapping(*this, GL_UNIFORM))
-				uniform_mappings.emplace_back(move(mapping));
-
-			attribute_mappings.clear();
-			for (auto && mapping : query_interface_mapping(*this, GL_PROGRAM_INPUT))
-				attribute_mappings.emplace_back(AttributeMapping{
-					.location = mapping.location,
-					.glsl_type = mapping.glsl_type,
-					.key = IntoAttributeKey(mapping.key),
-				});
+			update_uniform_mapping();
+			update_uniform_block_mapping();
+			update_attribute_mapping();
 		}
 	};
 }

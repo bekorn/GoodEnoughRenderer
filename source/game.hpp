@@ -86,7 +86,7 @@ struct Game final : IRenderer
 				drawable.load(assets.programs.get(GLTF::pbrMetallicRoughness_program_name));
 	}
 
-	void render(GLFW::Window const & window, FrameInfo const & frame_data) final
+	void render(GLFW::Window const & window, FrameInfo const & frame_info) final
 	{
 		using namespace GL;
 
