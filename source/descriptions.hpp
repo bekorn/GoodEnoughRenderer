@@ -5,11 +5,13 @@
 #include "Lib/opengl/core.hpp"
 #include "Lib/opengl/glsl.hpp"
 #include "Lib/asset_kitchen/glsl/loader.hpp"
+#include "Lib/asset_kitchen/glsl/uniform_block/.hpp"
 #include "Lib/asset_kitchen/gltf/loader.hpp"
 
 struct Desriptions
 {
 	Managed<GLSL::Description> glsl;
+	Managed<GLSL::UniformBlock::Description> uniform_block;
 	Managed<GLTF::Description> gltf;
 
 	void create(std::filesystem::path const & test_assets)
@@ -19,10 +21,20 @@ struct Desriptions
 				{GL::GL_VERTEX_SHADER,   test_assets / "gltf_pbrMetallicRoughness.vert.glsl"},
 				{GL::GL_FRAGMENT_SHADER, test_assets / "gltf_pbrMetallicRoughness.frag.glsl"},
 			},
-			.include_paths = {},
 			.include_strings = {
 				GL::GLSL_VERSION_MACRO,
+			},
+			.include_paths = {
+				test_assets / "lights.unib.glsl",
+				test_assets / "camera.unib.glsl",
 			}
+		};
+
+		uniform_block.generate("Lights"_name).data = {
+			.path = test_assets / "lights.unib.glsl",
+		};
+		uniform_block.generate("Camera"_name).data = {
+			.path = test_assets / "camera.unib.glsl",
 		};
 
 		gltf.generate("DamagedHelmet"_name).data = {

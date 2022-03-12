@@ -32,9 +32,11 @@ namespace GLSL
 		std::stringstream error_log;
 
 		vector<const char*> includes;
-		includes.resize(loaded.includes.size() + 1); // +1 for the stage source
+		includes.resize(loaded.includes.size() + 2); // +1 for the #line, +1 for the stage source
 		for (auto i = 0; i < loaded.includes.size(); ++i)
 			includes[i] = loaded.includes[i].data();
+
+		includes[includes.size() - 2] = "#line 1\n";
 
 		bool all_stages_compiled = true;
 

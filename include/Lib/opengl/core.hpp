@@ -7,6 +7,7 @@
 namespace GL
 {
 	using namespace gl45core;
+	using namespace gl45ext;
 
 	auto constexpr VERSION_MAJOR = 4;
 	auto constexpr VERSION_MINOR = 5;

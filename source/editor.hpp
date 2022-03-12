@@ -431,6 +431,63 @@ struct Editor final : IRenderer
 		End();
 	}
 
+	void uniform_buffer_window()
+	{
+		using namespace ImGui;
+
+		Begin("Uniform Buffer Info", nullptr, ImGuiWindowFlags_NoCollapse);
+
+		static Name uniform_buffer_name;
+		if (BeginCombo("Uniform Buffer", uniform_buffer_name.string.data()))
+		{
+			for (auto const & [name, _]: assets.uniform_blocks)
+				if (Selectable(name.string.data()))
+					uniform_buffer_name = name;
+
+			EndCombo();
+		}
+		if (not assets.uniform_blocks.contains(uniform_buffer_name))
+		{
+			Text("Pick a uniform buffer");
+			End();
+			return;
+		}
+		auto named_uniform_buffer = assets.uniform_blocks.get_named(uniform_buffer_name);
+		auto & uniform_buffer = named_uniform_buffer.data;
+
+		if (Button("Reload"))
+			assets.load_uniform_block(named_uniform_buffer.name);
+
+		if (auto const & error = assets.program_errors.get(named_uniform_buffer.name); not error.empty())
+			TextColored({255, 0, 0, 255}, "%s", error.data());
+
+		LabelText("Name", "%s", uniform_buffer.key.data());
+		LabelText("Binding", "%d", uniform_buffer.binding);
+		LabelText("Size", "%d", uniform_buffer.data_size);
+
+		if (BeginTable("Variables", 3, ImGuiTableFlags_BordersInnerH))
+		{
+			TableSetupColumn("GLSL Name");
+			TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
+			TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100);
+			TableHeadersRow();
+
+			for (auto const & [key, variable]: uniform_buffer.variables)
+			{
+				TableNextRow();
+				TableNextColumn();
+				Text("%s", key.data());
+				TableNextColumn();
+				Text("%d", variable.offset);
+				TableNextColumn();
+				Text("%s", GL::GLSLTypeToString(variable.glsl_type).data());
+			}
+			EndTable();
+		}
+
+		End();
+	}
+
 	void camera_window()
 	{
 		using namespace ImGui;
@@ -479,6 +536,7 @@ struct Editor final : IRenderer
 		material_settings_window();
 		textures_window();
 		program_window();
+		uniform_buffer_window();
 		camera_window();
 
 //		ImGui::ShowDemoWindow();

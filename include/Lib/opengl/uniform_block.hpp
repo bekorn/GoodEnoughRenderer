@@ -1,0 +1,48 @@
+#pragma once
+
+#include "core.hpp"
+
+namespace GL
+{
+	struct UniformBlock
+	{
+		u32 binding;
+		u32 data_size;
+		std::string key;
+
+		struct Variable
+		{
+			u32 offset;
+			GLenum glsl_type;
+		};
+		// TODO(bekorn): Name can be utilized here to reduce string hashing
+		std::unordered_map<std::string, Variable> variables;
+
+		struct Description
+		{
+			GL::ShaderProgram::UniformBlockMapping const & layout;
+		};
+
+		void create(Description const & description)
+		{
+			binding = description.layout.location;
+			data_size = description.layout.data_size;
+			key = description.layout.key;
+
+			for (auto & variable: description.layout.uniforms)
+				variables.try_emplace(variable.key, Variable{
+					.offset = variable.offset,
+					.glsl_type = variable.glsl_type,
+				});
+		}
+
+		template<typename T>
+		void set(byte * destination, std::string const & variable_key, T const & data) const
+		{
+			std::memcpy(
+				destination + variables.at(variable_key).offset,
+				&data, sizeof(T)
+			);
+		}
+	};
+}

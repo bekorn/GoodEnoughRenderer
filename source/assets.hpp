@@ -14,6 +14,7 @@ struct Assets
 	Desriptions const & desriptions;
 
 	// GL resources
+	Managed<GL::UniformBlock> uniform_blocks;
 	Managed<GL::ShaderProgram> programs;
 	Managed<std::string> program_errors;
 	Managed<GL::Texture2D> textures;
@@ -34,6 +35,8 @@ struct Assets
 	void create()
 	{
 		load_glsl(GLTF::pbrMetallicRoughness_program_name);
+		load_uniform_block("Lights"_name);
+		load_uniform_block("Camera"_name);
 		load_gltf("Sponza"_name);
 	}
 
@@ -49,6 +52,22 @@ struct Assets
 		else
 		{
 			programs.get_or_generate(name) = {};
+			program_errors.get_or_generate(name) = expected.into_error();
+		}
+	}
+
+	void load_uniform_block(Name const & name)
+	{
+		auto const uniform_block_data = GLSL::UniformBlock::Load(desriptions.uniform_block.get(name));
+
+		if (auto expected = GLSL::UniformBlock::Convert(uniform_block_data))
+		{
+			uniform_blocks.get_or_generate(name) = expected.into_result();
+			program_errors.get_or_generate(name) = {};
+		}
+		else
+		{
+			uniform_blocks.get_or_generate(name) = {};
 			program_errors.get_or_generate(name) = expected.into_error();
 		}
 	}

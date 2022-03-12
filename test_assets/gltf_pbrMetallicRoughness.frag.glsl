@@ -1,6 +1,8 @@
 in Vertex
 {
-    vec3 position;
+    vec3 camera_position;
+    vec3 object_position;
+    vec3 world_position;
     vec3 normal;
     vec3 color;
     vec2 texcoord;
@@ -16,9 +18,6 @@ layout(binding = 3) uniform sampler2D occlusion_sampler;
 layout(binding = 4) uniform sampler2D normal_sampler;
 
 out vec4 out_color;
-
-
-const vec3 light_pos = vec3(1, 1, -1);
 
 
 bool is_sampler_bound(sampler2D sampler)
@@ -96,16 +95,29 @@ void main()
     vec3 normal = get_normal();
 
     vec3 base_color = get_base_color();
+    float occlusion = get_occlusion();
 
-    vec3 light_dir = normalize(light_pos - vertex.position);
+    vec3 diffuse_color = vec3(0);
+    for (int i = 0; i < 4; ++i)
+    {
+        Light light = Lights[i];
+        if (! light.is_active)
+            continue;
 
-    float light_intensity = dot(normal, light_dir);
-    light_intensity *= get_occlusion();
+        vec3 to_light = light.position - vertex.world_position;
+        float dist_sqr = dot(to_light, to_light);
+        float dist = sqrt(dist_sqr);
+        vec3 dir = normalize(to_light);
 
-    vec3 diffuse_color = base_color * max(0, light_intensity);
+        float intensity = dot(normal, dir);
+        intensity *= occlusion;
+        intensity *= clamp(light.intensity / (0.3 * dist + 0.5 * dist_sqr), 0, 1);
+
+        diffuse_color += base_color * light.color * max(0, intensity);
+    }
 
     vec3 ambient_color = vec3(0.2);
-    ambient_color *= max(vec3(0), 0.8 - diffuse_color);
+    ambient_color *= max(vec3(0), 0.3 - diffuse_color);
 
     vec3 emission_color = get_emission();
 

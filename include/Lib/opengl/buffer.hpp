@@ -3,6 +3,7 @@
 #include "Lib/core/utils.hpp"
 
 #include "core.hpp"
+#include "uniform_block.hpp"
 
 namespace GL
 {
@@ -30,6 +31,29 @@ namespace GL
 				id,
 				description.data.size(),
 				description.data.data(),
+				description.usage
+			);
+		}
+
+		struct UniformBlockDescription
+		{
+			GLenum usage = GL_DYNAMIC_DRAW;
+			GL::UniformBlock const & uniform_block;
+			u32 array_size = 1;
+		};
+
+		void create(UniformBlockDescription const & description)
+		{
+			i32 alignment;
+			GL::glGetIntegerv(GL::GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
+
+			auto aligned_size = (description.uniform_block.data_size / alignment + 1) * alignment;
+
+			glCreateBuffers(1, &id);
+			glNamedBufferData(
+				id,
+				aligned_size * description.array_size,
+				nullptr,
 				description.usage
 			);
 		}

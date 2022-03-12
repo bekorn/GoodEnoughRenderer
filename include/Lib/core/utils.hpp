@@ -23,8 +23,8 @@ struct Timer
 
 	struct TimeElapsed
 	{
-		cpu_clock::duration cpu;
-		wall_clock::duration wall;
+		std::chrono::microseconds cpu;
+		std::chrono::microseconds wall;
 	};
 
 	TimeElapsed timeit()
@@ -38,7 +38,7 @@ struct Timer
 		cpu_last = cpu_now;
 		wall_last = wall_now;
 
-		return { cpu_diff, wall_diff };
+		return {cpu_diff, wall_diff};
 	};
 
 	void timeit(std::ostream & out, std::string_view tag)
