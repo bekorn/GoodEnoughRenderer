@@ -16,18 +16,20 @@ add_subdirectory(source)
 target_link_libraries(App
     PUBLIC Lib)
 
+
 if (GL_DEBUG)
     target_compile_definitions(App PUBLIC _GL_DEBUG)
 endif ()
 
 
 # Debug optimizations
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # see section Version of CRT on https://ledas.com/post/861-fast-debug-in-visual-c/
+    set_target_properties(App PROPERTIES
+        MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+        )
 
-# see section Version of CRT on https://ledas.com/post/861-fast-debug-in-visual-c/
-set_target_properties(App PROPERTIES
-    MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
-    )
-
-# Not sure if this has any affects (can't see the generated assembly currently).
-# However, this flag is needed to generate same assembly from std::algorithms and bare for loops.
-list(APPEND CMAKE_CXX_FLAGS_DEBUG " /O1")
+    # Not sure if this has any affects (can't see the generated assembly currently).
+    # However, this flag is needed to generate same assembly from std::algorithms and bare for loops.
+    list(APPEND CMAKE_CXX_FLAGS_DEBUG " /O1")
+endif ()
