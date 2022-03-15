@@ -289,6 +289,7 @@ struct Editor final : IRenderer
 		{
 			auto & [_, texture] = *it;
 			SameLine(), Text("(id %d)", texture.id);
+			LabelText("Handle", "%llu", texture.handle);
 
 			Image(
 				reinterpret_cast<void*>(i64(texture.id)),
@@ -307,7 +308,7 @@ struct Editor final : IRenderer
 	{
 		using namespace ImGui;
 
-		Begin("Program Info", nullptr, ImGuiWindowFlags_NoCollapse);
+		Begin("Program Info", nullptr);
 
 		static Name program_name;
 		if (BeginCombo("Program", program_name.string.data()))
@@ -435,7 +436,7 @@ struct Editor final : IRenderer
 	{
 		using namespace ImGui;
 
-		Begin("Uniform Buffer Info", nullptr, ImGuiWindowFlags_NoCollapse);
+		Begin("Uniform Buffer Info", nullptr);
 
 		static Name uniform_buffer_name;
 		if (BeginCombo("Uniform Buffer", uniform_buffer_name.string.data()))

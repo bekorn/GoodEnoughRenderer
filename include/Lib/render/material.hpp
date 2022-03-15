@@ -20,32 +20,29 @@ namespace Render
 	// for now, here is an example concrete Material
 	struct Material_gltf_pbrMetallicRoughness final : IMaterial
 	{
-		u32 base_color_texture;
+		u64 base_color_texture_handle{0};
 		f32x4 base_color_factor;
 
-		u32 metallic_roughness_texture;
+		u64 metallic_roughness_texture_handle{0};
 		f32x2 metallic_roughness_factor;
 
-		u32 emissive_texture;
+		u64 emissive_texture_handle{0};
 		f32x3 emissive_factor;
 
-		u32 occlusion_texture;
-		u32 normal_texture;
+		u64 occlusion_texture_handle{0};
+		u64 normal_texture_handle{0};
 
 		void set_uniforms() final
 		{
 			using namespace GL;
 
-			glBindTextureUnit(0, base_color_texture);
-			glUniform4fv(0, 1, begin(base_color_factor));
+			glUniformHandleui64ARB(0, base_color_texture_handle);
+			glUniform4fv(1, 1, begin(base_color_factor));
 
-			glBindTextureUnit(1, metallic_roughness_texture);
-
-			glBindTextureUnit(2, emissive_texture);
-
-			glBindTextureUnit(3, occlusion_texture);
-
-			glBindTextureUnit(4, normal_texture);
+			glUniformHandleui64ARB(2, metallic_roughness_texture_handle);
+			glUniformHandleui64ARB(3, emissive_texture_handle);
+			glUniformHandleui64ARB(4, occlusion_texture_handle);
+			glUniformHandleui64ARB(5, normal_texture_handle);
 		}
 	};
 }

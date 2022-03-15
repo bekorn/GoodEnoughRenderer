@@ -6,6 +6,8 @@ namespace GL
 {
 	struct Texture2D : OpenGLObject
 	{
+		u64 handle;
+
 		CTOR(Texture2D, default)
 		COPY(Texture2D, delete)
 		MOVE(Texture2D, default)
@@ -90,6 +92,10 @@ namespace GL
 
 			if (not aligns_to_4)
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+
+			handle = glGetTextureHandleARB(id);
+			// Since all the textures will always be needed, their residency doesn't need management
+			glMakeTextureHandleResidentARB(handle);
 		}
 	};
 }

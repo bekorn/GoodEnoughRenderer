@@ -8,9 +8,9 @@ namespace GL
 	{
 		using namespace std::string_view_literals;
 
-		// https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetActiveUniform.xhtml
 		switch (type)
 		{
+		// https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetActiveUniform.xhtml
 		case (GL_FLOAT): return "float"sv;
 		case (GL_FLOAT_VEC2): return "vec2"sv;
 		case (GL_FLOAT_VEC3): return "vec3"sv;
@@ -116,6 +116,16 @@ namespace GL
 		case (GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE): return "uimage2DMS"sv;
 		case (GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY): return "uimage2DMSArray"sv;
 		case (GL_UNSIGNED_INT_ATOMIC_COUNTER): return "atomic_uint"sv;
+
+		// https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_gpu_shader_int64.txt
+		case (GL_INT64_ARB): return "int64"sv;
+		case (GL_INT64_VEC2_ARB): return "i64vec2"sv;
+		case (GL_INT64_VEC3_ARB): return "i64vec3"sv;
+		case (GL_INT64_VEC4_ARB): return "i64vec4"sv;
+		case (GL_UNSIGNED_INT64_ARB): return "uint64"sv;
+		case (GL_UNSIGNED_INT64_VEC2_ARB): return "u64vec2"sv;
+		case (GL_UNSIGNED_INT64_VEC3_ARB): return "u64vec3"sv;
+		case (GL_UNSIGNED_INT64_VEC4_ARB): return "u64vec4"sv;
 
 		default: return "unknown type :("sv;
 		}

@@ -132,25 +132,25 @@ namespace GLTF
 
 				// TODO: use texcoord indices as well
 				if (pbr_mat.base_color_texture)
-					mat->base_color_texture = textures.get(loaded.textures[pbr_mat.base_color_texture->texture_index].name).id;
+					mat->base_color_texture_handle = textures.get(loaded.textures[pbr_mat.base_color_texture->texture_index].name).handle;
 				else
 					mat->base_color_factor = pbr_mat.base_color_factor;
 
 				if (pbr_mat.metallic_roughness_texture)
-					mat->metallic_roughness_texture = textures.get(loaded.textures[pbr_mat.metallic_roughness_texture->texture_index].name).id;
+					mat->metallic_roughness_texture_handle = textures.get(loaded.textures[pbr_mat.metallic_roughness_texture->texture_index].name).handle;
 				else
 					mat->metallic_roughness_factor = {pbr_mat.metallic_factor, pbr_mat.roughness_factor};
 
 				if (loaded_mat.emissive_texture)
-					mat->emissive_texture = textures.get(loaded.textures[loaded_mat.emissive_texture->texture_index].name).id;
+					mat->emissive_texture_handle = textures.get(loaded.textures[loaded_mat.emissive_texture->texture_index].name).handle;
 				else
 					mat->emissive_factor = loaded_mat.emissive_factor;
 
 				if (loaded_mat.occlusion_texture)
-					mat->occlusion_texture = textures.get(loaded.textures[loaded_mat.occlusion_texture->texture_index].name).id;
+					mat->occlusion_texture_handle = textures.get(loaded.textures[loaded_mat.occlusion_texture->texture_index].name).handle;
 
 				if (loaded_mat.normal_texture)
-					mat->normal_texture = textures.get(loaded.textures[loaded_mat.normal_texture->texture_index].name).id;
+					mat->normal_texture_handle = textures.get(loaded.textures[loaded_mat.normal_texture->texture_index].name).handle;
 
 				materials.generate(loaded_mat.name).data = move(mat);
 			}

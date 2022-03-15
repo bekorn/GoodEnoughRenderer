@@ -175,7 +175,7 @@ struct Game final : IRenderer
 
 				for (auto & drawable: node.mesh->drawables)
 				{
-					drawable.named_material.data->set_uniforms();
+					drawable.named_material.data.get()->set_uniforms();
 
 					glBindVertexArray(drawable.vertex_array.id);
 					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
