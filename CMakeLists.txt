@@ -16,8 +16,13 @@ add_subdirectory(source)
 target_link_libraries(App
     PUBLIC Lib)
 
+if (GL_DEBUG)
+    target_compile_definitions(App PUBLIC _GL_DEBUG)
+endif ()
+
 
 # Debug optimizations
+
 # see section Version of CRT on https://ledas.com/post/861-fast-debug-in-visual-c/
 set_target_properties(App PROPERTIES
     MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"

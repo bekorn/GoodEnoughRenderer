@@ -71,7 +71,7 @@ namespace GLFW
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, description.gl_minor);
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
-			if constexpr (DEBUG)
+			if constexpr (GL_DEBUG)
 				glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
 			glfw_window = glfwCreateWindow(
@@ -92,7 +92,7 @@ namespace GLFW
 			glbinding::initialize(glfwGetProcAddress);
 
 			// Set callbacks
-			if constexpr (DEBUG)
+			if constexpr (GL_DEBUG)
 			{
 				using namespace GL;
 
@@ -105,6 +105,8 @@ namespace GLFW
 				glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 				glDebugMessageCallback(DebugCallback, nullptr);
 				glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+				
+				std::clog << "GL Debug initialized\n";
 			}
 
 			glfwSetWindowSizeCallback(glfw_window, resize_callback);

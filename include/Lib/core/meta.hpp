@@ -6,6 +6,12 @@ constexpr bool DEBUG = true;
 constexpr bool DEBUG = false;
 #endif
 
+#if defined(_GL_DEBUG)
+constexpr bool GL_DEBUG = true;
+#else
+constexpr bool GL_DEBUG = false;
+#endif
+
 // TODO(bekorn): not sure if this will be handy or useless
 // https://blog.kowalczyk.info/article/j/guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc..html
 namespace Meta
