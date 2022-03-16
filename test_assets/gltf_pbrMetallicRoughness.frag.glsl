@@ -8,14 +8,20 @@ in Vertex
     vec2 texcoord;
 } vertex;
 
+layout(binding = 5) uniform Material
+{
+    uint64_t base_color_texture_handle;
+    vec4     base_color_factor;
 
-layout(location = 0) uniform uint64_t base_color_texture_handle;
-layout(location = 1) uniform vec4     base_color_factor;
+    uint64_t metallic_roughness_texture_handle;
+    vec2     metallic_roughness_factor;
 
-layout(location = 2) uniform uint64_t metallic_roughness_texture_handle;
-layout(location = 3) uniform uint64_t emissive_texture_handle;
-layout(location = 4) uniform uint64_t occlusion_texture_handle;
-layout(location = 5) uniform uint64_t normal_texture_handle;
+    uint64_t emissive_texture_handle;
+    vec3     emissive_factor;
+
+    uint64_t occlusion_texture_handle;
+    uint64_t normal_texture_handle;
+} material;
 
 out vec4 out_color;
 
@@ -33,15 +39,15 @@ vec3 get_base_color()
 {
     vec3 base_color = vec3(1);
 
-    if (is_handle_set(base_color_texture_handle))
+    if (is_handle_set(material.base_color_texture_handle))
     {
-        base_color *= texture(sampler2D(base_color_texture_handle), vertex.texcoord).rgb;
+        base_color *= texture(sampler2D(material.base_color_texture_handle), vertex.texcoord).rgb;
     }
 
     // TODO(bekorn): gltf specifies that baseColor.a is used for actual alpha values, so this check does not work on baseColor
-    if (is_factor_bound(base_color_factor))
+    if (is_factor_bound(material.base_color_factor))
     {
-        base_color *= base_color_factor.rgb;
+        base_color *= material.base_color_factor.rgb;
     }
 
     return base_color;
@@ -49,21 +55,21 @@ vec3 get_base_color()
 
 vec3 get_emission()
 {
-    if (is_handle_set(emissive_texture_handle))
+    if (is_handle_set(material.emissive_texture_handle))
     {
-        return texture(sampler2D(emissive_texture_handle), vertex.texcoord).rgb;
+        return texture(sampler2D(material.emissive_texture_handle), vertex.texcoord).rgb;
     }
     else
     {
-        return vec3(0);
+        return material.emissive_factor;
     }
 }
 
 float get_occlusion()
 {
-    if (is_handle_set(occlusion_texture_handle))
+    if (is_handle_set(material.occlusion_texture_handle))
     {
-        return texture(sampler2D(occlusion_texture_handle), vertex.texcoord).r;
+        return texture(sampler2D(material.occlusion_texture_handle), vertex.texcoord).r;
     }
     else
     {
@@ -75,7 +81,7 @@ vec3 get_normal()
 {
     vec3 normal = normalize(vertex.normal);
 
-    if (is_handle_set(normal_texture_handle))
+    if (is_handle_set(material.normal_texture_handle))
     {
         //        vec3 normal_tex = normalize(texture(normal_sampler, vertex.texcoord).rgb * 2 - 1);
         // TODO(bekorn): implement normal mapping (prerequisite: bi/tangent space attributes)

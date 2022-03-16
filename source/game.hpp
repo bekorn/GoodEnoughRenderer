@@ -30,6 +30,7 @@ struct Game final : IRenderer
 
 	GL::Buffer lights_uniform_buffer;
 	GL::Buffer camera_uniform_buffer;
+	GL::Buffer gltf_material_uniform_buffer; 		// !!! Temporary
 
 	void create_framebuffer()
 	{
@@ -67,9 +68,77 @@ struct Game final : IRenderer
 		);
 	}
 
+	void create_uniform_buffers()
+	{
+		using namespace GL;
+
+		// Setup Lights Uniform Buffer
+		auto & lights_uniform_block = assets.uniform_blocks.get("Lights"_name);
+
+		lights_uniform_buffer.create(GL::Buffer::UniformBlockDescription{
+			.usage = GL::GL_DYNAMIC_DRAW,
+			.uniform_block = lights_uniform_block,
+			.array_size = 1,
+		});
+
+		glBindBufferBase(GL_UNIFORM_BUFFER, lights_uniform_block.binding, lights_uniform_buffer.id);
+
+		auto * map = (byte *) glMapNamedBuffer(lights_uniform_buffer.id, GL_WRITE_ONLY);
+		lights_uniform_block.set(map, "Lights[0].position", f32x3{0, 1, 3});
+		lights_uniform_block.set(map, "Lights[0].color", f32x3{1, 0, 0});
+		lights_uniform_block.set(map, "Lights[0].intensity", f32{5});
+		lights_uniform_block.set(map, "Lights[0].is_active", true);
+
+		lights_uniform_block.set(map, "Lights[1].position", f32x3{0, 1, -3});
+		lights_uniform_block.set(map, "Lights[1].color", f32x3{0, 1, 0});
+		lights_uniform_block.set(map, "Lights[1].intensity", f32{3});
+		lights_uniform_block.set(map, "Lights[1].is_active", true);
+
+		lights_uniform_block.set(map, "Lights[2].position", f32x3{-2, 3, 0});
+		lights_uniform_block.set(map, "Lights[2].color", f32x3{1, 1, 1});
+		lights_uniform_block.set(map, "Lights[2].intensity", f32{16});
+		lights_uniform_block.set(map, "Lights[2].is_active", true);
+
+		lights_uniform_block.set(map, "Lights[3].position", f32x3{-10, 1, 0});
+		lights_uniform_block.set(map, "Lights[3].color", f32x3{0, 0, 1});
+		lights_uniform_block.set(map, "Lights[3].intensity", f32{8});
+		lights_uniform_block.set(map, "Lights[3].is_active", true);
+		glUnmapNamedBuffer(lights_uniform_buffer.id);
+
+
+		// Setup Camera Uniform Buffer
+		auto & camera_uniform_block = assets.uniform_blocks.get("Camera"_name);
+
+		camera_uniform_buffer.create(Buffer::UniformBlockDescription{
+			.usage = GL_DYNAMIC_DRAW,
+			.uniform_block = camera_uniform_block,
+			.array_size = 1,
+		});
+
+		glBindBufferBase(GL_UNIFORM_BUFFER, camera_uniform_block.binding, camera_uniform_buffer.id);
+
+
+		// Setup GLTF Material Uniform Block and Buffer
+		Render::Material_gltf_pbrMetallicRoughness::block.create({
+			.layout = *std::ranges::find(
+				assets.programs.get(GLTF::pbrMetallicRoughness_program_name).uniform_block_mappings,
+				"Material", &ShaderProgram::UniformBlockMapping::key
+			)
+		});
+
+		gltf_material_uniform_buffer.create(Buffer::UniformBlockDescription{
+			.usage = GL_DYNAMIC_DRAW,
+			.uniform_block = Render::Material_gltf_pbrMetallicRoughness::block,
+			.array_size = 1,
+		});
+
+		glBindBufferBase(GL_UNIFORM_BUFFER, Render::Material_gltf_pbrMetallicRoughness::block.binding, gltf_material_uniform_buffer.id);
+	}
+
 	void create() final
 	{
 		create_framebuffer();
+		create_uniform_buffers();
 
 		camera = PerspectiveCamera{
 			.position = {5, 2, 0},
@@ -85,47 +154,6 @@ struct Game final : IRenderer
 		for (auto & [_, mesh] : assets.meshes)
 			for (auto & drawable : mesh.drawables)
 				drawable.load(assets.programs.get(GLTF::pbrMetallicRoughness_program_name));
-
-
-		// Setup Lights Uniform Buffer
-		auto & lights_uniform_block = assets.uniform_blocks.get("Lights"_name);
-
-		lights_uniform_buffer.create(GL::Buffer::UniformBlockDescription{
-			.usage = GL::GL_DYNAMIC_DRAW,
-			.uniform_block = lights_uniform_block,
-			.array_size = 1,
-		});
-
-		GL::glBindBufferBase(GL::GL_UNIFORM_BUFFER, lights_uniform_block.binding, lights_uniform_buffer.id);
-
-		auto * map = (byte *) GL::glMapNamedBuffer(lights_uniform_buffer.id, GL::GL_WRITE_ONLY);
-		lights_uniform_block.set(map, "Lights[0].position", f32x3{0, 1, 3});
-		lights_uniform_block.set(map, "Lights[0].color", f32x3{1, 0, 0});
-		lights_uniform_block.set(map, "Lights[0].intensity", f32{5});
-		lights_uniform_block.set(map, "Lights[0].is_active", true);
-
-		lights_uniform_block.set(map, "Lights[1].position", f32x3{0, 1, -3});
-		lights_uniform_block.set(map, "Lights[1].color", f32x3{0, 1, 0});
-		lights_uniform_block.set(map, "Lights[1].intensity", f32{3});
-		lights_uniform_block.set(map, "Lights[1].is_active", true);
-
-		lights_uniform_block.set(map, "Lights[3].position", f32x3{-10, 1, 0});
-		lights_uniform_block.set(map, "Lights[3].color", f32x3{0, 0, 1});
-		lights_uniform_block.set(map, "Lights[3].intensity", f32{8});
-		lights_uniform_block.set(map, "Lights[3].is_active", true);
-		GL::glUnmapNamedBuffer(lights_uniform_buffer.id);
-
-
-		// Setup Camera Uniform Buffer
-		auto & camera_uniform_block = assets.uniform_blocks.get("Camera"_name);
-
-		camera_uniform_buffer.create(GL::Buffer::UniformBlockDescription{
-			.usage = GL::GL_DYNAMIC_DRAW,
-			.uniform_block = camera_uniform_block,
-			.array_size = 1,
-		});
-
-		GL::glBindBufferBase(GL::GL_UNIFORM_BUFFER, camera_uniform_block.binding, camera_uniform_buffer.id);
 	}
 
 	void render(GLFW::Window const & window, FrameInfo const & frame_info) final
@@ -148,12 +176,12 @@ struct Game final : IRenderer
 		// Update Camera Uniform Buffer
 		{
 			auto & camera_block = assets.uniform_blocks.get("Camera"_name);
-			auto * map = (byte *) GL::glMapNamedBuffer(camera_uniform_buffer.id, GL::GL_WRITE_ONLY);
+			auto * map = (byte *) glMapNamedBuffer(camera_uniform_buffer.id, GL_WRITE_ONLY);
 			camera_block.set(map, "CameraWorldPosition", camera_position);
 			camera_block.set(map, "TransformV", view);
 			camera_block.set(map, "TransformP", projection);
 			camera_block.set(map, "TransformVP", view_projection);
-			GL::glUnmapNamedBuffer(camera_uniform_buffer.id);
+			glUnmapNamedBuffer(camera_uniform_buffer.id);
 		}
 
 		glUseProgram(assets.programs.get(GLTF::pbrMetallicRoughness_program_name).id);
@@ -173,7 +201,10 @@ struct Game final : IRenderer
 
 				for (auto & drawable: node.mesh->drawables)
 				{
-					drawable.named_material.data.get()->set_uniforms();
+					// Update Material Uniform Buffer
+					auto * buffer = (byte *) glMapNamedBuffer(gltf_material_uniform_buffer.id, GL_WRITE_ONLY);
+					drawable.named_material.data->write_to_buffer(buffer);
+					glUnmapNamedBuffer(gltf_material_uniform_buffer.id);
 
 					glBindVertexArray(drawable.vertex_array.id);
 					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
