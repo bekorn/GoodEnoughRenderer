@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Lib/core/core.hpp"
+#include "Lib/opengl/core.hpp"
 
-namespace GLSL
+namespace GLSL::Program
 {
 	struct Stage
 	{

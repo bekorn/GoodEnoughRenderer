@@ -3,8 +3,6 @@
 #include "Lib/core/.hpp"
 #include "Lib/opengl/.hpp"
 #include "Lib/render/.hpp"
-#include "Lib/asset_kitchen/glsl/.hpp"
-#include "Lib/asset_kitchen/gltf/.hpp"
 
 #include "assets.hpp"
 #include "renderer.hpp"

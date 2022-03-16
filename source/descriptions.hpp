@@ -4,13 +4,13 @@
 #include "Lib/core/named.hpp"
 #include "Lib/opengl/core.hpp"
 #include "Lib/opengl/glsl.hpp"
-#include "Lib/asset_kitchen/glsl/loader.hpp"
+#include "Lib/asset_kitchen/glsl/program/loader.hpp"
 #include "Lib/asset_kitchen/glsl/uniform_block/.hpp"
 #include "Lib/asset_kitchen/gltf/loader.hpp"
 
 struct Desriptions
 {
-	Managed<GLSL::Description> glsl;
+	Managed<GLSL::Program::Description> glsl;
 	Managed<GLSL::UniformBlock::Description> uniform_block;
 	Managed<GLTF::Description> gltf;
 

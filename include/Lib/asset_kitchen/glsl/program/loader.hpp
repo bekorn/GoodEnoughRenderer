@@ -4,7 +4,7 @@
 
 #include "core.hpp"
 
-namespace GLSL
+namespace GLSL::Program
 {
 	struct Description
 	{

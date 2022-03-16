@@ -5,22 +5,23 @@
 
 #include "core.hpp"
 
-namespace GLSL
+namespace GLSL::Program
 {
 	namespace Helpers
 	{
 		std::string_view IntoString(GL::GLenum shader_stage)
 		{
+			using namespace std::string_view_literals;
 			// https://www.khronos.org/registry/OpenGL-Refpages/es3/html/glCreateShader.xhtml
 			switch (shader_stage)
 			{
-			case GL::GL_COMPUTE_SHADER: return "COMPUTE Shader";
-			case GL::GL_VERTEX_SHADER: return "VERTEX Shader";
-			case GL::GL_TESS_CONTROL_SHADER: return "TESS_CONTROL Shader";
-			case GL::GL_TESS_EVALUATION_SHADER: return "TESS_EVALUATION Shader";
-			case GL::GL_GEOMETRY_SHADER: return "GEOMETRY Shader";
-			case GL::GL_FRAGMENT_SHADER: return "FRAGMENT Shader";
-			default: return "UNKNOWN";
+			case GL::GL_COMPUTE_SHADER: return "COMPUTE Shader"sv;
+			case GL::GL_VERTEX_SHADER: return "VERTEX Shader"sv;
+			case GL::GL_TESS_CONTROL_SHADER: return "TESS_CONTROL Shader"sv;
+			case GL::GL_TESS_EVALUATION_SHADER: return "TESS_EVALUATION Shader"sv;
+			case GL::GL_GEOMETRY_SHADER: return "GEOMETRY Shader"sv;
+			case GL::GL_FRAGMENT_SHADER: return "FRAGMENT Shader"sv;
+			default: return "UNKNOWN"sv;
 			}
 		}
 	}

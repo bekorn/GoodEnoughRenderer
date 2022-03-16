@@ -330,7 +330,7 @@ struct Editor final : IRenderer
 		SameLine(), Text("(id: %d)", named_program.data.id);
 
 		if (Button("Reload"))
-			assets.load_glsl(named_program.name);
+			assets.load_glsl_program(named_program.name);
 
 		if (auto const & error = assets.program_errors.get(program_name); not error.empty())
 			TextColored({255, 0, 0, 255}, "%s", error.data());
@@ -457,7 +457,7 @@ struct Editor final : IRenderer
 		auto & uniform_buffer = named_uniform_buffer.data;
 
 		if (Button("Reload"))
-			assets.load_uniform_block(named_uniform_buffer.name);
+			assets.load_glsl_uniform_block(named_uniform_buffer.name);
 
 		if (auto const & error = assets.program_errors.get(named_uniform_buffer.name); not error.empty())
 			TextColored({255, 0, 0, 255}, "%s", error.data());

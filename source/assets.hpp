@@ -4,7 +4,7 @@
 #include "Lib/opengl/.hpp"
 #include "Lib/render/.hpp"
 #include "Lib/scene/.hpp"
-#include "Lib/asset_kitchen/glsl/.hpp"
+#include "Lib/asset_kitchen/glsl/program/.hpp"
 #include "Lib/asset_kitchen/gltf/.hpp"
 
 #include "descriptions.hpp"
@@ -34,17 +34,17 @@ struct Assets
 
 	void create()
 	{
-		load_glsl(GLTF::pbrMetallicRoughness_program_name);
-		load_uniform_block("Lights"_name);
-		load_uniform_block("Camera"_name);
+		load_glsl_program(GLTF::pbrMetallicRoughness_program_name);
+		load_glsl_uniform_block("Lights"_name);
+		load_glsl_uniform_block("Camera"_name);
 		load_gltf("Sponza"_name);
 	}
 
-	void load_glsl(Name const & name)
+	void load_glsl_program(Name const & name)
 	{
-		auto const glsl_data = GLSL::Load(desriptions.glsl.get(name));
+		auto const loaded_data = GLSL::Program::Load(desriptions.glsl.get(name));
 
-		if (auto expected = GLSL::Convert(glsl_data))
+		if (auto expected = GLSL::Program::Convert(loaded_data))
 		{
 			programs.get_or_generate(name) = expected.into_result();
 			program_errors.get_or_generate(name) = {};
@@ -56,11 +56,11 @@ struct Assets
 		}
 	}
 
-	void load_uniform_block(Name const & name)
+	void load_glsl_uniform_block(Name const & name)
 	{
-		auto const uniform_block_data = GLSL::UniformBlock::Load(desriptions.uniform_block.get(name));
+		auto const loaded_data = GLSL::UniformBlock::Load(desriptions.uniform_block.get(name));
 
-		if (auto expected = GLSL::UniformBlock::Convert(uniform_block_data))
+		if (auto expected = GLSL::UniformBlock::Convert(loaded_data))
 		{
 			uniform_blocks.get_or_generate(name) = expected.into_result();
 			program_errors.get_or_generate(name) = {};
