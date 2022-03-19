@@ -8,7 +8,7 @@ in Vertex
     vec2 texcoord;
 } vertex;
 
-layout(binding = 5) uniform Material
+layout(binding = 3) readonly buffer Material
 {
     uint64_t base_color_texture_handle;
     vec4     base_color_factor;
@@ -98,7 +98,7 @@ void main()
     float occlusion = get_occlusion();
 
     vec3 diffuse_color = vec3(0);
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < Lights.length(); ++i)
     {
         Light light = Lights[i];
         if (! light.is_active)

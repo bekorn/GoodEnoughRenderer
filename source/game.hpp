@@ -30,7 +30,8 @@ struct Game final : IRenderer
 
 	GL::Buffer lights_uniform_buffer;
 	GL::Buffer camera_uniform_buffer;
-	GL::Buffer gltf_material_uniform_buffer; 		// !!! Temporary
+	GL::Buffer gltf_material_buffer; 									// !!! Temporary
+	std::unordered_map<Name, u32, Name::Hasher> gltf_material2index;	// !!! Temporary
 
 	void create_framebuffer()
 	{
@@ -118,21 +119,29 @@ struct Game final : IRenderer
 		glBindBufferBase(GL_UNIFORM_BUFFER, camera_uniform_block.binding, camera_uniform_buffer.id);
 
 
-		// Setup GLTF Material Uniform Block and Buffer
-		Render::Material_gltf_pbrMetallicRoughness::block.create({
+		// Setup GLTF Material Block and Buffer
+		auto & material_block = Render::Material_gltf_pbrMetallicRoughness::block;
+		material_block.create({
 			.layout = *std::ranges::find(
-				assets.programs.get(GLTF::pbrMetallicRoughness_program_name).uniform_block_mappings,
-				"Material", &ShaderProgram::UniformBlockMapping::key
+				assets.programs.get(GLTF::pbrMetallicRoughness_program_name).storage_block_mappings,
+				"Material", &ShaderProgram::StorageBlockMapping::key
 			)
 		});
 
-		gltf_material_uniform_buffer.create(Buffer::UniformBlockDescription{
+		gltf_material_buffer.create(Buffer::StorageBlockDescription{
 			.usage = GL_DYNAMIC_DRAW,
-			.uniform_block = Render::Material_gltf_pbrMetallicRoughness::block,
-			.array_size = 1,
+			.storage_block = material_block,
+			.array_size = assets.materials.resources.size(),
 		});
 
-		glBindBufferBase(GL_UNIFORM_BUFFER, Render::Material_gltf_pbrMetallicRoughness::block.binding, gltf_material_uniform_buffer.id);
+		auto * buffer = (byte *) glMapNamedBuffer(gltf_material_buffer.id, GL_WRITE_ONLY);
+		for (auto i = 0; auto & [name, material]: assets.materials)
+		{
+			gltf_material2index.emplace(name, i);
+			material->write_to_buffer(buffer + i * material_block.aligned_size);
+			i++;
+		}
+		glUnmapNamedBuffer(gltf_material_buffer.id);
 	}
 
 	void create() final
@@ -201,10 +210,13 @@ struct Game final : IRenderer
 
 				for (auto & drawable: node.mesh->drawables)
 				{
-					// Update Material Uniform Buffer
-					auto * buffer = (byte *) glMapNamedBuffer(gltf_material_uniform_buffer.id, GL_WRITE_ONLY);
-					drawable.named_material.data->write_to_buffer(buffer);
-					glUnmapNamedBuffer(gltf_material_uniform_buffer.id);
+					// Bind Material Buffer
+					auto & material_block = Render::Material_gltf_pbrMetallicRoughness::block;
+					glBindBufferRange(
+						GL_SHADER_STORAGE_BUFFER, material_block.binding, gltf_material_buffer.id,
+						gltf_material2index.at(drawable.named_material.name) * material_block.aligned_size,
+						material_block.data_size
+					);
 
 					glBindVertexArray(drawable.vertex_array.id);
 					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);

@@ -20,7 +20,7 @@ namespace Render
 	// for now, here is an example concrete Material
 	struct Material_gltf_pbrMetallicRoughness final : IMaterial
 	{
-		static inline GL::UniformBlock block;
+		static inline GL::StorageBlock block;
 
 		u64 base_color_texture_handle{0};
 		f32x4 base_color_factor{0, 0, 0, 0};

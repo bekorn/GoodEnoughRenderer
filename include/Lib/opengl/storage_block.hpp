@@ -4,7 +4,7 @@
 
 namespace GL
 {
-	struct UniformBlock
+	struct StorageBlock
 	{
 		u32 binding;
 		u32 data_size;
@@ -21,13 +21,13 @@ namespace GL
 
 		struct Description
 		{
-			GL::ShaderProgram::UniformBlockMapping const & layout;
+			GL::ShaderProgram::StorageBlockMapping const & layout;
 		};
 
 		void create(Description const & description)
 		{
 			i32 alignment;
-			glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
+			glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &alignment);
 
 			binding = description.layout.location;
 			data_size = description.layout.data_size;

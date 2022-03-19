@@ -10,3 +10,4 @@
 #include "glsl.hpp"
 #include "framebuffer.hpp"
 #include "uniform_block.hpp"
+#include "storage_block.hpp"

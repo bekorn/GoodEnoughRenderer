@@ -391,7 +391,7 @@ struct Editor final : IRenderer
 				if (BeginTable("uniform_block", 3, ImGuiTableFlags_BordersInnerH))
 				{
 					TableSetupColumn("Name");
-					TableSetupColumn("Location", ImGuiTableColumnFlags_WidthFixed);
+					TableSetupColumn("Binding", ImGuiTableColumnFlags_WidthFixed);
 					TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
 					TableHeadersRow();
 
@@ -406,22 +406,73 @@ struct Editor final : IRenderer
 					EndTable();
 				}
 				TableNextColumn();
-				if (BeginTable("block_uniforms", 3, ImGuiTableFlags_BordersInnerH))
+				if (BeginTable("block_variables", 3, ImGuiTableFlags_BordersInnerH))
 				{
 					TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
 					TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100);
 					TableSetupColumn("Name");
 					TableHeadersRow();
 
-					for (auto const & uniform : uniform_block.uniforms)
+					for (auto const & variable : uniform_block.variables)
 					{
 						TableNextRow();
 						TableNextColumn();
-						Text("%d", uniform.offset);
+						Text("%d", variable.offset);
 						TableNextColumn();
-						Text("%s", GL::GLSLTypeToString(uniform.glsl_type).data());
+						Text("%s", GL::GLSLTypeToString(variable.glsl_type).data());
 						TableNextColumn();
-						Text("%s", uniform.key.data());
+						Text("%s", variable.key.data());
+					}
+					EndTable();
+				}
+			}
+			EndTable();
+		}
+
+		if (BeginTable("storage_block_mappings", 2, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp))
+		{
+			TableSetupColumn("Storage Block");
+			TableSetupColumn("Variables");
+			TableHeadersRow();
+
+			for (auto const & storage_block : named_program.data.storage_block_mappings)
+			{
+				TableNextRow();
+				TableNextColumn();
+				if (BeginTable("storage_block", 3, ImGuiTableFlags_BordersInnerH))
+				{
+					TableSetupColumn("Name");
+					TableSetupColumn("Binding", ImGuiTableColumnFlags_WidthFixed);
+					TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
+					TableHeadersRow();
+
+					TableNextRow();
+					TableNextColumn();
+					Text("%s", storage_block.key.data());
+					TableNextColumn();
+					Text("%d", storage_block.location);
+					TableNextColumn();
+					Text("%d", storage_block.data_size);
+
+					EndTable();
+				}
+				TableNextColumn();
+				if (BeginTable("block_variables", 3, ImGuiTableFlags_BordersInnerH))
+				{
+					TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
+					TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100);
+					TableSetupColumn("Name");
+					TableHeadersRow();
+
+					for (auto const & variable : storage_block.variables)
+					{
+						TableNextRow();
+						TableNextColumn();
+						Text("%d", variable.offset);
+						TableNextColumn();
+						Text("%s", GL::GLSLTypeToString(variable.glsl_type).data());
+						TableNextColumn();
+						Text("%s", variable.key.data());
 					}
 					EndTable();
 				}

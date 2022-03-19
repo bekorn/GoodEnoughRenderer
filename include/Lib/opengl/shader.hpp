@@ -278,13 +278,13 @@ namespace GL
 			u32 data_size;
 			std::string key;
 
-			struct Uniform
+			struct Variable
 			{
 				u32 offset;
 				GLenum glsl_type; // just for debug purposes
 				std::string key;
 			};
-			vector<Uniform> uniforms;
+			vector<Variable> variables;
 		};
 		vector<UniformBlockMapping> uniform_block_mappings;
 
@@ -299,8 +299,6 @@ namespace GL
 			};
 			array<i32, query_props.size()> query_results;
 
-			uniform_block_mappings.clear();
-
 			i32 max_name_size;
 			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
 			std::string name_buffer(max_name_size, 0);
@@ -308,6 +306,7 @@ namespace GL
 			i32 resource_size;
 			glGetProgramInterfaceiv(id, interface, GL_ACTIVE_RESOURCES, &resource_size);
 
+			uniform_block_mappings.clear();
 			uniform_block_mappings.reserve(resource_size);
 			for (auto i = 0; i < resource_size; ++i)
 			{
@@ -328,21 +327,21 @@ namespace GL
 						.location = static_cast<u32>(query_results[0]),
 						.data_size = static_cast<u32>(query_results[1]),
 						.key = name_buffer.substr(0, name_size),
-						.uniforms = query_block_uniforms(i, static_cast<u32>(query_results[2])),
+						.variables = query_uniform_block_variables(i, static_cast<u32>(query_results[2])),
 					}
 				);
 			}
 		};
 
-		vector<UniformBlockMapping::Uniform> query_block_uniforms(u32 block_idx, u32 uniform_count)
+		vector<UniformBlockMapping::Variable> query_uniform_block_variables(u32 block_idx, u32 variable_count)
 		{
-			vector<i32> uniform_indices;
-			uniform_indices.resize(uniform_count);
+			vector<i32> variable_indices;
+			variable_indices.resize(variable_count);
 
 			glGetProgramResourceiv(
 				id, GL_UNIFORM_BLOCK, block_idx,
 				1, &GL_ACTIVE_VARIABLES,
-				uniform_count, nullptr, uniform_indices.data()
+				variable_count, nullptr, variable_indices.data()
 			);
 
 			auto const interface = GL_UNIFORM;
@@ -357,10 +356,10 @@ namespace GL
 			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
 			std::string name_buffer(max_name_size, 0);
 
-			vector<UniformBlockMapping::Uniform> uniforms;
-			uniforms.reserve(uniform_count);
+			vector<UniformBlockMapping::Variable> variables;
+			variables.reserve(variable_count);
 
-			for (auto i: uniform_indices)
+			for (auto i: variable_indices)
 			{
 				glGetProgramResourceiv(
 					id, interface, i,
@@ -374,23 +373,137 @@ namespace GL
 					name_buffer.size(), &name_size, name_buffer.data()
 				);
 
-				uniforms.emplace_back(UniformBlockMapping::Uniform{
+				variables.emplace_back(UniformBlockMapping::Variable{
 					.offset = static_cast<u32>(query_results[0]),
 					.glsl_type = static_cast<GLenum>(query_results[1]),
 					.key = name_buffer.substr(0, name_size),
 				});
 			}
 
-			std::ranges::sort(uniforms, std::ranges::less{}, &UniformBlockMapping::Uniform::offset);
+			std::ranges::sort(variables, std::ranges::less{}, &UniformBlockMapping::Variable::offset);
 
-			return uniforms;
+			return variables;
+		}
+
+		struct StorageBlockMapping
+		{
+			u32 location;
+			u32 data_size;
+			std::string key;
+
+			struct Variable
+			{
+				u32 offset;
+				GLenum glsl_type; // just for debug purposes
+				std::string key;
+			};
+			vector<Variable> variables;
+		};
+		vector<StorageBlockMapping> storage_block_mappings;
+
+		void update_storage_block_mapping()
+		{
+			auto const interface = GL_SHADER_STORAGE_BLOCK;
+
+			array const query_props{
+				GL_BUFFER_BINDING,
+				GL_BUFFER_DATA_SIZE,
+				GL_NUM_ACTIVE_VARIABLES,
+			};
+			array<i32, query_props.size()> query_results;
+
+			i32 max_name_size;
+			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
+			std::string name_buffer(max_name_size, 0);
+
+			i32 resource_size;
+			glGetProgramInterfaceiv(id, interface, GL_ACTIVE_RESOURCES, &resource_size);
+
+			storage_block_mappings.clear();
+			storage_block_mappings.reserve(resource_size);
+			for (auto i = 0; i < resource_size; ++i)
+			{
+				glGetProgramResourceiv(
+					id, interface, i,
+					query_props.size(), query_props.data(),
+					query_props.size(), nullptr, query_results.data()
+				);
+
+				i32 name_size;
+				glGetProgramResourceName(
+					id, interface, i,
+					name_buffer.size(), &name_size, name_buffer.data()
+				);
+
+				storage_block_mappings.emplace_back(
+					StorageBlockMapping{
+						.location = static_cast<u32>(query_results[0]),
+						.data_size = static_cast<u32>(query_results[1]),
+						.key = name_buffer.substr(0, name_size),
+						.variables = query_sotrage_block_variables(i, static_cast<u32>(query_results[2])),
+					}
+				);
+			}
+		};
+
+		vector<StorageBlockMapping::Variable> query_sotrage_block_variables(u32 block_idx, u32 variable_count)
+		{
+			vector<i32> variable_indices;
+			variable_indices.resize(variable_count);
+
+			glGetProgramResourceiv(
+				id, GL_SHADER_STORAGE_BLOCK, block_idx,
+				1, &GL_ACTIVE_VARIABLES,
+				variable_count, nullptr, variable_indices.data()
+			);
+
+			auto const interface = GL_BUFFER_VARIABLE;
+
+			array const query_props{
+				GL_OFFSET,
+				GL_TYPE,
+			};
+			array<i32, query_props.size()> query_results;
+
+			i32 max_name_size;
+			glGetProgramInterfaceiv(id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
+			std::string name_buffer(max_name_size, 0);
+
+			vector<StorageBlockMapping::Variable> variables;
+			variables.reserve(variable_count);
+
+			for (auto i: variable_indices)
+			{
+				glGetProgramResourceiv(
+					id, interface, i,
+					query_props.size(), query_props.data(),
+					query_props.size(), nullptr, query_results.data()
+				);
+
+				i32 name_size;
+				glGetProgramResourceName(
+					id, interface, i,
+					name_buffer.size(), &name_size, name_buffer.data()
+				);
+
+				variables.emplace_back(StorageBlockMapping::Variable{
+					.offset = static_cast<u32>(query_results[0]),
+					.glsl_type = static_cast<GLenum>(query_results[1]),
+					.key = name_buffer.substr(0, name_size),
+				});
+			}
+
+			std::ranges::sort(variables, std::ranges::less{}, &StorageBlockMapping::Variable::offset);
+
+			return variables;
 		}
 
 		void update_interface_mapping()
 		{
+			update_attribute_mapping();
 			update_uniform_mapping();
 			update_uniform_block_mapping();
-			update_attribute_mapping();
+			update_storage_block_mapping();
 		}
 	};
 }

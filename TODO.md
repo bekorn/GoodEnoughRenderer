@@ -7,15 +7,12 @@ Editor
 - Transform gizmos
 
 Rendering
-- Material data blocks
 - GLTF materials
-- Uniform buffers
 - Deferred rendering
 - Instanced rendering
   - Particles
   - Foliage
 - Z-up right-handed coordinate system
-- Mesh shaders
 
 Core
 - Entity Component System (or some equilevent)

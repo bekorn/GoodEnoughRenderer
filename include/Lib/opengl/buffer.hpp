@@ -4,6 +4,7 @@
 
 #include "core.hpp"
 #include "uniform_block.hpp"
+#include "storage_block.hpp"
 
 namespace GL
 {
@@ -44,15 +45,28 @@ namespace GL
 
 		void create(UniformBlockDescription const & description)
 		{
-			i32 alignment;
-			GL::glGetIntegerv(GL::GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
-
-			auto aligned_size = (description.uniform_block.data_size / alignment + 1) * alignment;
-
 			glCreateBuffers(1, &id);
 			glNamedBufferData(
 				id,
-				aligned_size * description.array_size,
+				description.uniform_block.aligned_size * description.array_size,
+				nullptr,
+				description.usage
+			);
+		}
+
+		struct StorageBlockDescription
+		{
+			GLenum usage = GL_DYNAMIC_DRAW;
+			GL::StorageBlock const & storage_block;
+			usize array_size = 1;
+		};
+
+		void create(StorageBlockDescription const & description)
+		{
+			glCreateBuffers(1, &id);
+			glNamedBufferData(
+				id,
+				description.storage_block.aligned_size * description.array_size,
 				nullptr,
 				description.usage
 			);
