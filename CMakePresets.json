@@ -2,22 +2,30 @@
   "version": 3,
   "configurePresets": [
     {
+      "hidden": true,
+      "name": "baseNinja",
+      "generator": "Ninja",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "binaryDir": "build/${presetName}-Project",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "./build/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_MANIFEST_INSTALL": "ON"
+      }
+    },
+    {
+      "inherits": "baseNinja",
       "name": "Debug",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64",
-      "binaryDir": "build/Debug-Project",
-
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "GL_DEBUG": "TRUE"
       }
     },
     {
+      "inherits": "baseNinja",
       "name": "RelWithDebInfo",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64",
-      "binaryDir": "build/RelWithDebInfo-Project",
-
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
