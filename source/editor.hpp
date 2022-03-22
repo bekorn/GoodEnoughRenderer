@@ -22,8 +22,7 @@ struct Editor final : IRenderer
 	{
 		using namespace ImGui;
 
-		SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
-		Begin("Metrics", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+		Begin("Metrics", nullptr, ImGuiWindowFlags_NoCollapse);
 
 		{
 			static array<f64, 30> deltas{};
@@ -573,13 +572,73 @@ struct Editor final : IRenderer
 		End();
 	}
 
+	void workspaces()
+	{
+		using namespace ImGui;
+
+		// see imgui_demo.cpp ShowExampleAppDockSpace function
+		auto * viewport = GetMainViewport();
+		SetNextWindowPos(viewport->WorkPos);
+		SetNextWindowSize(viewport->WorkSize);
+		SetNextWindowViewport(viewport->ID);
+		PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+		PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+		Begin(
+			"MainWindow", nullptr,
+			ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse
+			| ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus
+			| ImGuiWindowFlags_NoNavFocus
+		);
+		ImGui::PopStyleVar(2);
+
+
+		BeginTabBar("Workspaces");
+
+		struct Workspace
+		{
+			const char * name;
+			ImGuiID id;
+
+			explicit Workspace(const char* name):
+				name(name),
+				id(GetID(name))
+			{}
+		};
+
+		static array workspaces = {
+			Workspace("Workspace 1"),
+			Workspace("Workspace 2"),
+			Workspace("Workspace 3"),
+		};
+
+		for (auto & workspace: workspaces)
+		{
+			if (BeginTabItem(workspace.name))
+				DockSpace(workspace.id), EndTabItem();
+			else
+				DockSpace(workspace.id, {0, 0}, ImGuiDockNodeFlags_KeepAliveOnly);
+		}
+
+		EndTabBar();
+
+		End();
+	}
+
 	void create() final
 	{
+		// Enable docking
+		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+		// Table styling
 		ImGui::GetStyle().CellPadding.x = 6;
 	}
 
 	void render(GLFW::Window const & window, FrameInfo const & frame_info) final
 	{
+		workspaces();
+
+		// TODO(bekorn): these windows are monolithic right now,
+		//  it should be similar to Blender's, each workspace can have arbitrary windows with dynamic types
 		metrics_window(frame_info);
 		game_window();
 		game_settings_window();
