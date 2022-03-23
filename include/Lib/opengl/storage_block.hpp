@@ -4,6 +4,8 @@
 
 namespace GL
 {
+	// TODO(bekorn): maybe merge this and UniformBlock into Block or InterfaceBlock
+	//  because the only difference is the alignment size and that can be specified in the description
 	struct StorageBlock
 	{
 		u32 binding;
@@ -54,7 +56,7 @@ namespace GL
 		void get(const byte * buffer, std::string const & variable_key, T & destination) const
 		{
 			std::memcpy(
-				destination,
+				&destination,
 				buffer + variables.at(variable_key).offset, sizeof(T)
 			);
 		}

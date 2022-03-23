@@ -84,9 +84,9 @@ using unique_array = std::unique_ptr<T[]>;
 template<typename T, typename... Args>
 auto inline make_unique_one(Args && ... args)
 { return std::make_unique<T, Args...>(std::forward<Args>(args)...); }
-template<typename T, typename... Args>
-auto inline make_unique_array(Args && ... args)
-{ return std::make_unique<T[], Args...>(std::forward<Args>(args)...); }
+template<typename T>
+auto inline make_unique_array(size_t const size)
+{ return std::make_unique<T[]>(size); }
 
 // Simple byte buffer
 struct ByteBuffer
@@ -125,18 +125,18 @@ struct ByteBuffer
 	}
 
 	template<typename T>
-	auto span_as(usize offset, usize size) const
+	auto span_as(usize byte_offset, usize size) const
 	{
-		assert(("Out of bounds access", offset + size <= this->size));
+		assert(("Out of bounds access", byte_offset + size <= this->size));
 		return span<T>(
-			reinterpret_cast<T*>(data.get() + offset),
-			reinterpret_cast<T*>(data.get() + offset + size)
+			reinterpret_cast<T*>(data.get() + byte_offset),
+			reinterpret_cast<T*>(data.get() + byte_offset + size)
 		);
 	}
 
 	template<typename T>
-	auto data_as() const
-	{ return reinterpret_cast<T*>(data.get()); }
+	auto data_as(usize byte_offset = 0) const
+	{ return reinterpret_cast<T*>(data.get() + byte_offset); }
 };
 
 // shortcuts

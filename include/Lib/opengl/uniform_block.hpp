@@ -54,7 +54,7 @@ namespace GL
 		void get(const byte * buffer, std::string const & variable_key, T & destination) const
 		{
 			std::memcpy(
-				destination,
+				&destination,
 				buffer + variables.at(variable_key).offset, sizeof(T)
 			);
 		}

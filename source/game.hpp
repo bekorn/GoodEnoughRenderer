@@ -32,6 +32,7 @@ struct Game final : IRenderer
 	GL::Buffer camera_uniform_buffer;
 	GL::Buffer gltf_material_buffer; 									// !!! Temporary
 	std::unordered_map<Name, u32, Name::Hasher> gltf_material2index;	// !!! Temporary
+	std::queue<Name> gltf_material_is_dirty;							// !!! Temporary
 
 	void create_framebuffer()
 	{
@@ -168,6 +169,28 @@ struct Game final : IRenderer
 	void render(GLFW::Window const & window, FrameInfo const & frame_info) final
 	{
 		using namespace GL;
+
+		// Update gltf materials !!! Temporary
+		{
+			auto & block = Render::Material_gltf_pbrMetallicRoughness::block;
+
+			while (not gltf_material_is_dirty.empty())
+			{
+				auto & name = gltf_material_is_dirty.front();
+				auto & material = assets.materials.get(name);
+
+				auto * map = (byte *) glMapNamedBufferRange(
+					gltf_material_buffer.id,
+					gltf_material2index.at(name) * block.aligned_size,
+					block.data_size,
+					BufferAccessMask::GL_MAP_WRITE_BIT
+				);
+				material->write_to_buffer(map);
+				glUnmapNamedBuffer(gltf_material_buffer.id);
+
+				gltf_material_is_dirty.pop();
+			}
+		}
 
 		glViewport(0, 0, resolution.x, resolution.y);
 

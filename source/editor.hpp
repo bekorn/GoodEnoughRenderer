@@ -261,10 +261,51 @@ struct Editor final : IRenderer
 			return;
 		}
 		auto & material = assets.materials.get(material_name);
+		auto & block = material->get_block();
 
-		ColorEdit4("Base Color", begin(
-			dynamic_cast<Render::Material_gltf_pbrMetallicRoughness*>(material.get())->base_color_factor
-		));
+		auto buffer = ByteBuffer(block.data_size);
+		material->write_to_buffer(buffer.begin());
+
+		bool edited = false;
+		for (auto &[name, variable]: block.variables)
+			switch (variable.glsl_type)
+			{
+			case GL::GL_FLOAT:
+			{
+				edited |= DragFloat(name.data(), buffer.data_as<f32>(variable.offset));
+				break;
+			}
+			case GL::GL_FLOAT_VEC2:
+			{
+				edited |= DragFloat2(name.data(), buffer.data_as<f32>(variable.offset));
+				break;
+			}
+			case GL::GL_FLOAT_VEC3:
+			{
+				edited |= ColorEdit3(name.data(), buffer.data_as<f32>(variable.offset));
+				break;
+			}
+			case GL::GL_FLOAT_VEC4:
+			{
+				edited |= ColorEdit4(name.data(), buffer.data_as<f32>(variable.offset));
+				break;
+			}
+			case GL::GL_UNSIGNED_INT64_ARB:
+			{
+				// TODO(bekorn): display the texture
+				// TODO(bekorn): should be editable
+				LabelText(name.data(), "%llu", *buffer.data_as<u64>(variable.offset));
+				break;
+			}
+			default:
+			{ LabelText(name.data(), "%s is not supported", GL::GLSLTypeToString(variable.glsl_type).data()); }
+			}
+
+		if (edited)
+		{
+			material->read_from_buffer(buffer.begin());
+			game.gltf_material_is_dirty.push(material_name); // !!! Temporary
+		}
 
 		End();
 	}
