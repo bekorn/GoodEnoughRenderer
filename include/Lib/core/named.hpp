@@ -24,6 +24,9 @@ struct Name
 		hash(std::hash<std::string>{}(str)), string(str)
 	{}
 
+	Name(const char * cp) : Name(std::string_view(cp))
+	{}
+
 	bool operator==(Name const & other) const
 	{ return hash == other.hash; }
 
@@ -94,5 +97,11 @@ struct Managed
 	{ return resources.begin(); }
 
 	auto end()
+	{ return resources.end(); }
+
+	auto begin() const
+	{ return resources.begin(); }
+
+	auto end() const
 	{ return resources.end(); }
 };

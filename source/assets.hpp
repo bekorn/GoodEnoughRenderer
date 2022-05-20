@@ -11,7 +11,7 @@
 
 struct Assets
 {
-	Desriptions const & desriptions;
+	Descriptions const & descriptions;
 
 	// GL resources
 	Managed<GL::UniformBlock> uniform_blocks;
@@ -25,8 +25,8 @@ struct Assets
 	// Scene resources
 	Scene::Tree scene_tree;
 
-	explicit Assets(Desriptions const & desriptions) :
-		desriptions(desriptions)
+	explicit Assets(Descriptions const & desriptions) :
+		descriptions(desriptions)
 	{}
 
 	COPY(Assets, delete)
@@ -34,15 +34,19 @@ struct Assets
 
 	void create()
 	{
-		load_glsl_program(GLTF::pbrMetallicRoughness_program_name);
-		load_glsl_uniform_block("Lights"_name);
-		load_glsl_uniform_block("Camera"_name);
-		load_gltf("Sponza"_name);
+		for (auto const & [name, _] : descriptions.uniform_block)
+			load_glsl_uniform_block(name);
+
+		for (auto const & [name, _] : descriptions.glsl)
+			load_glsl_program(name);
+
+		for (auto const & [name, _] : descriptions.gltf)
+			load_gltf(name);
 	}
 
 	void load_glsl_program(Name const & name)
 	{
-		auto const loaded_data = GLSL::Program::Load(desriptions.glsl.get(name));
+		auto const loaded_data = GLSL::Program::Load(descriptions.glsl.get(name));
 
 		if (auto expected = GLSL::Program::Convert(loaded_data))
 		{
@@ -58,7 +62,7 @@ struct Assets
 
 	void load_glsl_uniform_block(Name const & name)
 	{
-		auto const loaded_data = GLSL::UniformBlock::Load(desriptions.uniform_block.get(name));
+		auto const loaded_data = GLSL::UniformBlock::Load(descriptions.uniform_block.get(name));
 
 		if (auto expected = GLSL::UniformBlock::Convert(loaded_data))
 		{
@@ -74,7 +78,7 @@ struct Assets
 
 	void load_gltf(Name const & name)
 	{
-		auto const gltf_data = GLTF::Load(desriptions.gltf.get(name));
+		auto const gltf_data = GLTF::Load(descriptions.gltf.get(name));
 		GLTF::Convert(gltf_data, textures, materials, primitives, meshes, scene_tree);
 	}
 };

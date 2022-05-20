@@ -11,6 +11,18 @@
 
 i32 main(i32 argc, char** argv)
 {
+	if (argc < 2)
+	{
+		std::cerr << "First parameter must be the project directory";
+		std::exit(1);
+	}
+	auto project_root = std::filesystem::path(argv[1]);
+	if (not std::filesystem::exists(project_root))
+	{
+		std::cerr << "Given directory does not exist";
+		std::exit(1);
+	}
+
 	GLFW::Context glfw_context;
 	GLFW::Window window;
 	Imgui::Context imgui_context;
@@ -37,10 +49,10 @@ i32 main(i32 argc, char** argv)
 	imgui_context.create({.window = window});
 	std::clog << GL::GetContextInfo() << std::endl;
 
-	Desriptions desriptions;
-	desriptions.create(R"(E:\Users\Berk\Desktop\Projeler\Portfolio\GoodEnoughRenderer\test_assets)");
+	Descriptions descriptions;
+	descriptions.create(project_root);
 
-	Assets assets(desriptions);
+	Assets assets(descriptions);
 	assets.create();
 
 	vector<unique_one<IRenderer>> renderers;
