@@ -1,18 +1,22 @@
 {
   "name": "good-enough-renderer",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "dependencies": [
     {
-      "name": "glbinding"
+      "name": "glbinding",
+      "version>=": "3.1.0"
     },
     {
-      "name": "glfw3"
+      "name": "glfw3",
+      "version>=": "3.3.6"
     },
     {
-      "name": "glm"
+      "name": "glm",
+      "version>=": "0.9.9.8"
     },
     {
       "name": "imgui",
+      "version>=": "1.87",
       "default-features": false,
       "features": [
         "docking-experimental",
@@ -21,10 +25,12 @@
       ]
     },
     {
-      "name": "rapidjson"
+      "name": "rapidjson",
+      "version>=": "2020-09-14#2"
     },
     {
-      "name": "stb"
+      "name": "stb",
+      "version>=": "2020-09-14"
     }
   ],
   "features": {
@@ -34,5 +40,6 @@
         "benchmark"
       ]
     }
-  }
+  },
+  "builtin-baseline": "440075a9fccf52cab386521967e4f074acd1bd34"
 }

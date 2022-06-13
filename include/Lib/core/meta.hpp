@@ -1,15 +1,15 @@
 #pragma once
 
-#if defined(_DEBUG)
+#if defined(_DEBUG_CORE)
 constexpr bool DEBUG = true;
 #else
 constexpr bool DEBUG = false;
 #endif
 
-#if defined(_GL_DEBUG)
-constexpr bool GL_DEBUG = true;
+#if defined(_DEBUG_GL)
+constexpr bool DEBUG_GL = true;
 #else
-constexpr bool GL_DEBUG = false;
+constexpr bool DEBUG_GL = false;
 #endif
 
 // TODO(bekorn): not sure if this will be handy or useless

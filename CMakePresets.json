@@ -12,15 +12,15 @@
       "binaryDir": "build/${presetName}-Project",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "./build/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "VCPKG_MANIFEST_INSTALL": "ON"
+        "VCPKG_MANIFEST_INSTALL": "ON",
+        "VCPKG_FEATURE_FLAGS": "versions"
       }
     },
     {
       "inherits": "baseNinja",
       "name": "Debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "GL_DEBUG": "TRUE"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {

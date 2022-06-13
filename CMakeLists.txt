@@ -13,11 +13,6 @@ target_link_libraries(App
     PUBLIC Lib)
 
 
-if (GL_DEBUG)
-    target_compile_definitions(App PUBLIC _GL_DEBUG)
-endif ()
-
-
 # Debug optimizations
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     # see section Version of CRT on https://ledas.com/post/861-fast-debug-in-visual-c/
@@ -28,4 +23,8 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     # Not sure if this has any affects (can't see the generated assembly currently).
     # However, this flag is needed to generate same assembly from std::algorithms and bare for loops.
     list(APPEND CMAKE_CXX_FLAGS_DEBUG " /O1")
+
+    # Enable debugging for specific parts
+    target_compile_definitions(App PUBLIC _DEBUG_CORE)
+    target_compile_definitions(App PUBLIC _DEBUG_GL)
 endif ()

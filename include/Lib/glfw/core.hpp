@@ -71,7 +71,7 @@ namespace GLFW
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, description.gl_minor);
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
-			if constexpr (GL_DEBUG)
+			if constexpr (DEBUG_GL)
 				glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
 			glfw_window = glfwCreateWindow(
@@ -92,7 +92,7 @@ namespace GLFW
 			glbinding::initialize(glfwGetProcAddress);
 
 			// Set callbacks
-			if constexpr (GL_DEBUG)
+			if constexpr (DEBUG_GL)
 			{
 				using namespace GL;
 
