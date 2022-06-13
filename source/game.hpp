@@ -3,8 +3,8 @@
 #include "Lib/core/.hpp"
 #include "Lib/opengl/.hpp"
 #include "Lib/render/.hpp"
+#include "Lib/asset_kitchen/assets.hpp"
 
-#include "assets.hpp"
 #include "renderer.hpp"
 #include "camera.hpp"
 

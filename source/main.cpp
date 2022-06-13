@@ -4,8 +4,8 @@
 #include "Lib/opengl/.hpp"
 #include "Lib/glfw/.hpp"
 #include "Lib/imgui/.hpp"
+#include "Lib/asset_kitchen/assets.hpp"
 
-#include "assets.hpp"
 #include "game.hpp"
 #include "editor.hpp"
 

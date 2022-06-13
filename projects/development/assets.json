@@ -16,7 +16,7 @@
   ],
   "glsl_program": [
     {
-      "name": "GLTF_pbrMetallicRoughness",
+      "name": "gltf_pbrMetallicRoughness",
       "stages": {
         "vert": "glsl/program/gltf_pbrMetallicRoughness.vert.glsl",
         "frag": "glsl/program/gltf_pbrMetallicRoughness.frag.glsl"
