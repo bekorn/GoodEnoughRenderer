@@ -13,13 +13,25 @@ i32 main(i32 argc, char** argv)
 {
 	if (argc < 2)
 	{
-		std::cerr << "First parameter must be the project directory";
+		std::cerr << "First parameter must be the editor directory";
 		std::exit(1);
 	}
-	auto project_root = std::filesystem::path(argv[1]);
+	auto editor_root = std::filesystem::path(argv[1]);
+	if (not std::filesystem::exists(editor_root))
+	{
+		std::cerr << "Editor directory does not exist";
+		std::exit(1);
+	}
+
+	if (argc < 3)
+	{
+		std::cerr << "Second parameter must be the project directory";
+		std::exit(1);
+	}
+	auto project_root = std::filesystem::path(argv[2]);
 	if (not std::filesystem::exists(project_root))
 	{
-		std::cerr << "Given directory does not exist";
+		std::cerr << "Project directory does not exist";
 		std::exit(1);
 	}
 
@@ -49,16 +61,22 @@ i32 main(i32 argc, char** argv)
 	imgui_context.create({.window = window});
 	std::clog << GL::GetContextInfo() << std::endl;
 
+	// Project assets
 	Descriptions descriptions;
 	descriptions.create(project_root);
-
 	Assets assets(descriptions);
 	assets.create();
+
+	// Editor assets
+	Descriptions editor_descriptions;
+	editor_descriptions.create(editor_root);
+	Assets editor_assets(editor_descriptions);
+	editor_assets.create();
 
 	vector<unique_one<IRenderer>> renderers;
 	{
 		auto game = make_unique_one<Game>(assets);
-		auto editor = make_unique_one<Editor>(assets, *game);
+		auto editor = make_unique_one<Editor>(editor_assets, *game);
 
 		renderers.emplace_back(move(game));
 		renderers.emplace_back(move(editor));

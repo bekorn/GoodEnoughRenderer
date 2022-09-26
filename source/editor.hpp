@@ -11,11 +11,11 @@
 
 struct Editor final : IRenderer
 {
-	Assets & assets;
+	Assets & editor_assets;
 	Game & game;
 
-	explicit Editor(Assets & assets, Game & game) :
-		assets(assets), game(game)
+	explicit Editor(Assets & editor_assets, Game & game) :
+		editor_assets(editor_assets), game(game)
 	{}
 
 	void metrics_window(FrameInfo const & frame_info)
@@ -57,6 +57,30 @@ struct Editor final : IRenderer
 			{0, 1}, {1, 0} // because default is flipped on y-axis
 		);
 
+		// Draw gizmos
+		{
+			using namespace GL;
+
+			// Render on top of the game framebuffer
+			// TODO(bekorn): should editor has its own framebuffer?
+			glBindFramebuffer(GL_FRAMEBUFFER, game.framebuffer.id);
+			glClearNamedFramebufferfv(game.framebuffer.id, GL_DEPTH, 0, &game.clear_depth);
+			glEnable(GL_DEPTH_TEST);
+
+			auto & gizmo_program = editor_assets.programs.get("gizmo"_name);
+			glUseProgram(gizmo_program.id);
+
+			// TODO(bekorn): size of the gizmo should be in screen space (currently 1/6 on the gizmo.vert.glsl)
+			auto transform = f32x3x3(visit([](Camera auto & c){ return c.get_view(); }, game.camera));
+			glUniformMatrix3fv(0, 1, false, begin(transform));
+
+			for (auto & drawable : editor_assets.meshes.get("AxisGizmo:mesh:0:Cube"_name).drawables)
+			{
+				glBindVertexArray(drawable.vertex_array.id);
+				glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+			}
+		}
+
 		End();
 	}
 
@@ -82,7 +106,7 @@ struct Editor final : IRenderer
 		if (BeginCombo("Node", node_name.string.data()))
 		{
 			auto indent = ImGui::GetStyle().IndentSpacing;
-			for (auto & node: assets.scene_tree.depth_first())
+			for (auto & node: game.assets.scene_tree.depth_first())
 			{
 				if (node.depth) Indent(indent * node.depth);
 
@@ -94,19 +118,19 @@ struct Editor final : IRenderer
 
 			EndCombo();
 		}
-		if (not assets.scene_tree.named_indices.contains(node_name))
+		if (not game.assets.scene_tree.named_indices.contains(node_name))
 		{
 			Text("Pick a node");
 			End();
 			return;
 		}
-		auto & node_index = assets.scene_tree.named_indices.get(node_name);
-		auto & node = assets.scene_tree.get(node_index);
+		auto & node_index = game.assets.scene_tree.named_indices.get(node_name);
+		auto & node = game.assets.scene_tree.get(node_index);
 
 
 		auto const & parent_name = node.depth == 0
 								   ? "-"
-								   : assets.scene_tree.get({node.depth - 1, node.parent_index}).name.string.data();
+								   : game.assets.scene_tree.get({node.depth - 1, node.parent_index}).name.string.data();
 		LabelText("Parent", "%s", parent_name);
 
 		auto const & mesh_name = node.mesh == nullptr
@@ -147,19 +171,19 @@ struct Editor final : IRenderer
 		static Name mesh_name;
 		if (BeginCombo("Mesh", mesh_name.string.data()))
 		{
-			for (auto const & [name, _]: assets.meshes)
+			for (auto const & [name, _]: game.assets.meshes)
 				if (Selectable(name.string.data()))
 					mesh_name = name;
 
 			EndCombo();
 		}
-		if (not assets.meshes.contains(mesh_name))
+		if (not game.assets.meshes.contains(mesh_name))
 		{
 			Text("Pick a mesh");
 			End();
 			return;
 		}
-		auto & mesh = assets.meshes.get(mesh_name);
+		auto & mesh = game.assets.meshes.get(mesh_name);
 
 
 		Spacing(), Separator(), Text("Drawables");
@@ -192,7 +216,7 @@ struct Editor final : IRenderer
 			{
 				if (Button("Load all drawables"))
 					for (auto & drawable: mesh.drawables)
-						drawable.load(assets.programs.get(GLTF::pbrMetallicRoughness_program_name));
+						drawable.load(game.assets.programs.get(GLTF::pbrMetallicRoughness_program_name));
 			}
 		}
 
@@ -248,19 +272,19 @@ struct Editor final : IRenderer
 		static Name material_name;
 		if (BeginCombo("Material", material_name.string.data()))
 		{
-			for (auto const & [name, _]: assets.materials)
+			for (auto const & [name, _]: game.assets.materials)
 				if (Selectable(name.string.data()))
 					material_name = name;
 
 			EndCombo();
 		}
-		if (not assets.materials.contains(material_name))
+		if (not game.assets.materials.contains(material_name))
 		{
 			Text("Pick a material");
 			End();
 			return;
 		}
-		auto & material = assets.materials.get(material_name);
+		auto & material = game.assets.materials.get(material_name);
 		auto & block = material->get_block();
 
 		auto buffer = ByteBuffer(block.data_size);
@@ -319,13 +343,13 @@ struct Editor final : IRenderer
 		static Name texture_name;
 		if (BeginCombo("Texture", texture_name.string.data()))
 		{
-			for (auto & [name, _]: assets.textures)
+			for (auto & [name, _]: game.assets.textures)
 				if (Selectable(name.string.data()))
 					texture_name = name;
 
 			EndCombo();
 		}
-		if (auto it = assets.textures.find(texture_name); it != assets.textures.end())
+		if (auto it = game.assets.textures.find(texture_name); it != game.assets.textures.end())
 		{
 			auto & [_, texture] = *it;
 			SameLine(), Text("(id %d)", texture.id);
@@ -351,28 +375,35 @@ struct Editor final : IRenderer
 		Begin("Program Info", nullptr);
 
 		static Name program_name;
+		static Assets * assets = &game.assets;
 		if (BeginCombo("Program", program_name.string.data()))
 		{
-			for (auto const & [name, _]: assets.programs)
+			Selectable("Game", false, ImGuiSelectableFlags_Disabled);
+			for (auto const & [name, _]: game.assets.programs)
 				if (Selectable(name.string.data()))
-					program_name = name;
+					program_name = name, assets = &game.assets;
+
+			Selectable("Editor", false, ImGuiSelectableFlags_Disabled);
+			for (auto const & [name, _]: editor_assets.programs)
+				if (Selectable(name.string.data()))
+					program_name = name, assets = &editor_assets;
 
 			EndCombo();
 		}
-		if (not assets.programs.contains(program_name))
+		if (not assets->programs.contains(program_name))
 		{
 			Text("Pick a program");
 			End();
 			return;
 		}
-		auto named_program = assets.programs.get_named(program_name);
+		auto named_program = assets->programs.get_named(program_name);
 
 		SameLine(), Text("(id: %d)", named_program.data.id);
 
 		if (Button("Reload"))
-			assets.load_glsl_program(named_program.name);
+			assets->load_glsl_program(named_program.name);
 
-		if (auto const & error = assets.program_errors.get(program_name); not error.empty())
+		if (auto const & error = assets->program_errors.get(program_name); not error.empty())
 			TextColored({255, 0, 0, 255}, "%s", error.data());
 
 		if (BeginTable("attribute_mappings", 4, ImGuiTableFlags_BordersInnerH))
@@ -532,25 +563,25 @@ struct Editor final : IRenderer
 		static Name uniform_buffer_name;
 		if (BeginCombo("Uniform Buffer", uniform_buffer_name.string.data()))
 		{
-			for (auto const & [name, _]: assets.uniform_blocks)
+			for (auto const & [name, _]: game.assets.uniform_blocks)
 				if (Selectable(name.string.data()))
 					uniform_buffer_name = name;
 
 			EndCombo();
 		}
-		if (not assets.uniform_blocks.contains(uniform_buffer_name))
+		if (not game.assets.uniform_blocks.contains(uniform_buffer_name))
 		{
 			Text("Pick a uniform buffer");
 			End();
 			return;
 		}
-		auto named_uniform_buffer = assets.uniform_blocks.get_named(uniform_buffer_name);
+		auto named_uniform_buffer = game.assets.uniform_blocks.get_named(uniform_buffer_name);
 		auto & uniform_buffer = named_uniform_buffer.data;
 
 		if (Button("Reload"))
-			assets.load_glsl_uniform_block(named_uniform_buffer.name);
+			game.assets.load_glsl_uniform_block(named_uniform_buffer.name);
 
-		if (auto const & error = assets.program_errors.get(named_uniform_buffer.name); not error.empty())
+		if (auto const & error = game.assets.program_errors.get(named_uniform_buffer.name); not error.empty())
 			TextColored({255, 0, 0, 255}, "%s", error.data());
 
 		LabelText("Name", "%s", uniform_buffer.key.data());
@@ -672,6 +703,11 @@ struct Editor final : IRenderer
 
 		// Table styling
 		ImGui::GetStyle().CellPadding.x = 6;
+
+		// Load gizmo meshes
+		for (auto & [_, mesh] : editor_assets.meshes)
+			for (auto & drawable : mesh.drawables)
+				drawable.load(editor_assets.programs.get("gizmo"_name));
 	}
 
 	void render(GLFW::Window const & window, FrameInfo const & frame_info) final
@@ -687,8 +723,8 @@ struct Editor final : IRenderer
 		mesh_settings_window();
 		material_settings_window();
 		textures_window();
-		program_window();
 		uniform_buffer_window();
+		program_window();
 		camera_window();
 
 //		ImGui::ShowDemoWindow();

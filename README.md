@@ -9,9 +9,8 @@ git clone --single-branch https://github.com/Microsoft/vcpkg.git
 ./vcpkg/bootstrap-vcpkg.bat
 ```
 
-Now you can open the project with CLion and everything should be fine. **Or**:
-
-You can generate the project with cmake presets `Debug` or `RelWithDebInfo` (_both require Ninja_)
+Now you can open the project with CLion and everything should be fine.
+**Or**, you can generate the project with cmake presets `Debug` or `RelWithDebInfo` (_both require Ninja_)
 ```
 cd path/to/clone
 cmake --preset=RelWithDebInfo
@@ -23,9 +22,10 @@ cd path/to/clone
 cmake --build --preset=RelWithDebInfo
 ```
 
-To run the program, provide the path to the `projects/development` folder as the first and only argument so the assets are loaded.
+To run the program, provide the paths to `projects/editor` and `projects/development` folders as the command line arguments.
+(I prefer absolute paths to prevent any _current working directory_ differences between compilers) 
 
-GLTF assets are not added to git. I may prepare a GDrive link for the ones I'm using but actually any model is fine,
+GLTF assets are not added to git (except `projects/editor/models`). I may prepare a GDrive link for the ones I'm using but actually any model is fine,
 just edit the `projects/development/assets.json`.
 
 ---

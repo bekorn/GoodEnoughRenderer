@@ -1,0 +1,17 @@
+{
+  "gltf": [
+    {"name": "AxisGizmo", "path": "model/axis gizmo/axis gizmo.gltf"}
+  ],
+  "glsl_uniform_block": [],
+  "glsl_program": [
+    {
+      "name": "gizmo",
+      "stages": {
+        "vert": "glsl/program/gizmo.vert.glsl",
+        "frag": "glsl/program/gizmo.frag.glsl"
+      },
+      "include_strings": [],
+      "include_paths": []
+    }
+  ]
+}
