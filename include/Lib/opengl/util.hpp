@@ -1,27 +1,26 @@
 #pragma once
 
-#include <sstream>
-
 #include "Lib/core/core.hpp"
 
 namespace GL
 {
 	std::string GetContextInfo()
 	{
-		std::stringstream out;
+		fmt::memory_buffer buffer;
+		auto buffer_iter = std::back_inserter(buffer);
 
-		out << "Renderer: " << glGetString(GL_RENDERER) << '\n';
+		fmt::format_to(buffer_iter, "Device: {}\n", (const char *) glGetString(GL_RENDERER));
 
 		i32 major, minor;
 		glGetIntegerv(GL_MAJOR_VERSION, &major);
 		glGetIntegerv(GL_MINOR_VERSION, &minor);
-		out << "GL version: " << major << '.' << minor << '\n';
+		fmt::format_to(buffer_iter, "GL version: {}.{}\n", major, minor);
 
 		char dot;
 		std::istringstream((char const*) glGetString(GL_SHADING_LANGUAGE_VERSION)) >> major >> dot >> minor;
-		out << "GLSL version: " << major << '.' << minor << '\n';
+		fmt::format_to(buffer_iter, "GLSL version: {}.{}", major, minor);
 
-		return out.str();
+		return fmt::to_string(buffer);
 	}
 
 	void DebugCallback(
@@ -35,7 +34,7 @@ namespace GL
 		if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
 			return;
 
-		std::stringstream out;
+		std::ostringstream out;
 
 		out << "OpenGL Debug [";
 		switch (source)
@@ -77,6 +76,6 @@ namespace GL
 		if (message[length - 2] != '\n')
 			out << '\n';
 
-		std::clog << out.str();
+		fmt::print("{}", out.str());
 	}// @formatter:on
 }

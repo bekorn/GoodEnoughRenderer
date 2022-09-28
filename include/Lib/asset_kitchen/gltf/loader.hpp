@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <execution>
 
 #include "Lib/file_management/.hpp"
@@ -78,7 +77,7 @@ namespace GLTF
 					auto const file_data = LoadAsBytes(file_dir / uri);
 					i32x2 dimensions;
 					i32 channels;
-					void* raw_pixel_data = stbi_load_from_memory(
+					void * raw_pixel_data = stbi_load_from_memory(
 						file_data.data_as<const unsigned char>(), file_data.size,
 						&dimensions.x, &dimensions.y,
 						&channels, 0
@@ -291,7 +290,7 @@ namespace GLTF
 				}
 
 				if (auto member = gltf_node.FindMember("children"); member != gltf_node.MemberEnd())
-					for (auto & child_index : member->value.GetArray())
+					for (auto & child_index: member->value.GetArray())
 						node.child_indices.push_back(child_index.GetUint());
 
 				loaded.nodes.push_back(node);
@@ -308,7 +307,7 @@ namespace GLTF
 			auto const & gltf_scene = member->value.GetArray()[scene_index].GetObject();
 
 			if (auto member = gltf_scene.FindMember("nodes"); member != gltf_scene.MemberEnd())
-				for (auto & node_index : member->value.GetArray())
+				for (auto & node_index: member->value.GetArray())
 					loaded.scene.node_indices.push_back(node_index.GetUint());
 		}
 		else

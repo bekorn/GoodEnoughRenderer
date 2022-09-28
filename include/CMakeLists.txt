@@ -17,13 +17,15 @@ find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
 find_path(STB_INCLUDE_DIRS "stb.h")
+find_package(fmt CONFIG REQUIRED)
 
 target_link_libraries(Lib INTERFACE
     glbinding::glbinding glbinding::glbinding-aux
     glfw
     glm::glm
     imgui::imgui
-    rapidjson)
+    rapidjson
+    fmt::fmt-header-only)
 
 target_include_directories(Lib INTERFACE
     ${STB_INCLUDE_DIRS})

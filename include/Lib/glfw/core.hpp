@@ -8,9 +8,9 @@ namespace GLFW
 {
 	struct Context
 	{
-		static void error_callback(i32 error, const char* description)
+		static void error_callback(i32 error, const char * description)
 		{
-			std::cerr << "GLFW Error " << error << ": " << description << '\n';
+			fmt::print(stderr, "GLFW Error {}: {}\n", error, description);
 		}
 
 		CTOR(Context, default)
@@ -23,7 +23,7 @@ namespace GLFW
 			glfwSetErrorCallback(error_callback);
 
 			if (glfwInit())
-				std::clog << "GLFW initialized\n";
+				fmt::print("GLFW initialized\n");
 			else
 				return "GLFW failed to initialize";
 
@@ -35,21 +35,21 @@ namespace GLFW
 			glfwTerminate();
 		}
 	};
-	
+
 	struct Window
 	{
-		GLFWwindow* glfw_window = nullptr;
+		GLFWwindow * glfw_window = nullptr;
 
 		CTOR(Window, default)
 		COPY(Window, delete)
 		MOVE(Window, default)
 
-		operator GLFWwindow*() const
+		operator GLFWwindow *() const
 		{
 			return glfw_window;
 		}
 
-		static void resize_callback(GLFWwindow*, int width, int height)
+		static void resize_callback(GLFWwindow *, int width, int height)
 		{
 			GL::glViewport(0, 0, width, height);
 		}
@@ -80,7 +80,7 @@ namespace GLFW
 			);
 
 			if (glfw_window != nullptr)
-				std::clog << "GLFW Window created\n";
+				fmt::print("GLFW Window created\n");
 			else
 				return "GLFW Window failed to create";
 
@@ -105,8 +105,8 @@ namespace GLFW
 				glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 				glDebugMessageCallback(DebugCallback, nullptr);
 				glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-				
-				std::clog << "GL Debug initialized\n";
+
+				fmt::print("GL Debug initialized\n");
 			}
 
 			glfwSetWindowSizeCallback(glfw_window, resize_callback);

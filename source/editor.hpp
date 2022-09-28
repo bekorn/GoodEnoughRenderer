@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sstream>
+#include <ranges>
 
 #include "Lib/opengl/.hpp"
 #include "Lib/render/.hpp"
@@ -17,6 +17,16 @@ struct Editor final : IRenderer
 	explicit Editor(Assets & editor_assets, Game & game) :
 		editor_assets(editor_assets), game(game)
 	{}
+
+	// TODO(bekorn): as I understand, imgui already has a buffer to keep formatted strings, so this might be unnecessary
+	// ImGui + fmtlib utility (especially handy for tables)
+	inline static fmt::memory_buffer _buffer;
+	inline static auto _buffer_iter = std::back_inserter(_buffer);
+	inline static auto const TextFMT = []<typename... T>(fmt::format_string<T...> fmt, T&&... args)
+	{
+		_buffer.clear(), fmt::vformat_to(_buffer_iter, fmt, fmt::make_format_args(args...));
+		ImGui::TextUnformatted(_buffer.begin(), _buffer.end());
+	};
 
 	void metrics_window(FrameInfo const & frame_info)
 	{
@@ -35,10 +45,10 @@ struct Editor final : IRenderer
 				average_delta += delta;
 			average_delta /= deltas.size();
 
-			Text("Average frame takes %-6.4f ms, (%06.1f fps)", average_delta, 1. / average_delta);
+			TextFMT("Average frame takes {:>6.2f} ms, {:>4.0f} fps", average_delta * 1000., 1. / average_delta);
 		}
 
-		Text("Frame: %06llu, Time: %g", frame_info.idx, frame_info.seconds_since_start);
+		TextFMT("Frame: {:6}, Time: {:7.2f}", frame_info.idx, frame_info.seconds_since_start);
 
 		End();
 	}
@@ -196,10 +206,9 @@ struct Editor final : IRenderer
 		}
 
 		{
-			std::stringstream ss;
-			for (auto & drawable: mesh.drawables)
-				ss << drawable.vertex_array.id << ", ";
-			LabelText("VertexArrays", "%s", ss.str().data());
+			auto ids = mesh.drawables | std::views::transform([](auto & d) { return d.vertex_array.id; });
+			_buffer.clear(), fmt::format_to(_buffer_iter, "{}", fmt::join(ids, ","));
+			LabelText("VertexArrays", "%.*s", int(_buffer.size()), _buffer.data());
 
 
 			bool any_vertex_array_loaded = false;
@@ -239,19 +248,11 @@ struct Editor final : IRenderer
 			TableSetupColumn("Key"), TableSetupColumn("Data"), TableSetupColumn("Size");
 			TableHeadersRow();
 
-			std::ostringstream ss;
 			for (auto const &[key, data]: primitive.attributes)
 			{
-				TableNextRow();
-
-				TableNextColumn(); ss << key;
-				TextUnformatted(ss.str().data()), ss.str({});
-
-				TableNextColumn(); ss << data.type << 'x' << (u32)data.dimension;
-				TextUnformatted(ss.str().data()), ss.str({});
-
-				TableNextColumn(); ss << data.buffer.size / (data.type.size() * data.dimension);
-				TextUnformatted(ss.str().data()), ss.str({});
+				TableNextColumn(), TextFMT("{}", key);
+				TableNextColumn(), TextFMT("{}x{}", data.type, data.dimension);
+				TableNextColumn(), TextFMT("{}", data.buffer.size / (data.type.size() * data.dimension));
 			}
 			EndTable();
 		}
@@ -416,15 +417,10 @@ struct Editor final : IRenderer
 
 			for (auto const & attribute : named_program.data.attribute_mappings)
 			{
-				TableNextRow();
-				TableNextColumn();
-				Text("%s", (std::stringstream() << attribute.key).str().data());
-				TableNextColumn();
-				Text("%s", attribute.per_patch ? "true" : "false");
-				TableNextColumn();
-				Text("%s", GL::GLSLTypeToString(attribute.glsl_type).data());
-				TableNextColumn();
-				Text("%d", attribute.location);
+				TableNextColumn(), TextFMT("{}", attribute.key);
+				TableNextColumn(), TextFMT("{}", attribute.per_patch ? "true" : "false");
+				TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(attribute.glsl_type));
+				TableNextColumn(), TextFMT("{}", attribute.location);
 			}
 			EndTable();
 		}
@@ -438,13 +434,9 @@ struct Editor final : IRenderer
 
 			for (auto const & uniform : named_program.data.uniform_mappings)
 			{
-				TableNextRow();
-				TableNextColumn();
-				Text("%s", uniform.key.data());
-				TableNextColumn();
-				Text("%s", GL::GLSLTypeToString(uniform.glsl_type).data());
-				TableNextColumn();
-				Text("%d", uniform.location);
+				TableNextColumn(), TextFMT("{}", uniform.key);
+				TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(uniform.glsl_type));
+				TableNextColumn(), TextFMT("{}", uniform.location);
 			}
 			EndTable();
 		}
@@ -457,7 +449,6 @@ struct Editor final : IRenderer
 
 			for (auto const & uniform_block : named_program.data.uniform_block_mappings)
 			{
-				TableNextRow();
 				TableNextColumn();
 				if (BeginTable("uniform_block", 3, ImGuiTableFlags_BordersInnerH))
 				{
@@ -466,13 +457,9 @@ struct Editor final : IRenderer
 					TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
 					TableHeadersRow();
 
-					TableNextRow();
-					TableNextColumn();
-					Text("%s", uniform_block.key.data());
-					TableNextColumn();
-					Text("%d", uniform_block.location);
-					TableNextColumn();
-					Text("%d", uniform_block.data_size);
+					TableNextColumn(), TextFMT("{}", uniform_block.key);
+					TableNextColumn(), TextFMT("{}", uniform_block.location);
+					TableNextColumn(), TextFMT("{}", uniform_block.data_size);
 
 					EndTable();
 				}
@@ -486,13 +473,9 @@ struct Editor final : IRenderer
 
 					for (auto const & variable : uniform_block.variables)
 					{
-						TableNextRow();
-						TableNextColumn();
-						Text("%d", variable.offset);
-						TableNextColumn();
-						Text("%s", GL::GLSLTypeToString(variable.glsl_type).data());
-						TableNextColumn();
-						Text("%s", variable.key.data());
+						TableNextColumn(), TextFMT("{}", variable.offset);
+						TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(variable.glsl_type));
+						TableNextColumn(), TextFMT("{}", variable.key);
 					}
 					EndTable();
 				}
@@ -508,7 +491,6 @@ struct Editor final : IRenderer
 
 			for (auto const & storage_block : named_program.data.storage_block_mappings)
 			{
-				TableNextRow();
 				TableNextColumn();
 				if (BeginTable("storage_block", 3, ImGuiTableFlags_BordersInnerH))
 				{
@@ -517,13 +499,9 @@ struct Editor final : IRenderer
 					TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed);
 					TableHeadersRow();
 
-					TableNextRow();
-					TableNextColumn();
-					Text("%s", storage_block.key.data());
-					TableNextColumn();
-					Text("%d", storage_block.location);
-					TableNextColumn();
-					Text("%d", storage_block.data_size);
+					TableNextColumn(), TextFMT("{}", storage_block.key);
+					TableNextColumn(), TextFMT("{}", storage_block.location);
+					TableNextColumn(), TextFMT("{}", storage_block.data_size);
 
 					EndTable();
 				}
@@ -537,13 +515,9 @@ struct Editor final : IRenderer
 
 					for (auto const & variable : storage_block.variables)
 					{
-						TableNextRow();
-						TableNextColumn();
-						Text("%d", variable.offset);
-						TableNextColumn();
-						Text("%s", GL::GLSLTypeToString(variable.glsl_type).data());
-						TableNextColumn();
-						Text("%s", variable.key.data());
+						TableNextColumn(), TextFMT("{}", variable.offset);
+						TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(variable.glsl_type));
+						TableNextColumn(), TextFMT("{}", variable.key);
 					}
 					EndTable();
 				}
@@ -597,13 +571,9 @@ struct Editor final : IRenderer
 
 			for (auto const & [key, variable]: uniform_buffer.variables)
 			{
-				TableNextRow();
-				TableNextColumn();
-				Text("%s", key.data());
-				TableNextColumn();
-				Text("%d", variable.offset);
-				TableNextColumn();
-				Text("%s", GL::GLSLTypeToString(variable.glsl_type).data());
+				TableNextColumn(), TextFMT("{}", key);
+				TableNextColumn(), TextFMT("{}", variable.offset);
+				TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(variable.glsl_type));
 			}
 			EndTable();
 		}

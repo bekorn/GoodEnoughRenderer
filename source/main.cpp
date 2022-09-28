@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "Lib/core/.hpp"
 #include "Lib/opengl/.hpp"
 #include "Lib/glfw/.hpp"
@@ -13,25 +11,25 @@ i32 main(i32 argc, char** argv)
 {
 	if (argc < 2)
 	{
-		std::cerr << "First parameter must be the editor directory";
+		fmt::print(stderr, "First parameter must be the editor directory");
 		std::exit(1);
 	}
 	auto editor_root = std::filesystem::path(argv[1]);
 	if (not std::filesystem::exists(editor_root))
 	{
-		std::cerr << "Editor directory does not exist";
+		fmt::print(stderr, "Editor directory \"{}\" does not exist", editor_root);
 		std::exit(1);
 	}
 
 	if (argc < 3)
 	{
-		std::cerr << "Second parameter must be the project directory";
+		fmt::print(stderr, "Second parameter must be the project directory");
 		std::exit(1);
 	}
 	auto project_root = std::filesystem::path(argv[2]);
 	if (not std::filesystem::exists(project_root))
 	{
-		std::cerr << "Project directory does not exist";
+		fmt::print(stderr, "Project directory \"{}\" does not exist", project_root);
 		std::exit(1);
 	}
 
@@ -41,7 +39,7 @@ i32 main(i32 argc, char** argv)
 
 	if (auto error = glfw_context.create())
 	{
-		std::cerr << error.value();
+		fmt::print(stderr, "{}", error.value());
 		std::exit(1);
 	}
 
@@ -54,12 +52,12 @@ i32 main(i32 argc, char** argv)
 		}
 	))
 	{
-		std::cerr << error.value();
+		fmt::print(stderr, "{}", error.value());
 		std::exit(1);
 	}
 
 	imgui_context.create({.window = window});
-	std::clog << GL::GetContextInfo() << std::endl;
+	fmt::print("{}\n", GL::GetContextInfo());
 
 	// Project assets
 	Descriptions descriptions;

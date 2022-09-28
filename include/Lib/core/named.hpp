@@ -1,8 +1,5 @@
 #pragma once
 
-#include <unordered_map>
-#include <iomanip>
-
 #include "core.hpp"
 
 // inspired by https://github.com/skypjack/entt/blob/master/src/entt/core/hashed_string.hpp
@@ -24,7 +21,8 @@ struct Name
 		hash(std::hash<std::string>{}(str)), string(str)
 	{}
 
-	Name(const char * cp) : Name(std::string_view(cp))
+	Name(const char * cp) :
+		Name(std::string_view(cp))
 	{}
 
 	bool operator==(Name const & other) const
@@ -35,15 +33,23 @@ struct Name
 		usize operator()(Name const & name) const
 		{ return name.hash; }
 	};
-
-	friend std::ostream & operator<<(std::ostream & out, Name const & name)
-	{ return out << std::right << std::setw(20) << name.hash << std::left << '|' << name.string; }
 };
 
 Name operator ""_name(char const * literal, usize size)
 {
 	return std::string_view(literal, size);
 }
+
+template<>
+struct fmt::formatter<Name>
+{
+	constexpr auto parse(format_parse_context & ctx) -> decltype(ctx.begin())
+	{ return ctx.end(); }
+
+	template<typename FormatContext>
+	auto format(Name name, FormatContext & ctx) const
+	{ return fmt::format_to(ctx.out(), "{:>20}|{}", name.hash, name.string); }
+};
 
 template<typename T>
 struct Named
@@ -63,9 +69,9 @@ struct Managed
 	template<typename... Args>
 	Named<T> generate(Name const & name, Args && ... args)
 	{
-		auto[it, is_emplaced] = resources.try_emplace(name, std::forward<Args>(args)...);
+		auto [it, is_emplaced] = resources.try_emplace(name, std::forward<Args>(args)...);
 		if (not is_emplaced)
-			std::cerr << "!! Resource is not emplaced: " << name << '\n';
+			fmt::print(stderr, "!! Resource is not emplaced: {}\n", name);
 		return {it->first, it->second};
 	}
 

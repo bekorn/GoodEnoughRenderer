@@ -94,15 +94,15 @@ namespace File
 		struct NameGenerator
 		{
 			std::string const prefix;
-			u64 counter = 0;
+			u64 idx = 0;
 
 			std::string get(JSONObj obj, Key key)
 			{
 				auto member = obj.FindMember(key.data());
 				if (member != obj.MemberEnd())
-					return prefix + std::to_string(counter++) + ':' + member->value.GetString();
+					return fmt::format("{}{}:{}", prefix, idx++, member->value.GetString());
 				else
-					return prefix + std::to_string(counter++);
+					return fmt::format("{}{}", prefix, idx++);
 			}
 		};
 	}

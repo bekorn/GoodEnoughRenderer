@@ -1,8 +1,5 @@
 #pragma once
 
-#include <unordered_map>
-#include <ostream>
-
 #include "Lib/core/core.hpp"
 #include "Lib/core/intrinsics.hpp"
 #include "Lib/core/named.hpp"
@@ -40,29 +37,27 @@ namespace Geometry
 					return std::hash<decltype(key.layer)>{}(key.layer) ^ std::hash<decltype(key.name)>{}(key.name);
 				}
 			};
-		};
 
-		std::ostream & operator<<(std::ostream & os, Key::Common semantic)
-		{
-			using enum Key::Common;
-			switch (semantic)
+			const char * name_to_string() const
 			{
-			case POSITION: return os << "POSITION";
-			case NORMAL: return os << "NORMAL";
-			case TANGENT: return os << "TANGENT";
-			case TEXCOORD: return os << "TEXCOORD";
-			case COLOR: return os << "COLOR";
-			case JOINTS: return os << "JOINTS";
-			case WEIGHTS: return os << "WEIGHTS";
+				if (holds_alternative<Common>(name))
+				{
+					using enum Common;
+					switch (get<Common>(name))
+					{
+					case POSITION: return "POSITION";
+					case NORMAL: return "NORMAL";
+					case TANGENT: return "TANGENT";
+					case TEXCOORD: return "TEXCOORD";
+					case COLOR: return "COLOR";
+					case JOINTS: return "JOINTS";
+					case WEIGHTS: return "WEIGHTS";
+					}
+				}
+				else
+					return get<std::string>(name).data();
 			}
-			unreachable();
-		}
-
-		std::ostream & operator<<(std::ostream & os, Key const & key)
-		{
-			std::visit([&os](auto const & s) { os << s; }, key.name);
-			return os << ':' << static_cast<u32>(key.layer);
-		}
+		};
 
 		struct Type
 		{
@@ -122,28 +117,28 @@ namespace Geometry
 				case U32: return false;
 				}
 			}
-		};
 
-		std::ostream & operator<<(std::ostream & os, Type::Value type)
-		{
-			using enum Type::Value;
-			switch (type)
+			const char * value_to_string() const
 			{
-			case F32: return os << "F32";
-			case I8: return os << "I8";
-			case I16: return os << "I16";
-			case I32: return os << "I32";
-			case I8NORM: return os << "I8NORM";
-			case I16NORM: return os << "I16NORM";
-			case I32NORM: return os << "I32NORM";
-			case U8: return os << "U8";
-			case U16: return os << "U16";
-			case U32: return os << "U32";
-			case U8NORM: return os << "U8NORM";
-			case U16NORM: return os << "U16NORM";
-			case U32NORM: return os << "U32NORM";
+				using enum Type::Value;
+				switch (value)
+				{
+				case F32: return "F32";
+				case I8: return "I8";
+				case I16: return "I16";
+				case I32: return "I32";
+				case I8NORM: return "I8NORM";
+				case I16NORM: return "I16NORM";
+				case I32NORM: return "I32NORM";
+				case U8: return "U8";
+				case U16: return "U16";
+				case U32: return "U32";
+				case U8NORM: return "U8NORM";
+				case U16NORM: return "U16NORM";
+				case U32NORM: return "U32NORM";
+				}
 			}
-		}
+		};
 
 		struct Data
 		{
@@ -165,3 +160,24 @@ namespace Geometry
 	};
 }
 
+template<>
+struct fmt::formatter<Geometry::Attribute::Key>
+{
+	constexpr auto parse(format_parse_context & ctx) -> decltype(ctx.begin())
+	{ return ctx.end(); }
+
+	template<typename FormatContext>
+	auto format(Geometry::Attribute::Key key, FormatContext & ctx) const
+	{ return fmt::format_to(ctx.out(), "{}:{}", key.name_to_string(), key.layer); }
+};
+
+template<>
+struct fmt::formatter<Geometry::Attribute::Type>
+{
+	constexpr auto parse(format_parse_context & ctx) -> decltype(ctx.begin())
+	{ return ctx.end(); }
+
+	template<typename FormatContext>
+	auto format(Geometry::Attribute::Type type, FormatContext & ctx) const
+	{ return fmt::format_to(ctx.out(), "{}", type.value_to_string()); }
+};
