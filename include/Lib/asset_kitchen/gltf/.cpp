@@ -1,9 +1,9 @@
-#pragma message("----Read ASSET/GLTF/.Hpp----")
+#pragma message("----Read ASSET/GLTF/.Cpp----")
 
-#include ".hpp"
+#include "load.hpp"
+#include "convert.hpp"
 
 #include <execution>
-
 
 namespace GLTF
 {

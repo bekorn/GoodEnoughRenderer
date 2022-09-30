@@ -1,6 +1,7 @@
-#include ".hpp"
 #pragma message("----Read ASSET/PROGRAM/.Cpp----")
 
+#include "load.hpp"
+#include "convert.hpp"
 #include "../_helpers.hpp"
 
 namespace GLSL::Program
@@ -94,7 +95,7 @@ namespace GLSL::Program
 
 	namespace Helpers
 	{
-		GL::GLenum StringToGLEnum(std::string_view stage)
+		GL::GLenum ToGLenum(std::string_view stage)
 		{
 			if (stage == "vert") return GL::GL_VERTEX_SHADER;
 			if (stage == "frag") return GL::GL_FRAGMENT_SHADER;
@@ -111,7 +112,7 @@ namespace GLSL::Program
 
 		for (auto & item : o.FindMember("stages")->value.GetObject())
 			description.stages.push_back({
-				.stage = StringToGLEnum(item.name.GetString()),
+				.stage = ToGLenum(item.name.GetString()),
 				.path = root_dir / item.value.GetString(),
 			});
 

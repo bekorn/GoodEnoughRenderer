@@ -1,6 +1,7 @@
 #pragma message("----Read ASSET/BLOCK/.Cpp----")
 
-#include ".hpp"
+#include "load.hpp"
+#include "convert.hpp"
 #include "../_helpers.hpp"
 
 #include "Lib/opengl/glsl.hpp"

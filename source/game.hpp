@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Lib/asset_kitchen/assets.hpp"
+#include "Lib/opengl/.hpp"
 
 #include "renderer.hpp"
 #include "camera.hpp"

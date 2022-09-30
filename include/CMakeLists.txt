@@ -48,6 +48,7 @@ target_sources(asset_kitchen PRIVATE
     Lib/asset_kitchen/glsl/program/.cpp
     Lib/asset_kitchen/glsl/uniform_block/.cpp
     Lib/asset_kitchen/gltf/.cpp
+    Lib/asset_kitchen/.cpp
 )
 target_link_libraries(asset_kitchen PRIVATE
     core
