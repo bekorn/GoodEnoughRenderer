@@ -4,7 +4,9 @@
 
 namespace GL
 {
-	std::string GetContextInfo()
+	// TODO(bekorn): move into a .cpp
+
+	inline std::string GetContextInfo()
 	{
 		fmt::memory_buffer buffer;
 		auto buffer_iter = std::back_inserter(buffer);
@@ -23,7 +25,7 @@ namespace GL
 		return fmt::to_string(buffer);
 	}
 
-	void DebugCallback(
+	inline void DebugCallback(
 		GLenum source,
 		GLenum type, GLuint id, GLenum severity,
 		GLsizei length, const GLchar* message,

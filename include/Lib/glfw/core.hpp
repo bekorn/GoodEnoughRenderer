@@ -1,8 +1,11 @@
 #pragma once
 
-#include "Lib/core/expected.hpp"
-
 #include ".pch.hpp"
+
+#include "Lib/core/expected.hpp"
+#include "Lib/core/meta.hpp"
+#include "Lib/opengl/core.hpp"
+#include "Lib/opengl/util.hpp"
 
 namespace GLFW
 {
