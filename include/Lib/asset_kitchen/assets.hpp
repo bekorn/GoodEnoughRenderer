@@ -4,8 +4,7 @@
 #include "Lib/opengl/.hpp"
 #include "Lib/render/.hpp"
 #include "Lib/scene/.hpp"
-#include "Lib/asset_kitchen/glsl/program/.hpp"
-#include "Lib/asset_kitchen/gltf/.hpp"
+#include "Lib/asset_kitchen/descriptions.hpp"
 
 #include "descriptions.hpp"
 

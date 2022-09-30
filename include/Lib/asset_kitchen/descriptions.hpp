@@ -4,9 +4,9 @@
 #include "Lib/core/named.hpp"
 #include "Lib/opengl/core.hpp"
 #include "Lib/opengl/glsl.hpp"
-#include "Lib/asset_kitchen/glsl/program/loader.hpp"
+#include "Lib/asset_kitchen/glsl/program/.hpp"
 #include "Lib/asset_kitchen/glsl/uniform_block/.hpp"
-#include "Lib/asset_kitchen/gltf/loader.hpp"
+#include "Lib/asset_kitchen/gltf/.hpp"
 
 struct Descriptions
 {

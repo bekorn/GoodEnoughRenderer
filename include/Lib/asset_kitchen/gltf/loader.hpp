@@ -74,24 +74,12 @@ namespace GLTF
 					if (uri[5] == ':') // check for "data:" (base64 encoded data as a json string)
 						throw std::runtime_error("images without a uri file path are not supported yet");
 
-					auto const file_data = LoadAsBytes(file_dir / uri);
-					i32x2 dimensions;
-					i32 channels;
-					void * raw_pixel_data = stbi_load_from_memory(
-						file_data.data_as<const unsigned char>(), file_data.size,
-						&dimensions.x, &dimensions.y,
-						&channels, 0
-					);
-
-					auto data = ByteBuffer(
-						move(raw_pixel_data),
-						dimensions.x * dimensions.y * channels
-					);
+					auto image_file = File::LoadImage(file_dir / uri);
 
 					return {
-						.data = move(data),
-						.dimensions = dimensions,
-						.channels = channels,
+						.data = move(image_file.buffer),
+						.dimensions = image_file.dimensions,
+						.channels = image_file.channels,
 					};
 				}
 			);

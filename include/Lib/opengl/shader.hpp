@@ -1,9 +1,5 @@
 #pragma once
 
-#include <string>
-#include <regex>
-#include <charconv>
-
 #include "Lib/geometry/core.hpp"
 
 #include "core.hpp"

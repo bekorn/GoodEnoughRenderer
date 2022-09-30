@@ -1,4 +1,5 @@
 #pragma once
+#pragma message("----Read CORE/core.Hpp----")
 
 #include ".pch.hpp"
 

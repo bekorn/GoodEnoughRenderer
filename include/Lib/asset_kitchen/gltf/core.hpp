@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 #include "Lib/core/core.hpp"
 
 namespace GLTF
