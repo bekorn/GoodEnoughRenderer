@@ -1,8 +1,7 @@
 #pragma once
 
 #include "core.hpp"
-#include "util.hpp"
-#include "glue.hpp"
+#include "utils.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
 #include "buffer.hpp"

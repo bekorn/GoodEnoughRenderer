@@ -31,6 +31,17 @@ target_link_libraries(file_management PUBLIC
 target_include_directories(file_management PUBLIC
     ${STB_INCLUDE_DIRS})
 
+# opengl
+add_library(opengl STATIC)
+target_precompile_headers(opengl PUBLIC Lib/opengl/.pch.hpp)
+target_sources(opengl PRIVATE
+    Lib/opengl/utils.cpp)
+target_link_libraries(opengl PRIVATE
+    core)
+target_link_libraries(opengl PUBLIC
+    glbinding::glbinding
+    glbinding::glbinding-aux)
+
 # asset_kitchen
 add_library(asset_kitchen STATIC)
 target_sources(asset_kitchen PRIVATE
@@ -40,15 +51,20 @@ target_sources(asset_kitchen PRIVATE
 )
 target_link_libraries(asset_kitchen PRIVATE
     core
-    file_management)
+    file_management
+    opengl)
 target_include_directories(asset_kitchen PUBLIC
     ${STB_INCLUDE_DIRS})
 
 
 # debug optimizations
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set_target_properties(core file_management asset_kitchen PROPERTIES
-        MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+    set_target_properties(
+        core
+        file_management
+        opengl
+        asset_kitchen
+        PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 endif()
 
 
@@ -59,13 +75,12 @@ target_include_directories(Lib INTERFACE
 
 target_precompile_headers(Lib INTERFACE
     Lib/glfw/.pch.hpp
-    Lib/imgui/.pch.hpp
-    Lib/opengl/.pch.hpp)
+    Lib/imgui/.pch.hpp)
 
 target_link_libraries(Lib INTERFACE
     core
     file_management
     asset_kitchen
-    glbinding::glbinding glbinding::glbinding-aux
+    opengl
     glfw
     imgui::imgui)

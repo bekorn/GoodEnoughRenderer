@@ -1,18 +1,89 @@
-#pragma once
-
-#include "Lib/geometry/core.hpp"
+#include "utils.hpp"
 
 namespace GL
 {
-	// TODO(bekorn): move all definitions into a .cpp
+	std::string GetContextInfo()
+	{
+		fmt::memory_buffer buffer;
+		auto buffer_iter = std::back_inserter(buffer);
 
-	inline std::string_view GLSLTypeToString(GLenum type)
+		fmt::format_to(buffer_iter, "Device: {}\n", (const char *) glGetString(GL_RENDERER));
+
+		i32 major, minor;
+		glGetIntegerv(GL_MAJOR_VERSION, &major);
+		glGetIntegerv(GL_MINOR_VERSION, &minor);
+		fmt::format_to(buffer_iter, "GL version: {}.{}\n", major, minor);
+
+		char dot;
+		std::istringstream((char const *) glGetString(GL_SHADING_LANGUAGE_VERSION)) >> major >> dot >> minor;
+		fmt::format_to(buffer_iter, "GLSL version: {}.{}", major, minor);
+
+		return fmt::to_string(buffer);
+	}
+
+	void DebugCallback(
+		GLenum source,
+		GLenum type, GLuint id, GLenum severity,
+		GLsizei length, const GLchar * message,
+		const void * userParam
+	)
+	{// @formatter:off
+		// ignore non-significant error/warning codes
+		if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
+			return;
+
+		std::ostringstream out;
+
+		out << "OpenGL Debug [";
+		switch (source)
+		{
+		case GL_DEBUG_SOURCE_API:				out << "Source: API"; break;
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM:		out << "Source: Window System"; break;
+		case GL_DEBUG_SOURCE_SHADER_COMPILER:	out << "Source: Shader Compiler"; break;
+		case GL_DEBUG_SOURCE_THIRD_PARTY:		out << "Source: Third Party"; break;
+		case GL_DEBUG_SOURCE_APPLICATION:		out << "Source: Application"; break;
+		case GL_DEBUG_SOURCE_OTHER:				out << "Source: Other"; break;
+		default: break;
+		}
+		out << ", ";
+		switch (type)
+		{
+		case GL_DEBUG_TYPE_ERROR:				out << "Type: Error"; break;
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:	out << "Type: Deprecated Behaviour";break;
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:	out << "Type: Undefined Behaviour";	break;
+		case GL_DEBUG_TYPE_PORTABILITY:			out << "Type: Portability";	break;
+		case GL_DEBUG_TYPE_PERFORMANCE:			out << "Type: Performance";	break;
+		case GL_DEBUG_TYPE_MARKER:				out << "Type: Marker";	break;
+		case GL_DEBUG_TYPE_PUSH_GROUP:			out << "Type: Push Group";break;
+		case GL_DEBUG_TYPE_POP_GROUP:			out << "Type: Pop Group";break;
+		case GL_DEBUG_TYPE_OTHER:				out << "Type: Other";break;
+		default: break;
+		}
+		out << ", ";
+		switch (severity)
+		{
+		case GL_DEBUG_SEVERITY_HIGH: 			out << "Severity: high"; break;
+		case GL_DEBUG_SEVERITY_MEDIUM: 			out << "Severity: medium"; break;
+		case GL_DEBUG_SEVERITY_LOW: 			out << "Severity: low"; break;
+		case GL_DEBUG_SEVERITY_NOTIFICATION:	out << "Severity: notification"; break;
+		default: break;
+		}
+		out << "]\n";
+
+		out << "Error " << id << ": " << message;
+		if (message[length - 2] != '\n')
+			out << '\n';
+
+		fmt::print("{}", out.str());
+	}// @formatter:on
+
+	std::string_view GLSLTypeToString(GLenum type)
 	{
 		using namespace std::string_view_literals;
 
 		switch (type)
 		{
-		// https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetActiveUniform.xhtml
+			// https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetActiveUniform.xhtml
 		case (GL_FLOAT): return "float"sv;
 		case (GL_FLOAT_VEC2): return "vec2"sv;
 		case (GL_FLOAT_VEC3): return "vec3"sv;
@@ -119,7 +190,7 @@ namespace GL
 		case (GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY): return "uimage2DMSArray"sv;
 		case (GL_UNSIGNED_INT_ATOMIC_COUNTER): return "atomic_uint"sv;
 
-		// https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_gpu_shader_int64.txt
+			// https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_gpu_shader_int64.txt
 		case (GL_INT64_ARB): return "int64"sv;
 		case (GL_INT64_VEC2_ARB): return "i64vec2"sv;
 		case (GL_INT64_VEC3_ARB): return "i64vec3"sv;
@@ -133,7 +204,7 @@ namespace GL
 		}
 	}
 
-	inline u32 ComponentTypeSize(GLenum type)
+	u32 ComponentTypeSize(GLenum type)
 	{
 		// https://www.khronos.org/opengl/wiki/Vertex_Specification#Component_type
 		switch (type)
@@ -155,9 +226,10 @@ namespace GL
 		}
 	}
 
-	inline GLenum IntoGLenum(Geometry::Attribute::Type::Value type)
+	GLenum IntoGLenum(Geometry::Attribute::Type::Value type)
 	{
-		using enum Geometry::Attribute::Type::Value;
+		using
+		enum Geometry::Attribute::Type::Value;
 		switch (type)
 		{
 		case F32: return GL_FLOAT;
@@ -176,9 +248,10 @@ namespace GL
 		}
 	}
 
-	inline Geometry::Attribute::Type IntoAttributeType(GLenum type, bool is_normalized)
+	Geometry::Attribute::Type IntoAttributeType(GLenum type, bool is_normalized)
 	{
-		using enum Geometry::Attribute::Type::Value;
+		using
+		enum Geometry::Attribute::Type::Value;
 
 		if (is_normalized)
 			switch (type)

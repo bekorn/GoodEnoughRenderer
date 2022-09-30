@@ -1,6 +1,8 @@
 #include ".hpp"
 #pragma message("----Read ASSET/PROGRAM/.Cpp----")
 
+#include "../_helpers.hpp"
+
 namespace GLSL::Program
 {
 	LoadedData Load(Description const & description)
@@ -21,25 +23,6 @@ namespace GLSL::Program
 			loaded.includes.emplace_back(File::LoadAsString(path));
 
 		return loaded;
-	}
-
-	namespace Helpers
-	{
-		std::string_view IntoString(GL::GLenum shader_stage)
-		{
-			using namespace std::string_view_literals;
-			// https://www.khronos.org/registry/OpenGL-Refpages/es3/html/glCreateShader.xhtml
-			switch (shader_stage)
-			{
-			case GL::GL_COMPUTE_SHADER: return "COMPUTE Shader"sv;
-			case GL::GL_VERTEX_SHADER: return "VERTEX Shader"sv;
-			case GL::GL_TESS_CONTROL_SHADER: return "TESS_CONTROL Shader"sv;
-			case GL::GL_TESS_EVALUATION_SHADER: return "TESS_EVALUATION Shader"sv;
-			case GL::GL_GEOMETRY_SHADER: return "GEOMETRY Shader"sv;
-			case GL::GL_FRAGMENT_SHADER: return "FRAGMENT Shader"sv;
-			default: return "UNKNOWN"sv;
-			}
-		}
 	}
 
 	Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded)
@@ -73,10 +56,10 @@ namespace GLSL::Program
 				}
 			);
 
-			if (not stage.is_compiled())
+			if (not is_compiled(stage))
 			{
 				all_stages_compiled = false;
-				error_log << IntoString(data_stage.type) << ": " << stage.get_log();
+				error_log << IntoString(data_stage.type) << ": " << get_log(stage);
 			}
 		}
 
@@ -96,13 +79,16 @@ namespace GLSL::Program
 			}
 		);
 
-		if (not program.is_linked())
+		if (not is_linked(program))
 		{
-			error_log << "Compilation failed! Linking Error:\n" << program.get_log();
+			error_log << "Compilation failed! Linking Error:\n" << get_log(program);
 			return {error_log.str()};
 		}
 
-		program.update_interface_mapping();
+		set_attribute_mapping(program);
+		set_uniform_mapping(program);
+		set_uniform_block_mapping(program);
+		set_storage_block_mapping(program);
 		return {move(program)};
 	}
 

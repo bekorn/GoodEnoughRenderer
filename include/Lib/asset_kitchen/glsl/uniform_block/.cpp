@@ -1,6 +1,7 @@
 #pragma message("----Read ASSET/BLOCK/.Cpp----")
 
 #include ".hpp"
+#include "../_helpers.hpp"
 
 #include "Lib/opengl/glsl.hpp"
 #include "Lib/opengl/shader.hpp"
@@ -16,6 +17,8 @@ namespace GLSL::UniformBlock
 
 	Expected<GL::UniformBlock, std::string> Convert(LoadedData const & loaded)
 	{
+		using namespace GLSL::Program::Helpers;
+
 		GL::ShaderStage vertex_stage;
 		vertex_stage.create(
 			{
@@ -28,8 +31,8 @@ namespace GLSL::UniformBlock
 				},
 			}
 		);
-		if (not vertex_stage.is_compiled())
-			return {vertex_stage.get_log()};
+		if (not is_compiled(vertex_stage))
+			return {get_log(vertex_stage)};
 
 		GL::ShaderProgram program;
 		program.create(
@@ -37,10 +40,10 @@ namespace GLSL::UniformBlock
 				.shader_stages = {&vertex_stage},
 			}
 		);
-		if (not program.is_linked())
-			return {program.get_log()};
+		if (not is_linked(program))
+			return {get_log(program)};
 
-		program.update_uniform_block_mapping();
+		set_uniform_block_mapping(program);
 		if (program.uniform_block_mappings.empty())
 			return {"ShaderProgram has no uniform_blocks"};
 

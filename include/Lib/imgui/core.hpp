@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Lib/opengl/util.hpp"
+#include "Lib/opengl/utils.hpp"
 
 #include ".pch.hpp"
 
