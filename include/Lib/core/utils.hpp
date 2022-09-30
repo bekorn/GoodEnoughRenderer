@@ -66,7 +66,7 @@ struct PointerIterator
 };
 
 // TODO(bekorn): this is demonstrative but still much better than depending on macros
-void log(std::string_view message, std::source_location const location = std::source_location::current())
+inline void log(std::string_view message, std::source_location const location = std::source_location::current())
 {
 	fmt::print(
 		"LOG {} ({}) {}:{}\n",

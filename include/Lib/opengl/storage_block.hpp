@@ -1,6 +1,8 @@
 #pragma once
 
 #include "core.hpp"
+// TODO(bekorn): this should not depend on shader, StorageBlockMapping can be its own thing
+#include "shader.hpp"
 
 namespace GL
 {
@@ -23,7 +25,7 @@ namespace GL
 
 		struct Description
 		{
-			GL::ShaderProgram::StorageBlockMapping const & layout;
+			ShaderProgram::StorageBlockMapping const & layout;
 		};
 
 		void create(Description const & description)

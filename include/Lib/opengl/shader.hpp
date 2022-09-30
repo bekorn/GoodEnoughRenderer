@@ -7,8 +7,9 @@
 
 namespace GL
 {
+	// TODO(bekorn): move to .cpp
 	// Pattern: String into Geometry::Attribute::Key
-	Geometry::Attribute::Key IntoAttributeKey(std::string_view name)
+	inline Geometry::Attribute::Key IntoAttributeKey(std::string_view name)
 	{
 		using namespace Geometry::Attribute;
 

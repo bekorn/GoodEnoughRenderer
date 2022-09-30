@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Lib/opengl/core.hpp"
+#include "Lib/opengl/storage_block.hpp"
 
 namespace Render
 {

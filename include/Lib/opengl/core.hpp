@@ -4,12 +4,13 @@
 
 #include ".pch.hpp"
 
-// To run the application with the external GPU, https://stackoverflow.com/a/39047129/2073225
-extern "C"
-{
-__declspec(dllexport) i64 NvOptimusEnablement = 1;
-__declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1;
-}
+//// To run the application with the external GPU, https://stackoverflow.com/a/39047129/2073225
+//extern "C"
+//{
+//// TODO(bekorn): move these into a .cpp
+//__declspec(dllexport) i64 NvOptimusEnablement = 1;
+//__declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1;
+//}
 
 namespace GL
 {

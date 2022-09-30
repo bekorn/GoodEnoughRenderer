@@ -31,10 +31,23 @@ target_link_libraries(file_management PUBLIC
 target_include_directories(file_management PUBLIC
     ${STB_INCLUDE_DIRS})
 
+# asset_kitchen
+add_library(asset_kitchen STATIC)
+target_sources(asset_kitchen PRIVATE
+    Lib/asset_kitchen/glsl/program/.cpp
+    Lib/asset_kitchen/glsl/uniform_block/.cpp
+    Lib/asset_kitchen/gltf/.cpp
+)
+target_link_libraries(asset_kitchen PRIVATE
+    core
+    file_management)
+target_include_directories(asset_kitchen PUBLIC
+    ${STB_INCLUDE_DIRS})
+
 
 # debug optimizations
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set_target_properties(core file_management PROPERTIES
+    set_target_properties(core file_management asset_kitchen PROPERTIES
         MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 endif()
 
@@ -52,6 +65,7 @@ target_precompile_headers(Lib INTERFACE
 target_link_libraries(Lib INTERFACE
     core
     file_management
+    asset_kitchen
     glbinding::glbinding glbinding::glbinding-aux
     glfw
     imgui::imgui)

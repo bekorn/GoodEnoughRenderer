@@ -1,12 +1,19 @@
-#pragma once
+#pragma message("----Read ASSET/BLOCK/.Cpp----")
 
+#include ".hpp"
+
+#include "Lib/opengl/glsl.hpp"
 #include "Lib/opengl/shader.hpp"
-#include "Lib/core/expected.hpp"
-
-#include "core.hpp"
 
 namespace GLSL::UniformBlock
 {
+	LoadedData Load(Description const & description)
+	{
+		return LoadedData{
+			.source = File::LoadAsString(description.path),
+		};
+	}
+
 	Expected<GL::UniformBlock, std::string> Convert(LoadedData const & loaded)
 	{
 		GL::ShaderStage vertex_stage;
@@ -44,5 +51,13 @@ namespace GLSL::UniformBlock
 			}
 		);
 		return {move(uniform_block)};
+	}
+
+	std::pair<Name, Description> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
+	{
+		return {
+			o.FindMember("name")->value.GetString(),
+			{.path = root_dir / o.FindMember("path")->value.GetString()}
+		};
 	}
 }

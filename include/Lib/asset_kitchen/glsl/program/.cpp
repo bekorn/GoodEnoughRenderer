@@ -1,12 +1,28 @@
-#pragma once
-
-#include "Lib/core/expected.hpp"
-#include "Lib/opengl/shader.hpp"
-
-#include "core.hpp"
+#include ".hpp"
+#pragma message("----Read ASSET/PROGRAM/.Cpp----")
 
 namespace GLSL::Program
 {
+	LoadedData Load(Description const & description)
+	{
+		LoadedData loaded;
+
+		loaded.stages.reserve(description.stages.size());
+		for (auto const & [stage, path]: description.stages)
+			loaded.stages.emplace_back(Stage{
+				.type = stage,
+				.source = File::LoadAsString(path),
+			});
+
+		loaded.includes.reserve(description.include_paths.size() + description.include_strings.size());
+		for (auto const & sv: description.include_strings)
+			loaded.includes.emplace_back(sv);
+		for (auto const & path: description.include_paths)
+			loaded.includes.emplace_back(File::LoadAsString(path));
+
+		return loaded;
+	}
+
 	namespace Helpers
 	{
 		std::string_view IntoString(GL::GLenum shader_stage)
@@ -88,5 +104,38 @@ namespace GLSL::Program
 
 		program.update_interface_mapping();
 		return {move(program)};
+	}
+
+	namespace Helpers
+	{
+		GL::GLenum StringToGLEnum(std::string_view stage)
+		{
+			if (stage == "vert") return GL::GL_VERTEX_SHADER;
+			if (stage == "frag") return GL::GL_FRAGMENT_SHADER;
+			if (stage == "geom") return GL::GL_GEOMETRY_SHADER;
+		}
+	}
+
+	std::pair<Name, Description> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
+	{
+		using namespace Helpers;
+
+		auto name = o.FindMember("name")->value.GetString();
+		GLSL::Program::Description description;
+
+		for (auto & item : o.FindMember("stages")->value.GetObject())
+			description.stages.push_back({
+				.stage = StringToGLEnum(item.name.GetString()),
+				.path = root_dir / item.value.GetString(),
+			});
+
+		for (auto & item: o.FindMember("include_paths")->value.GetArray())
+			description.include_paths.push_back(root_dir / item.GetString());
+
+		description.include_strings.push_back(GL::GLSL_VERSION_MACRO);
+		for (auto & item: o.FindMember("include_strings")->value.GetArray())
+			description.include_strings.emplace_back(item.GetString());
+
+		return {name, description};
 	}
 }

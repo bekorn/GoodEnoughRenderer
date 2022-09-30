@@ -4,7 +4,9 @@
 
 namespace GL
 {
-	std::string_view GLSLTypeToString(GLenum type)
+	// TODO(bekorn): move all definitions into a .cpp
+
+	inline std::string_view GLSLTypeToString(GLenum type)
 	{
 		using namespace std::string_view_literals;
 
@@ -131,7 +133,7 @@ namespace GL
 		}
 	}
 
-	u32 ComponentTypeSize(GLenum type)
+	inline u32 ComponentTypeSize(GLenum type)
 	{
 		// https://www.khronos.org/opengl/wiki/Vertex_Specification#Component_type
 		switch (type)
@@ -153,7 +155,7 @@ namespace GL
 		}
 	}
 
-	GLenum IntoGLenum(Geometry::Attribute::Type::Value type)
+	inline GLenum IntoGLenum(Geometry::Attribute::Type::Value type)
 	{
 		using enum Geometry::Attribute::Type::Value;
 		switch (type)
@@ -174,7 +176,7 @@ namespace GL
 		}
 	}
 
-	Geometry::Attribute::Type IntoAttributeType(GLenum type, bool is_normalized)
+	inline Geometry::Attribute::Type IntoAttributeType(GLenum type, bool is_normalized)
 	{
 		using enum Geometry::Attribute::Type::Value;
 
