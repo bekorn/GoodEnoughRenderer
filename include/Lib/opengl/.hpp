@@ -3,6 +3,7 @@
 #include "core.hpp"
 #include "utils.hpp"
 #include "shader.hpp"
+#include "shader_mappings.hpp"
 #include "texture.hpp"
 #include "buffer.hpp"
 #include "vao.hpp"

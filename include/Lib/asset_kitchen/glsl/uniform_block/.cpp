@@ -5,7 +5,6 @@
 #include "../_helpers.hpp"
 
 #include "Lib/opengl/glsl.hpp"
-#include "Lib/opengl/shader.hpp"
 
 namespace GLSL::UniformBlock
 {

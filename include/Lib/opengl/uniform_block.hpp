@@ -1,8 +1,7 @@
 #pragma once
 
 #include "core.hpp"
-// TODO(bekorn): this should not depend on shader, UniformBlockMapping can be its own thing
-#include "shader.hpp"
+#include "shader_mappings.hpp"
 
 namespace GL
 {
@@ -23,7 +22,7 @@ namespace GL
 
 		struct Description
 		{
-			ShaderProgram::UniformBlockMapping const & layout;
+			UniformBlockMapping const & layout;
 		};
 
 		void create(Description const & description)

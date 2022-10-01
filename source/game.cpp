@@ -95,7 +95,7 @@ void Game::create_uniform_buffers()
 	material_block.create({
 		.layout = *std::ranges::find(
 			assets.programs.get(GLTF::pbrMetallicRoughness_program_name).storage_block_mappings,
-			"Material", &ShaderProgram::StorageBlockMapping::key
+			"Material", &StorageBlockMapping::key
 		)
 	});
 

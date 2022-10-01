@@ -2,6 +2,8 @@
 
 // this supposed to be inside glsl/program/.cpp but glsl/uniform_buffer/.cpp also needs it
 
+#include "Lib/opengl/shader.hpp"
+
 namespace GLSL::Program::Helpers
 {
 	inline std::string_view IntoString(GL::GLenum shader_stage)
@@ -158,7 +160,7 @@ namespace GLSL::Program::Helpers
 			);
 
 			program.attribute_mappings.emplace_back(
-				GL::ShaderProgram::AttributeMapping{
+				GL::AttributeMapping{
 					.location = static_cast<u32>(query_results[0]),
 					.glsl_type = static_cast<GLenum>(query_results[1]),
 					.per_patch = static_cast<bool>(query_results[2]),
@@ -208,7 +210,7 @@ namespace GLSL::Program::Helpers
 			);
 
 			program.uniform_mappings.emplace_back(
-				GL::ShaderProgram::UniformMapping{
+				GL::UniformMapping{
 					.location = static_cast<u32>(query_results[0]),
 					.glsl_type = static_cast<GLenum>(query_results[1]),
 					.key = name_buffer.substr(0, name_size),
@@ -217,7 +219,7 @@ namespace GLSL::Program::Helpers
 		}
 	}
 
-	inline vector<GL::ShaderProgram::UniformBlockMapping::Variable>
+	inline vector<GL::UniformBlockMapping::Variable>
 	query_uniform_block_variables(GL::ShaderProgram const & program, u32 block_idx, u32 variable_count)
 	{
 		using namespace GL;
@@ -232,7 +234,7 @@ namespace GLSL::Program::Helpers
 		);
 
 		auto const interface = GL_UNIFORM;
-		using Mapping = GL::ShaderProgram::UniformBlockMapping;
+		using Mapping = GL::UniformBlockMapping;
 
 		array const query_props{
 			GL_OFFSET,
@@ -310,7 +312,7 @@ namespace GLSL::Program::Helpers
 			);
 
 			program.uniform_block_mappings.emplace_back(
-				GL::ShaderProgram::UniformBlockMapping{
+				GL::UniformBlockMapping{
 					.location = static_cast<u32>(query_results[0]),
 					.data_size = static_cast<u32>(query_results[1]),
 					.key = name_buffer.substr(0, name_size),
@@ -320,7 +322,7 @@ namespace GLSL::Program::Helpers
 		}
 	}
 
-	inline vector<GL::ShaderProgram::StorageBlockMapping::Variable>
+	inline vector<GL::StorageBlockMapping::Variable>
 	query_sotrage_block_variables(GL::ShaderProgram const & program, u32 block_idx, u32 variable_count)
 	{
 		using namespace GL;
@@ -335,7 +337,7 @@ namespace GLSL::Program::Helpers
 		);
 
 		auto const interface = GL_BUFFER_VARIABLE;
-		using Mapping = GL::ShaderProgram::StorageBlockMapping;
+		using Mapping = GL::StorageBlockMapping;
 
 		array const query_props{
 			GL_OFFSET,
@@ -413,7 +415,7 @@ namespace GLSL::Program::Helpers
 			);
 
 			program.storage_block_mappings.emplace_back(
-				GL::ShaderProgram::StorageBlockMapping{
+				GL::StorageBlockMapping{
 					.location = static_cast<u32>(query_results[0]),
 					.data_size = static_cast<u32>(query_results[1]),
 					.key = name_buffer.substr(0, name_size),
