@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Lib/opengl/utils.hpp"
+#include "Lib/opengl/glsl.hpp"
 
 namespace Imgui
 {

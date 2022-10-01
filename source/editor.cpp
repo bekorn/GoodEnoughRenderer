@@ -1,11 +1,6 @@
 #include "editor.hpp"
 
-#include <ranges>
-
-#include "Lib/opengl/.hpp"
-#include "Lib/render/.hpp"
-#include "Lib/imgui/.hpp"
-
+#include "Lib/opengl/core.hpp"
 
 // TODO(bekorn): as I understand, imgui already has a buffer to keep formatted strings, so this might be unnecessary
 // ImGui + fmtlib utility (especially handy for tables)

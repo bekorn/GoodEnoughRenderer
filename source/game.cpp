@@ -1,8 +1,7 @@
 #include "game.hpp"
 
-#include "Lib/core/.hpp"
-#include "Lib/opengl/.hpp"
-#include "Lib/render/.hpp"
+#include "Lib/core/core.hpp"
+#include "Lib/core/named.hpp"
 
 void Game::create_framebuffer()
 {
