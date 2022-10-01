@@ -13,6 +13,17 @@ target_link_libraries(App
     PUBLIC Lib)
 
 
+if (MSVC)
+    # warning level 4 and all warnings as errors
+#    add_compile_options(/W4 /WX)
+    # better optimizations and make glm use SIMD (https://github.com/g-truc/glm/blob/master/manual.md#section2_11)
+    add_compile_options(/arch:AVX2)
+else()
+    # lots of warnings and all warnings as errors
+#    add_compile_options(-Wall -Wextra -pedantic -Werror)
+endif()
+
+
 # Debug optimizations
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     # see section Version of CRT on https://ledas.com/post/861-fast-debug-in-visual-c/
