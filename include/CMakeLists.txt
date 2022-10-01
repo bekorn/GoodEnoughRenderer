@@ -23,12 +23,13 @@ target_include_directories(core PUBLIC
 # file_amangement
 add_library(file_management STATIC)
 target_precompile_headers(file_management PUBLIC Lib/file_management/.pch.hpp)
-target_sources(file_management PRIVATE Lib/file_management/core.cpp)
+target_sources(file_management PRIVATE
+    Lib/file_management/core.cpp)
 target_link_libraries(file_management PRIVATE
     core)
 target_link_libraries(file_management PUBLIC
     rapidjson)
-target_include_directories(file_management PUBLIC
+target_include_directories(file_management PRIVATE
     ${STB_INCLUDE_DIRS})
 
 # opengl

@@ -2,8 +2,6 @@
 
 #include "Lib/opengl/utils.hpp"
 
-#include ".pch.hpp"
-
 namespace Imgui
 {
 	struct Context

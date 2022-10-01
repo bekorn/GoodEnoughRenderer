@@ -1,7 +1,4 @@
 #pragma once
-#pragma message("----Read GLFW/core.Hpp----")
-
-#include ".pch.hpp"
 
 #include "Lib/core/expected.hpp"
 #include "Lib/core/meta.hpp"

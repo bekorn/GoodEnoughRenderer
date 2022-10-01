@@ -1,7 +1,5 @@
 #pragma once
 
-#include ".pch.hpp"
-
 #include "Lib/core/core.hpp"
 
 namespace GL
