@@ -7,10 +7,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}-Binaries")
 
 
 add_subdirectory(include)
-
 add_subdirectory(source)
-target_link_libraries(App
-    PUBLIC Lib)
 
 
 if (MSVC)

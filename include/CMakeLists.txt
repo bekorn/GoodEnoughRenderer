@@ -11,6 +11,7 @@ find_package(fmt CONFIG REQUIRED)
 
 
 # core
+list(APPEND LIBS core)
 add_library(core STATIC)
 target_precompile_headers(core PUBLIC Lib/core/.pch.hpp)
 target_sources(core PRIVATE Lib/core/core.cpp)
@@ -21,6 +22,7 @@ target_include_directories(core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
 
 # file_amangement
+list(APPEND LIBS file_management)
 add_library(file_management STATIC)
 target_precompile_headers(file_management PUBLIC Lib/file_management/.pch.hpp)
 target_sources(file_management PRIVATE
@@ -33,6 +35,7 @@ target_include_directories(file_management PRIVATE
     ${STB_INCLUDE_DIRS})
 
 # opengl
+list(APPEND LIBS opengl)
 add_library(opengl STATIC)
 target_precompile_headers(opengl PUBLIC Lib/opengl/.pch.hpp)
 target_sources(opengl PRIVATE
@@ -44,6 +47,7 @@ target_link_libraries(opengl PUBLIC
     glbinding::glbinding-aux)
 
 # asset_kitchen
+list(APPEND LIBS asset_kitchen)
 add_library(asset_kitchen STATIC)
 target_sources(asset_kitchen PRIVATE
     Lib/asset_kitchen/glsl/program/.cpp
@@ -61,12 +65,7 @@ target_include_directories(asset_kitchen PUBLIC
 
 # debug optimizations
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set_target_properties(
-        core
-        file_management
-        opengl
-        asset_kitchen
-        PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+    set_target_properties(${LIBS} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 endif()
 
 
@@ -80,9 +79,6 @@ target_precompile_headers(Lib INTERFACE
     Lib/imgui/.pch.hpp)
 
 target_link_libraries(Lib INTERFACE
-    core
-    file_management
-    asset_kitchen
-    opengl
+    ${LIBS}
     glfw
     imgui::imgui)
