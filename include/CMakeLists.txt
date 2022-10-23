@@ -63,11 +63,8 @@ target_include_directories(asset_kitchen PUBLIC
     ${STB_INCLUDE_DIRS})
 
 
-# debug optimizations
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set_target_properties(${LIBS} PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
-endif()
-
+# export libs to parent scope
+set(LIBS ${LIBS} PARENT_SCOPE)
 
 # rest
 add_library(Lib INTERFACE)
