@@ -1,6 +1,6 @@
 #pragma once
 
-// this supposed to be inside glsl/program/.cpp but glsl/uniform_buffer/.cpp also needs it
+// TODO(bekorn): this supposed to be inside glsl/program/.cpp but glsl/uniform_buffer/.cpp also needs it
 
 #include "Lib/opengl/shader.hpp"
 
@@ -189,7 +189,6 @@ namespace GLSL::Program::Helpers
 		i32 resource_size;
 		glGetProgramInterfaceiv(program.id, interface, GL_ACTIVE_RESOURCES, &resource_size);
 
-		//	!!!		program.uniform_mappings.clear();
 		program.uniform_mappings.reserve(resource_size);
 		for (auto i = 0; i < resource_size; ++i)
 		{
@@ -295,7 +294,6 @@ namespace GLSL::Program::Helpers
 		i32 resource_size;
 		glGetProgramInterfaceiv(program.id, interface, GL_ACTIVE_RESOURCES, &resource_size);
 
-		//	!!!		program.uniform_block_mappings.clear();
 		program.uniform_block_mappings.reserve(resource_size);
 		for (auto i = 0; i < resource_size; ++i)
 		{
@@ -398,7 +396,6 @@ namespace GLSL::Program::Helpers
 		i32 resource_size;
 		glGetProgramInterfaceiv(program.id, interface, GL_ACTIVE_RESOURCES, &resource_size);
 
-		//	!!!		program.storage_block_mappings.clear();
 		program.storage_block_mappings.reserve(resource_size);
 		for (auto i = 0; i < resource_size; ++i)
 		{

@@ -303,9 +303,8 @@ namespace GLTF
 
 	namespace Helpers
 	{
-		// TODO(bekorn): move these implementation details into a .cpp
 		// Pattern: String into Geometry::Attribute::Key
-		inline Geometry::Attribute::Key IntoAttributeKey(std::string_view name)
+		Geometry::Attribute::Key IntoAttributeKey(std::string_view name)
 		{
 			using namespace Geometry::Attribute;
 
