@@ -19,10 +19,11 @@ namespace Render
 			return vertex_array.id != 0;
 		}
 
-		// TODO(bekorn): ShaderProgram should be accessible from the material
-		void load(GL::ShaderProgram const & program)
+		// TODO(bekorn): a drawable can be used by multiple shader programs,
+		//  should load all the attributes that might be required but nothing more
+		void load(span<GL::AttributeMapping const> attribute_mappings)
 		{
-			vertex_array.create(primitive, program);
+			vertex_array.create(primitive, attribute_mappings);
 		}
 
 		void unload()

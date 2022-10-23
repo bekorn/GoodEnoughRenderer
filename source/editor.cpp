@@ -223,8 +223,11 @@ void Editor::mesh_settings_window()
 		else
 		{
 			if (Button("Load all drawables"))
+			{
+				auto & attribute_mappings = game.assets.programs.get(GLTF::pbrMetallicRoughness_program_name).attribute_mappings;
 				for (auto & drawable: mesh.drawables)
-					drawable.load(game.assets.programs.get(GLTF::pbrMetallicRoughness_program_name));
+					drawable.load(attribute_mappings);
+			}
 		}
 	}
 
@@ -674,9 +677,10 @@ void Editor::create()
 	ImGui::GetStyle().CellPadding.x = 6;
 
 	// Load gizmo meshes
+	auto & attribute_mappings = editor_assets.programs.get("gizmo"_name).attribute_mappings;
 	for (auto & [_, mesh] : editor_assets.meshes)
 		for (auto & drawable : mesh.drawables)
-			drawable.load(editor_assets.programs.get("gizmo"_name));
+			drawable.load(attribute_mappings);
 }
 
 void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info, f64 seconds_since_game_render)

@@ -12,7 +12,7 @@ namespace GL
 {
 	struct VertexArray : OpenGLObject
 	{
-		vector<Buffer> vertex_buffers;
+		Buffer vertex_buffer;
 		Buffer element_buffer;
 		GLsizei element_count;
 
@@ -25,14 +25,25 @@ namespace GL
 			glDeleteVertexArrays(1, &id);
 		}
 
-		void create(Geometry::Primitive const & geometry, ShaderProgram const & shader)
+		void create(Geometry::Primitive const & geometry, span<AttributeMapping const> attribute_mappings)
 		{
-			// TODO(bekorn): This method creates a vbo for each attribute,
-			//  it would be better to merge them in a single vbo
-
 			glCreateVertexArrays(1, &id);
 
-			for (auto const & attribute: shader.attribute_mappings)
+			usize buffer_size = 0;
+			for (auto const & attribute: attribute_mappings)
+			{
+				auto const geo_attribute = geometry.attributes.find(attribute.key);
+				if (geo_attribute == geometry.attributes.end())
+					continue;
+
+				auto const & [_, data] = *geo_attribute;
+				buffer_size += data.buffer.size;
+			}
+			vertex_buffer.create({.size = buffer_size});
+
+			auto buffer_bind_idx = 0;
+			GLintptr buffer_offset = 0;
+			for (auto const & attribute: attribute_mappings)
 			{
 				auto const geo_attribute = geometry.attributes.find(attribute.key);
 				if (geo_attribute == geometry.attributes.end())
@@ -40,34 +51,32 @@ namespace GL
 
 				auto const & [key, data] = *geo_attribute;
 
-				Buffer vertex_buffer;
-				vertex_buffer.create(
-					{
-						.data = data.buffer.span_as<byte>(),
-					}
+				glNamedBufferSubData(
+					vertex_buffer.id,
+					buffer_offset, data.buffer.size, data.buffer.begin()
 				);
-				auto const buffer_bind_index = vertex_buffers.size();
 
 				glVertexArrayVertexBuffer(
 					id,
-					buffer_bind_index,
-					vertex_buffer.id, 0, data.type.size() * data.dimension
+					buffer_bind_idx,
+					vertex_buffer.id, buffer_offset, data.type.size() * data.dimension
 				);
 				glVertexArrayAttribFormat(
 					id,
 					attribute.location,
-					data.dimension, IntoGLenum(data.type),data.type.is_normalized(),
+					data.dimension, IntoGLenum(data.type), data.type.is_normalized(),
 					0
 				);
 				glEnableVertexArrayAttrib(id, attribute.location);
-				glVertexArrayAttribBinding(id, attribute.location, buffer_bind_index);
+				glVertexArrayAttribBinding(id, attribute.location, buffer_bind_idx);
 
-				vertex_buffers.emplace_back(move(vertex_buffer));
+				buffer_bind_idx++;
+				buffer_offset += static_cast<GLintptr>(data.buffer.size);
 			}
 
 			element_buffer.create(
 				{
-					.data = span((byte*)geometry.indices.data(), geometry.indices.size() * sizeof(u32)),
+					.data = span((byte *) geometry.indices.data(), geometry.indices.size() * sizeof(u32)),
 				}
 			);
 

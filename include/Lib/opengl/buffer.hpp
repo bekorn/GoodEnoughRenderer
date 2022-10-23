@@ -34,6 +34,23 @@ namespace GL
 			);
 		}
 
+		struct EmptyDescription
+		{
+			GLenum usage = GL_STATIC_DRAW;
+			usize size;
+		};
+
+		void create(EmptyDescription const & description)
+		{
+			glCreateBuffers(1, &id);
+			glNamedBufferData(
+				id,
+				description.size,
+				nullptr,
+				description.usage
+			);
+		}
+
 		struct UniformBlockDescription
 		{
 			GLenum usage = GL_DYNAMIC_DRAW;

@@ -46,7 +46,7 @@ void Game::create_uniform_buffers()
 	// Setup Lights Uniform Buffer
 	auto & lights_uniform_block = assets.uniform_blocks.get("Lights"_name);
 
-	lights_uniform_buffer.create(GL::Buffer::UniformBlockDescription{
+	lights_uniform_buffer.create(Buffer::UniformBlockDescription{
 		.usage = GL::GL_DYNAMIC_DRAW,
 		.uniform_block = lights_uniform_block,
 		.array_size = 1,
@@ -130,9 +130,10 @@ void Game::create()
 	};
 
 	// load all the meshes to the gpu
+	auto & attribute_mappings = assets.programs.get(GLTF::pbrMetallicRoughness_program_name).attribute_mappings;
 	for (auto & [_, mesh] : assets.meshes)
 		for (auto & drawable : mesh.drawables)
-			drawable.load(assets.programs.get(GLTF::pbrMetallicRoughness_program_name));
+			drawable.load(attribute_mappings);
 }
 
 void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
