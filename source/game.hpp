@@ -3,11 +3,12 @@
 #include "Lib/asset_kitchen/assets.hpp"
 #include "Lib/opengl/core.hpp"
 #include "Lib/opengl/framebuffer.hpp"
+#include "Lib/glfw/core.hpp"
 
-#include "renderer.hpp"
+#include "frame_info.hpp"
 #include "camera.hpp"
 
-struct Game final : IRenderer
+struct Game
 {
 	Assets & assets;
 
@@ -35,6 +36,6 @@ struct Game final : IRenderer
 
 	void create_framebuffer();
 	void create_uniform_buffers();
-	void create() final;
-	void render(GLFW::Window const & window, FrameInfo const & frame_info) final;
+	void create();
+	void render(GLFW::Window const & window, FrameInfo const & frame_info);
 };

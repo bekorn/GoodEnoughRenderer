@@ -7,6 +7,7 @@
 
 #include "game.hpp"
 #include "editor.hpp"
+#include "frame_info.hpp"
 
 i32 main(i32 argc, char** argv)
 {
@@ -72,17 +73,11 @@ i32 main(i32 argc, char** argv)
 	Assets editor_assets(editor_descriptions);
 	editor_assets.create();
 
-	vector<unique_one<IRenderer>> renderers;
-	{
-		auto game = make_unique_one<Game>(assets);
-		auto editor = make_unique_one<Editor>(editor_assets, *game);
+	Game game(assets);
+	Editor editor(editor_assets, game);
 
-		renderers.emplace_back(move(game));
-		renderers.emplace_back(move(editor));
-	}
-
-	for (auto & renderer: renderers)
-		renderer->create();
+	game.create();
+	editor.create();
 
 	FrameInfo frame_info;
 	FrameInfo previous_frame_info{
@@ -104,8 +99,10 @@ i32 main(i32 argc, char** argv)
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		for (auto & renderer: renderers)
-			renderer->render(window, frame_info);
+		game.render(window, frame_info);
+
+		auto seconds_since_game_render = glfwGetTime() - frame_info.seconds_since_start;
+		editor.render(window, frame_info, seconds_since_game_render);
 
 		{
 			using namespace GL;

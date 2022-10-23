@@ -1,4 +1,5 @@
 #include "editor.hpp"
+#include "game.hpp"
 
 #include "Lib/opengl/core.hpp"
 
@@ -12,7 +13,7 @@ inline static auto const TextFMT = []<typename... T>(fmt::format_string<T...> fm
 	ImGui::TextUnformatted(_buffer.begin(), _buffer.end());
 };
 
-void Editor::metrics_window(FrameInfo const & frame_info)
+void Editor::metrics_window(FrameInfo const & frame_info, f64 seconds_since_game_render)
 {
 	using namespace ImGui;
 
@@ -29,7 +30,21 @@ void Editor::metrics_window(FrameInfo const & frame_info)
 			average_delta += delta;
 		average_delta /= deltas.size();
 
-		TextFMT("Average frame takes {:>6.2f} ms, {:>4.0f} fps", average_delta * 1000., 1. / average_delta);
+		TextFMT("Average frame:  {:>6.2f} ms, {:>4.0f} fps", average_delta * 1000., 1. / average_delta);
+	}
+
+	{
+		static array<f64, 30> deltas{};
+		static usize delta_idx = 0;
+
+		deltas[delta_idx] = seconds_since_game_render;
+		delta_idx = (delta_idx + 1) % deltas.size();
+		f64 average_delta = 0;
+		for (auto const & delta: deltas)
+			average_delta += delta;
+		average_delta /= deltas.size();
+
+		TextFMT("Average render: {:>6.2f} ms", average_delta * 1000., 1. / average_delta);
 	}
 
 	TextFMT("Frame: {:6}, Time: {:7.2f}", frame_info.idx, frame_info.seconds_since_start);
@@ -664,13 +679,13 @@ void Editor::create()
 			drawable.load(editor_assets.programs.get("gizmo"_name));
 }
 
-void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
+void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info, f64 seconds_since_game_render)
 {
 	workspaces();
 
 	// TODO(bekorn): these windows are monolithic right now,
 	//  it should be similar to Blender's, each workspace can have arbitrary windows with dynamic types
-	metrics_window(frame_info);
+	metrics_window(frame_info, seconds_since_game_render);
 	game_window();
 	game_settings_window();
 	node_settings_window();

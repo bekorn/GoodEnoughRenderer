@@ -1,9 +1,13 @@
 #pragma once
 
-#include "renderer.hpp"
-#include "game.hpp"
+#include "Lib/glfw/core.hpp"
 
-struct Editor final : IRenderer
+#include "frame_info.hpp"
+
+struct Game;
+struct Assets;
+
+struct Editor
 {
 	Assets & editor_assets;
 	Game & game;
@@ -12,7 +16,7 @@ struct Editor final : IRenderer
 		editor_assets(editor_assets), game(game)
 	{}
 
-	void metrics_window(FrameInfo const & frame_info);
+	void metrics_window(FrameInfo const & frame_info, f64 seconds_since_game_render);
 	void game_window();
 	void game_settings_window();
 	void node_settings_window();
@@ -23,6 +27,6 @@ struct Editor final : IRenderer
 	void uniform_buffer_window();
 	void camera_window();
 	void workspaces();
-	void create() final;
-	void render(GLFW::Window const & window, FrameInfo const & frame_info) final;
+	void create();
+	void render(GLFW::Window const & window, FrameInfo const & frame_info, f64 seconds_since_game_render);
 };
