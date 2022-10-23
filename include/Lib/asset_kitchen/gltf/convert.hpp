@@ -1,5 +1,5 @@
 #pragma once
-#pragma message("----Read ASSET/GLTF/convert.Hpp----")
+#pragma message("-- read ASSET/GLTF/convert.Hpp --")
 
 #include "load.hpp"
 

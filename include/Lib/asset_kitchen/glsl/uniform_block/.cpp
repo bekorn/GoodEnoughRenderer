@@ -1,4 +1,4 @@
-#pragma message("----Read ASSET/BLOCK/.Cpp----")
+#pragma message("-- read ASSET/BLOCK/.Cpp --")
 
 #include "load.hpp"
 #include "convert.hpp"

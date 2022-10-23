@@ -1,5 +1,5 @@
 #pragma once
-#pragma message("~~~~READ CORE/.PCH~~~~")
+#pragma message("-- read CORE/.PCHpp --")
 
 // glm
 #define GLM_FORCE_NO_CTOR_INIT

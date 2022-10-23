@@ -1,7 +1,7 @@
 #pragma once
-#pragma message("----Read CORE/core.Hpp----")
+#pragma message("-- read CORE/core.Hpp --")
 
-#include ".pch.hpp"
+#include ".pchpp"
 
 using byte = std::byte;
 

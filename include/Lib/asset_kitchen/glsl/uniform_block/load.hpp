@@ -1,5 +1,5 @@
 #pragma once
-#pragma message("----Read ASSET/BLOCK/load.Hpp----")
+#pragma message("-- read ASSET/BLOCK/load.Hpp --")
 
 #include "Lib/core/core.hpp"
 

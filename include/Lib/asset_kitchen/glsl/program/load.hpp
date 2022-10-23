@@ -1,5 +1,5 @@
 #pragma once
-#pragma message("----Read ASSET/PROGRAM/load.Hpp----")
+#pragma message("-- read ASSET/PROGRAM/load.Hpp --")
 
 #include "Lib/core/core.hpp"
 #include "Lib/opengl/core.hpp"

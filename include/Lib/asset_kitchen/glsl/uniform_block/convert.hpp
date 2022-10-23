@@ -1,5 +1,5 @@
 #pragma once
-#pragma message("----Read ASSET/BLOCK/convert.Hpp----")
+#pragma message("-- read ASSET/BLOCK/convert.Hpp --")
 
 #include "load.hpp"
 

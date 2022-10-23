@@ -1,4 +1,4 @@
-#pragma message("----Read FILE/core.Cpp----")
+#pragma message("-- read FILE/core.Cpp --")
 
 #include <fstream>
 

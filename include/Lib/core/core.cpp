@@ -1,1 +1,1 @@
-#pragma message("----Read CORE/core.Cpp----")
+#pragma message("-- read CORE/core.Cpp --")
