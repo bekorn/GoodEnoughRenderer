@@ -1,8 +1,8 @@
 #pragma once
-
-#include <string>
+#pragma message("-- read ASSET/GLTF/load.Hpp --")
 
 #include "Lib/core/core.hpp"
+#include "Lib/core/named.hpp"
 
 namespace GLTF
 {
@@ -147,4 +147,12 @@ namespace GLTF
 	};
 
 	auto const pbrMetallicRoughness_program_name = "gltf_pbrMetallicRoughness"_name;
+
+	struct Description
+	{
+		std::string name;
+		std::filesystem::path path;
+	};
+
+	LoadedData Load(Description const & description);
 }

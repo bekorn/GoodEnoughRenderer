@@ -35,7 +35,7 @@ struct Name
 	};
 };
 
-Name operator ""_name(char const * literal, usize size)
+inline Name operator ""_name(char const * literal, usize size)
 {
 	return std::string_view(literal, size);
 }

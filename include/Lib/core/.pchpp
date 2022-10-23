@@ -1,15 +1,11 @@
 #pragma once
+#pragma message("-- read CORE/.PCHpp --")
 
-// Configure GLM
+// glm
 #define GLM_FORCE_NO_CTOR_INIT
 #define GLM_FORCE_EXPLICIT_CTOR
-
-// forward declarations to reduce compile times
-#include <glm/fwd.hpp>
-
-// source file
+#define GLM_FORCE_INTRINSICS
 #include <glm/glm.hpp>
-
 // extensions (http://glm.g-truc.net/glm.pdf)
 #include <glm/gtc/type_precision.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -26,17 +22,16 @@
 #include <fmt/core.h>
 #include <fmt/std.h>
 
-// Handy std classes
+// std classes
 #include <memory>
 #include <span>
 #include <optional>
 #include <variant>
-
 // std containers
+#include <string>
 #include <vector>
 #include <array>
 #include <unordered_map>
-
 // std utilities
 #include <sstream> // TODO(bekorn): replace with a better lib
 #include <chrono>

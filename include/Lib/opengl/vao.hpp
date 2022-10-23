@@ -6,7 +6,7 @@
 #include "core.hpp"
 #include "buffer.hpp"
 #include "shader.hpp"
-#include "glue.hpp"
+#include "utils.hpp"
 
 namespace GL
 {

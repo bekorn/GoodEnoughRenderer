@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Lib/core/utils.hpp"
-
 #include "core.hpp"
 #include "uniform_block.hpp"
 #include "storage_block.hpp"

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.hpp"
+#include "shader_mappings.hpp"
 
 namespace GL
 {
@@ -23,7 +24,7 @@ namespace GL
 
 		struct Description
 		{
-			GL::ShaderProgram::StorageBlockMapping const & layout;
+			StorageBlockMapping const & layout;
 		};
 
 		void create(Description const & description)

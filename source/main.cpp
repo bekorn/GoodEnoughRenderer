@@ -1,7 +1,8 @@
-#include "Lib/core/.hpp"
-#include "Lib/opengl/.hpp"
-#include "Lib/glfw/.hpp"
-#include "Lib/imgui/.hpp"
+#include "Lib/core/core.hpp"
+#include "Lib/opengl/core.hpp"
+#include "Lib/opengl/use_dedicated_device_by_default.hpp"
+#include "Lib/glfw/core.hpp"
+#include "Lib/imgui/core.hpp"
 #include "Lib/asset_kitchen/assets.hpp"
 
 #include "game.hpp"

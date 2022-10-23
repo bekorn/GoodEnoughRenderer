@@ -1,8 +1,7 @@
 #pragma once
 
-#include <Lib/opengl/util.hpp>
-
-#include ".pch.hpp"
+#include "Lib/opengl/utils.hpp"
+#include "Lib/opengl/glsl.hpp"
 
 namespace Imgui
 {

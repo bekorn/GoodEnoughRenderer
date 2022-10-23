@@ -2,15 +2,6 @@
 
 #include "Lib/core/core.hpp"
 
-#include ".pch.hpp"
-
-// To run the application with the external GPU, https://stackoverflow.com/a/39047129/2073225
-extern "C"
-{
-__declspec(dllexport) i64 NvOptimusEnablement = 1;
-__declspec(dllexport) i32 AmdPowerXpressRequestHighPerformance = 1;
-}
-
 namespace GL
 {
 	using namespace gl45core;
@@ -25,10 +16,8 @@ namespace GL
 	{
 		u32 id = 0;
 
-		OpenGLObject() noexcept= default;
-
-		OpenGLObject(OpenGLObject const &) noexcept = delete;
-		OpenGLObject& operator=(OpenGLObject const &) noexcept = delete;
+		CTOR(OpenGLObject, default)
+		COPY(OpenGLObject, delete)
 
 		OpenGLObject(OpenGLObject && other) noexcept
 		{

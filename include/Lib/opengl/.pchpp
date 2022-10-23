@@ -1,4 +1,8 @@
 #pragma once
+#pragma message("-- read OPENGL/.PCHpp --")
+
+#include <regex>
+#include <charconv>
 
 #include <glbinding/gl45core/gl.h>
 #include <glbinding/gl45ext/gl.h>

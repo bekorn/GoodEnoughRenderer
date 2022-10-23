@@ -1,0 +1,6 @@
+#pragma once
+#pragma message("-- read FILE/.PCHpp --")
+
+#include <filesystem>
+
+#include <rapidjson/document.h>
