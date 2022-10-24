@@ -24,7 +24,8 @@ struct Game
 	f32 clear_depth = 1;
 	i32x2 resolution{720, 720};
 	GL::FrameBuffer framebuffer;
-	vector<GL::Texture2D> framebuffer_attachments;
+	GL::Texture2D framebuffer_depth_attachment;
+	GL::Texture2D framebuffer_color_attachment;
 
 	variant<PerspectiveCamera, OrthographicCamera> camera;
 
@@ -37,5 +38,6 @@ struct Game
 	void create_framebuffer();
 	void create_uniform_buffers();
 	void create();
+	void update(GLFW::Window const & window, FrameInfo const & frame_info);
 	void render(GLFW::Window const & window, FrameInfo const & frame_info);
 };

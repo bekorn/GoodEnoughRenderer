@@ -99,10 +99,18 @@ i32 main(i32 argc, char** argv)
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		game.render(window, frame_info);
+		editor.update(window, frame_info);
 
-		auto seconds_since_game_render = glfwGetTime() - frame_info.seconds_since_start;
-		editor.render(window, frame_info, seconds_since_game_render);
+		auto before_game_update = glfwGetTime();
+		game.update(window, frame_info);
+		auto game_update_in_seconds = glfwGetTime() - before_game_update;
+
+		auto before_game_Render = glfwGetTime();
+		if (editor.should_game_render)
+			game.render(window, frame_info);
+		auto game_render_in_seconds = glfwGetTime() - before_game_Render;
+
+		editor.render(window, frame_info, game_update_in_seconds, game_render_in_seconds);
 
 		{
 			using namespace GL;

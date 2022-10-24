@@ -1,7 +1,60 @@
 #include "editor.hpp"
-#include "game.hpp"
 
-#include "Lib/opengl/core.hpp"
+void Editor::create_framebuffer()
+{
+	resolution = game.resolution / 2;
+
+	framebuffer_color_attachment.create(
+		GL::Texture2D::AttachmentDescription{
+			.dimensions = resolution,
+			.internal_format = GL::GL_RGBA8,
+		}
+	);
+
+	framebuffer_depth_attachment.create(
+		GL::Texture2D::AttachmentDescription{
+			.dimensions = resolution,
+			.internal_format = GL::GL_DEPTH_COMPONENT16,
+		}
+	);
+
+	framebuffer.create(
+		GL::FrameBuffer::Description{
+			.attachments = {
+				{
+					.type = GL::GL_COLOR_ATTACHMENT0,
+					.texture = framebuffer_color_attachment,
+				},
+				{
+					.type = GL::GL_DEPTH_ATTACHMENT,
+					.texture = framebuffer_depth_attachment,
+				},
+			}
+		}
+	);
+}
+
+void Editor::create()
+{
+	create_framebuffer();
+
+	// Enable docking
+	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+	// Table styling
+	ImGui::GetStyle().CellPadding.x = 6;
+
+	// Load gizmo meshes
+	auto & attribute_mappings = editor_assets.programs.get("gizmo"_name).attribute_mappings;
+	for (auto & [_, mesh] : editor_assets.meshes)
+		for (auto & drawable : mesh.drawables)
+			drawable.load(attribute_mappings);
+}
+
+void Editor::update(GLFW::Window const & window, FrameInfo const & frame_info)
+{
+
+}
 
 // TODO(bekorn): as I understand, imgui already has a buffer to keep formatted strings, so this might be unnecessary
 // ImGui + fmtlib utility (especially handy for tables)
@@ -13,7 +66,7 @@ inline static auto const TextFMT = []<typename... T>(fmt::format_string<T...> fm
 	ImGui::TextUnformatted(_buffer.begin(), _buffer.end());
 };
 
-void Editor::metrics_window(FrameInfo const & frame_info, f64 seconds_since_game_render)
+void Editor::metrics_window(FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds)
 {
 	using namespace ImGui;
 
@@ -37,14 +90,28 @@ void Editor::metrics_window(FrameInfo const & frame_info, f64 seconds_since_game
 		static array<f64, 30> deltas{};
 		static usize delta_idx = 0;
 
-		deltas[delta_idx] = seconds_since_game_render;
+		deltas[delta_idx] = game_update_in_seconds;
 		delta_idx = (delta_idx + 1) % deltas.size();
 		f64 average_delta = 0;
 		for (auto const & delta: deltas)
 			average_delta += delta;
 		average_delta /= deltas.size();
 
-		TextFMT("Average render: {:>6.2f} ms", average_delta * 1000., 1. / average_delta);
+		TextFMT("Average update: {:>6.2f} ms", average_delta * 1000., 1. / average_delta);
+	}
+
+	{
+		static array<f64, 30> deltas{};
+		static usize delta_idx = 0;
+
+		deltas[delta_idx] = game_render_in_seconds;
+		delta_idx = (delta_idx + 1) % deltas.size();
+		f64 average_delta = 0;
+		for (auto const & delta: deltas)
+			average_delta += delta;
+		average_delta /= deltas.size();
+
+		SameLine(), TextFMT(",  render: {:>6.2f} ms", average_delta * 1000., 1. / average_delta);
 	}
 
 	TextFMT("Frame: {:6}, Time: {:7.2f}", frame_info.idx, frame_info.seconds_since_start);
@@ -58,22 +125,48 @@ void Editor::game_window()
 
 	Begin("Game", nullptr, ImGuiWindowFlags_NoCollapse);
 
-	f32 scale = 0.5;
-	Text("Resolution: %dx%d, Scale: %.2f", game.resolution.x, game.resolution.y, scale);
-	Image(
-		reinterpret_cast<void*>(i64(game.framebuffer_attachments[0].id)),
-		{f32(game.resolution.x) * scale, f32(game.resolution.y) * scale},
-		{0, 1}, {1, 0} // because default is flipped on y-axis
-	);
+	Checkbox("Render", &should_game_render);
+	static bool render_single_frame;
+	if (render_single_frame)
+		render_single_frame = should_game_render = false;
+	if (render_single_frame = (SameLine(), Button("Render Single Frame")))
+		should_game_render = true;
+
+	{
+		f32 scale = 0.5;
+		Text("Resolution: %dx%d, Scale: %.2f", game.resolution.x, game.resolution.y, scale);
+
+		auto resolution = ImVec2(f32(game.resolution.x) * scale, f32(game.resolution.y) * scale);
+		// custom uvs because defaults are flipped on y-axis
+		auto uv0 = ImVec2(0, 1);
+		auto uv1 = ImVec2(1, 0);
+
+		Image(
+			reinterpret_cast<void*>(i64(game.framebuffer_color_attachment.id)),
+			resolution, uv0, uv1
+		);
+		SameLine(GetCursorPosX()), Image(
+			reinterpret_cast<void*>(i64(framebuffer_color_attachment.id)),
+			resolution, uv0, uv1
+		);
+
+		SameLine(), Image(
+			reinterpret_cast<void*>(i64(game.framebuffer_depth_attachment.id)),
+			resolution, uv0, uv1
+		);
+	}
 
 	// Draw gizmos
 	{
 		using namespace GL;
 
-		// Render on top of the game framebuffer
-		// TODO(bekorn): should editor has its own framebuffer?
-		glBindFramebuffer(GL_FRAMEBUFFER, game.framebuffer.id);
-		glClearNamedFramebufferfv(game.framebuffer.id, GL_DEPTH, 0, &game.clear_depth);
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
+		glViewport(0, 0, resolution.x, resolution.y);
+		const f32 clear_depth{1};
+		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
+		const f32x4 clear_color{0, 0, 0, 0};
+		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
+
 		glEnable(GL_DEPTH_TEST);
 
 		auto & gizmo_program = editor_assets.programs.get("gizmo"_name);
@@ -668,28 +761,13 @@ void Editor::workspaces()
 	End();
 }
 
-void Editor::create()
-{
-	// Enable docking
-	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-	// Table styling
-	ImGui::GetStyle().CellPadding.x = 6;
-
-	// Load gizmo meshes
-	auto & attribute_mappings = editor_assets.programs.get("gizmo"_name).attribute_mappings;
-	for (auto & [_, mesh] : editor_assets.meshes)
-		for (auto & drawable : mesh.drawables)
-			drawable.load(attribute_mappings);
-}
-
-void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info, f64 seconds_since_game_render)
+void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds)
 {
 	workspaces();
 
 	// TODO(bekorn): these windows are monolithic right now,
 	//  it should be similar to Blender's, each workspace can have arbitrary windows with dynamic types
-	metrics_window(frame_info, seconds_since_game_render);
+	metrics_window(frame_info, game_update_in_seconds, game_render_in_seconds);
 	game_window();
 	game_settings_window();
 	node_settings_window();
@@ -700,5 +778,5 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info, f
 	program_window();
 	camera_window();
 
-	//		ImGui::ShowDemoWindow();
+//	ImGui::ShowDemoWindow();
 }

@@ -5,18 +5,14 @@
 
 void Game::create_framebuffer()
 {
-	framebuffer_attachments.resize(2);
-
-	auto & color_attachment = framebuffer_attachments[0];
-	color_attachment.create(
+	framebuffer_color_attachment.create(
 		GL::Texture2D::AttachmentDescription{
 			.dimensions = resolution,
 			.internal_format = GL::GL_RGB8,
 		}
 	);
 
-	auto & depth_attachment = framebuffer_attachments[1];
-	depth_attachment.create(
+	framebuffer_depth_attachment.create(
 		GL::Texture2D::AttachmentDescription{
 			.dimensions = resolution,
 			.internal_format = GL::GL_DEPTH_COMPONENT32F,
@@ -28,11 +24,11 @@ void Game::create_framebuffer()
 			.attachments = {
 				{
 					.type = GL::GL_COLOR_ATTACHMENT0,
-					.texture = color_attachment,
+					.texture = framebuffer_color_attachment,
 				},
 				{
 					.type = GL::GL_DEPTH_ATTACHMENT,
-					.texture = depth_attachment,
+					.texture = framebuffer_depth_attachment,
 				},
 			}
 		}
@@ -144,7 +140,7 @@ void Game::create()
 			drawable.load(attribute_mappings);
 }
 
-void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
+void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
 {
 	//	cmaera movement with WASD+QE+CTRL
 	{
@@ -169,8 +165,10 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 				visit([movement](Camera auto & c) { c.position += movement; }, camera);
 		}
 	}
+}
 
-
+void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
+{
 	using namespace GL;
 
 	// Update gltf materials !!! Temporary
@@ -195,9 +193,8 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		}
 	}
 
-	glViewport(0, 0, resolution.x, resolution.y);
-
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
+	glViewport(0, 0, resolution.x, resolution.y);
 	glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
 	glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
 
