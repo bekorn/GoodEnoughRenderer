@@ -46,11 +46,13 @@ void Game::create_uniform_buffers()
 	// Setup Lights Uniform Buffer
 	auto & lights_uniform_block = assets.uniform_blocks.get("Lights"_name);
 
-	lights_uniform_buffer.create(Buffer::UniformBlockDescription{
-		.usage = GL::GL_DYNAMIC_DRAW,
-		.uniform_block = lights_uniform_block,
-		.array_size = 1,
-	});
+	lights_uniform_buffer.create(
+		Buffer::UniformBlockDescription{
+			.usage = GL::GL_DYNAMIC_DRAW,
+			.uniform_block = lights_uniform_block,
+			.array_size = 1,
+		}
+	);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, lights_uniform_block.binding, lights_uniform_buffer.id);
 
@@ -80,29 +82,35 @@ void Game::create_uniform_buffers()
 	// Setup Camera Uniform Buffer
 	auto & camera_uniform_block = assets.uniform_blocks.get("Camera"_name);
 
-	camera_uniform_buffer.create(Buffer::UniformBlockDescription{
-		.usage = GL_DYNAMIC_DRAW,
-		.uniform_block = camera_uniform_block,
-		.array_size = 1,
-	});
+	camera_uniform_buffer.create(
+		Buffer::UniformBlockDescription{
+			.usage = GL_DYNAMIC_DRAW,
+			.uniform_block = camera_uniform_block,
+			.array_size = 1,
+		}
+	);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, camera_uniform_block.binding, camera_uniform_buffer.id);
 
 
 	// Setup GLTF Material Block and Buffer
 	auto & material_block = Render::Material_gltf_pbrMetallicRoughness::block;
-	material_block.create({
-		.layout = *std::ranges::find(
-			assets.programs.get(GLTF::pbrMetallicRoughness_program_name).storage_block_mappings,
-			"Material", &StorageBlockMapping::key
-		)
-	});
+	material_block.create(
+		{
+			.layout = *std::ranges::find(
+				assets.programs.get(GLTF::pbrMetallicRoughness_program_name).storage_block_mappings,
+				"Material", &StorageBlockMapping::key
+			)
+		}
+	);
 
-	gltf_material_buffer.create(Buffer::StorageBlockDescription{
-		.usage = GL_DYNAMIC_DRAW,
-		.storage_block = material_block,
-		.array_size = assets.materials.resources.size(),
-	});
+	gltf_material_buffer.create(
+		Buffer::StorageBlockDescription{
+			.usage = GL_DYNAMIC_DRAW,
+			.storage_block = material_block,
+			.array_size = assets.materials.resources.size(),
+		}
+	);
 
 	auto * buffer = (byte *) glMapNamedBuffer(gltf_material_buffer.id, GL_WRITE_ONLY);
 	for (auto i = 0; auto & [name, material]: assets.materials)
@@ -131,13 +139,38 @@ void Game::create()
 
 	// load all the meshes to the gpu
 	auto & attribute_mappings = assets.programs.get(GLTF::pbrMetallicRoughness_program_name).attribute_mappings;
-	for (auto & [_, mesh] : assets.meshes)
-		for (auto & drawable : mesh.drawables)
+	for (auto & [_, mesh]: assets.meshes)
+		for (auto & drawable: mesh.drawables)
 			drawable.load(attribute_mappings);
 }
 
 void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 {
+	//	cmaera movement with WASD+QE+CTRL
+	{
+		auto dir = f32x3(0);
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) dir.z -= 1;
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) dir.z += 1;
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) dir.x += 1;
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) dir.x -= 1;
+		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) dir.y += 1;
+		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) dir.y -= 1;
+
+		const auto speed = 2.f;
+		auto movement = speed * frame_info.seconds_since_last_frame * dir;
+		if (any(notEqual(movement, f32x3(0))))
+		{
+			movement = visit(
+				[movement](Camera auto & c) { return f32x3(inverse(c.get_view()) * f32x4(movement, 0)); }, camera
+			);
+			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+				visit([movement](Camera auto & c) { c.target += movement; }, camera);
+			else
+				visit([movement](Camera auto & c) { c.position += movement; }, camera);
+		}
+	}
+
+
 	using namespace GL;
 
 	// Update gltf materials !!! Temporary
@@ -170,9 +203,9 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	glEnable(GL_DEPTH_TEST);
 
-	auto camera_position = visit([](Camera auto & c){ return c.position; }, camera);
-	auto view = visit([](Camera auto & c){ return c.get_view(); }, camera);
-	auto projection = visit([](Camera auto & c){ return c.get_projection(); }, camera);
+	auto camera_position = visit([](Camera auto & c) { return c.position; }, camera);
+	auto view = visit([](Camera auto & c) { return c.get_view(); }, camera);
+	auto projection = visit([](Camera auto & c) { return c.get_projection(); }, camera);
 	auto view_projection = projection * view;
 
 	// Update Camera Uniform Buffer
