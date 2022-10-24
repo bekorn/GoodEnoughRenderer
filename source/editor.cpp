@@ -183,6 +183,24 @@ void Editor::game_window()
 		}
 	}
 
+	// gamma correction
+	{
+		using namespace GL;
+
+		auto & gamma_correct_program = game.assets.programs.get("gamma_correct"_name);
+		glUseProgram(gamma_correct_program.id);
+		glBindImageTexture(
+			0,
+			framebuffer_color_attachment.id, 0,
+			false, 0,
+			GL_READ_WRITE,
+			GL_RGBA8
+		);
+		glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
+		//	make sure writing to image has finished before read, see https://learnopengl.com/Guest-Articles/2022/Compute-Shaders/Introduction
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	}
+
 	End();
 }
 

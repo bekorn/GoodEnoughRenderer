@@ -106,18 +106,15 @@ void main()
 
         vec3 to_light = light.position - vertex.world_position;
         float dist_sqr = dot(to_light, to_light);
-        float dist = sqrt(dist_sqr);
-        vec3 dir = normalize(to_light);
 
-        float intensity = dot(normal, dir);
+        float intensity = dot(normal, normalize(to_light));
         intensity *= occlusion;
-        intensity *= clamp(light.intensity / (0.3 * dist + 0.5 * dist_sqr), 0, 1);
+        intensity *= light.intensity / dist_sqr;
 
         diffuse_color += base_color * light.color * max(0, intensity);
     }
 
-    vec3 ambient_color = vec3(0.2);
-    ambient_color *= max(vec3(0), 0.3 - diffuse_color);
+    vec3 ambient_color = vec3(0.01);
 
     vec3 emission_color = get_emission();
 

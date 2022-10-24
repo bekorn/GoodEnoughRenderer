@@ -9,9 +9,7 @@
       "stages": {
         "vert": "glsl/program/gizmo.vert.glsl",
         "frag": "glsl/program/gizmo.frag.glsl"
-      },
-      "include_strings": [],
-      "include_paths": []
+      }
     }
   ]
 }

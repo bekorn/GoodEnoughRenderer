@@ -9,6 +9,5 @@ out vec4 out_color;
 
 void main()
 {
-    // TODO(bekorn): make this a post proccessing effect
-    out_color = vec4(pow(v2f.color,  vec3(1 / 2.2)), 1);
+    out_color = vec4(v2f.color, 1);
 }

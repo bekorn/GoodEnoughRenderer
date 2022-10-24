@@ -100,6 +100,7 @@ namespace GLSL::Program
 			if (stage == "vert") return GL::GL_VERTEX_SHADER;
 			if (stage == "frag") return GL::GL_FRAGMENT_SHADER;
 			if (stage == "geom") return GL::GL_GEOMETRY_SHADER;
+			if (stage == "comp") return GL::GL_COMPUTE_SHADER;
 		}
 	}
 
@@ -116,12 +117,14 @@ namespace GLSL::Program
 				.path = root_dir / item.value.GetString(),
 			});
 
-		for (auto & item: o.FindMember("include_paths")->value.GetArray())
-			description.include_paths.push_back(root_dir / item.GetString());
+		if (auto member = o.FindMember("include_paths"); member != o.MemberEnd())
+			for (auto & item: member->value.GetArray())
+				description.include_paths.push_back(root_dir / item.GetString());
 
 		description.include_strings.push_back(GL::GLSL_VERSION_MACRO);
-		for (auto & item: o.FindMember("include_strings")->value.GetArray())
-			description.include_strings.emplace_back(item.GetString());
+		if (auto member = o.FindMember("include_strings"); member != o.MemberEnd())
+			for (auto & item: member->value.GetArray())
+				description.include_strings.emplace_back(item.GetString());
 
 		return {name, description};
 	}

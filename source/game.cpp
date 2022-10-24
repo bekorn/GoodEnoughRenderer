@@ -8,7 +8,7 @@ void Game::create_framebuffer()
 	framebuffer_color_attachment.create(
 		GL::Texture2D::AttachmentDescription{
 			.dimensions = resolution,
-			.internal_format = GL::GL_RGB8,
+			.internal_format = GL::GL_RGBA8, // GL_RGB8 does not work with compute shaders
 		}
 	);
 
@@ -55,22 +55,22 @@ void Game::create_uniform_buffers()
 	auto * map = (byte *) glMapNamedBuffer(lights_uniform_buffer.id, GL_WRITE_ONLY);
 	lights_uniform_block.set(map, "Lights[0].position", f32x3{0, 1, 3});
 	lights_uniform_block.set(map, "Lights[0].color", f32x3{1, 0, 0});
-	lights_uniform_block.set(map, "Lights[0].intensity", f32{5});
+	lights_uniform_block.set(map, "Lights[0].intensity", f32{2});
 	lights_uniform_block.set(map, "Lights[0].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[1].position", f32x3{0, 1, -3});
 	lights_uniform_block.set(map, "Lights[1].color", f32x3{0, 1, 0});
-	lights_uniform_block.set(map, "Lights[1].intensity", f32{3});
+	lights_uniform_block.set(map, "Lights[1].intensity", f32{1.6});
 	lights_uniform_block.set(map, "Lights[1].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[2].position", f32x3{-2, 3, 0});
 	lights_uniform_block.set(map, "Lights[2].color", f32x3{1, 1, 1});
-	lights_uniform_block.set(map, "Lights[2].intensity", f32{16});
+	lights_uniform_block.set(map, "Lights[2].intensity", f32{3.5});
 	lights_uniform_block.set(map, "Lights[2].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[3].position", f32x3{-10, 1, 0});
 	lights_uniform_block.set(map, "Lights[3].color", f32x3{0, 0, 1});
-	lights_uniform_block.set(map, "Lights[3].intensity", f32{8});
+	lights_uniform_block.set(map, "Lights[3].intensity", f32{2.5});
 	lights_uniform_block.set(map, "Lights[3].is_active", true);
 	glUnmapNamedBuffer(lights_uniform_buffer.id);
 
@@ -245,4 +245,18 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 				glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
 			}
 		}
+
+	// gamma correction
+	auto & gamma_correct_program = assets.programs.get("gamma_correct"_name);
+	glUseProgram(gamma_correct_program.id);
+	glBindImageTexture(
+		0,
+		framebuffer_color_attachment.id, 0,
+		false, 0,
+		GL_READ_WRITE,
+		GL_RGBA8
+	);
+	glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
+	//	make sure writing to image has finished before read, see https://learnopengl.com/Guest-Articles/2022/Compute-Shaders/Introduction
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }

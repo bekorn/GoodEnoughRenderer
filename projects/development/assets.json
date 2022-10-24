@@ -1,10 +1,10 @@
 {
   "gltf": [
     {"name": "Sponza", "path": "model/sponza/Sponza.gltf"},
-    {"name": "ElectricGuitar", "path": "model/electric_guitar_fender_strat_plus/model.gltf"}
+    {"name": "ElectricGuitar", "path": "model/electric_guitar_fender_strat_plus/model.gltf"},
+    {"name": "DamagedHelmet", "path": "model/damaged_helmet/DamagedHelmet.gltf"}
   ],
-  "unused_gltf": [
-    {"name": "DamagedHelmet", "path": "model/damaged_helmet/DamagedHelmet.gltf"},
+"unused_gltf": [
     {"name": "Avocado", "path": "model/avocado/Avocado.gltf"},
     {"name": "FlightHelmet", "path": "model/flight_helmet/FlightHelmet.gltf"},
     {"name": "OrientationTest", "path": "model/orientation test/OrientationTest.gltf"},
@@ -21,11 +21,16 @@
         "vert": "glsl/program/gltf_pbrMetallicRoughness.vert.glsl",
         "frag": "glsl/program/gltf_pbrMetallicRoughness.frag.glsl"
       },
-      "include_strings": [],
       "include_paths": [
         "glsl/uniform_block/lights.unib.glsl",
         "glsl/uniform_block/camera.unib.glsl"
       ]
+    },
+    {
+      "name": "gamma_correct",
+      "stages": {
+        "comp": "glsl/program/gamma_correct.comp.glsl"
+      }
     }
   ]
 }
