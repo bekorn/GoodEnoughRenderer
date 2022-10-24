@@ -45,6 +45,7 @@ namespace GL
 		{
 			i32x2 dimensions;
 			bool has_alpha = false;
+			bool is_sRGB = false;
 
 			GLenum min_filter = GL_LINEAR;
 			GLenum mag_filter = GL_LINEAR;
@@ -60,7 +61,6 @@ namespace GL
 			glCreateTextures(GL_TEXTURE_2D, 1, &id);
 
 			auto channel_count = description.has_alpha ? 4 : 3;
-			auto channel_format = description.has_alpha ? GL_RGBA : GL_RGB;
 
 			// Pick correct storage alignment
 			auto aligns_to_4 = (description.dimensions.x * channel_count) % 4 == 0;
@@ -70,7 +70,7 @@ namespace GL
 			glTextureStorage2D(
 				id,
 				1,
-				GL_RGBA8,
+				description.is_sRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8,
 				description.dimensions.x, description.dimensions.y
 			);
 			glTextureSubImage2D(
@@ -78,7 +78,7 @@ namespace GL
 				0,
 				0, 0,
 				description.dimensions.x, description.dimensions.y,
-				channel_format, GL_UNSIGNED_BYTE, description.data.data()
+				description.has_alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, description.data.data()
 			);
 
 			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, description.min_filter);

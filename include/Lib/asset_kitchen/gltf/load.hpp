@@ -33,6 +33,7 @@ namespace GLTF
 		ByteBuffer data;
 		i32x2 dimensions;
 		i32 channels;
+		bool is_sRGB;
 	};
 
 	struct Sampler

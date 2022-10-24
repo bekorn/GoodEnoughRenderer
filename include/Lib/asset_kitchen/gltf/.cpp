@@ -73,6 +73,7 @@ namespace GLTF
 						.data = move(image_file.buffer),
 						.dimensions = image_file.dimensions,
 						.channels = image_file.channels,
+						.is_sRGB = false,
 					};
 				}
 			);
@@ -205,6 +206,13 @@ namespace GLTF
 					return {};
 			};
 
+			auto const mark_sRGB = [&loaded](optional<Material::TexInfo> const & tex_info)
+			{
+				if (tex_info)
+					if (auto & image_index = loaded.textures[tex_info.value().texture_index].image_index)
+						loaded.images[image_index.value()].is_sRGB = true;
+			};
+
 			auto const & material = item.GetObject();
 			Material mat{
 				.name = material_name_generator.get(material, "name"),
@@ -221,6 +229,8 @@ namespace GLTF
 
 				.double_sided = GetBool(material, "doubleSided", false),
 			};
+			// mark sRGB textures
+			mark_sRGB(mat.emissive_texture);
 
 			if (auto member = material.FindMember("pbrMetallicRoughness"); member != material.MemberEnd())
 			{
@@ -232,6 +242,8 @@ namespace GLTF
 					.roughness_factor = GetF32(pbrMetallicRoughness, "roughnessFactor", 1),
 					.metallic_roughness_texture = get_tex_info(pbrMetallicRoughness, "metallicRoughnessTexture"),
 				};
+				// mark sRGB textures
+				mark_sRGB(mat.pbr_metallic_roughness.value().base_color_texture);
 			}
 
 			loaded.materials.push_back(mat);
@@ -349,7 +361,7 @@ namespace GLTF
 			return key;
 		}
 
-		inline Geometry::Attribute::Type IntoAttributeType(u32 type, bool is_normalized)
+		Geometry::Attribute::Type IntoAttributeType(u32 type, bool is_normalized)
 		{
 			// see spec section 3.6.2.2. Accessor Data Types
 			using enum Geometry::Attribute::Type::Value;
@@ -405,6 +417,7 @@ namespace GLTF
 				GL::Texture2D::ImageDescription{
 					.dimensions = loaded_image.dimensions,
 					.has_alpha = loaded_image.channels == 4,
+					.is_sRGB = loaded_image.is_sRGB,
 
 					.min_filter = GL::GLenum(loaded_sampler.min_filter),
 					.mag_filter = GL::GLenum(loaded_sampler.mag_filter),
