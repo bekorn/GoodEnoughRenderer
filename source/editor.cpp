@@ -39,7 +39,9 @@ void Editor::create()
 	create_framebuffer();
 
 	// Enable docking
-	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	auto & io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.ConfigDockingWithShift = true;
 
 	// Table styling
 	ImGui::GetStyle().CellPadding.x = 6;
