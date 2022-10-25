@@ -785,7 +785,7 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto & gamma_correct_program = game.assets.programs.get("gamma_correct"_name);
 		glUseProgram(gamma_correct_program.id);
 		glBindImageTexture(
-			0,
+			GetLocation(gamma_correct_program.uniform_mappings, "img"),
 			framebuffer_color_attachment.id, 0,
 			false, 0,
 			GL_READ_WRITE,

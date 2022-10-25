@@ -93,9 +93,8 @@ void Game::create_uniform_buffers()
 	auto & material_block = Render::Material_gltf_pbrMetallicRoughness::block;
 	material_block.create(
 		{
-			.layout = *std::ranges::find(
-				assets.programs.get(GLTF::pbrMetallicRoughness_program_name).storage_block_mappings,
-				"Material", &StorageBlockMapping::key
+			.layout = GetMapping(
+				assets.programs.get(GLTF::pbrMetallicRoughness_program_name).storage_block_mappings, "Material"
 			)
 		}
 	);
@@ -216,9 +215,14 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		glUnmapNamedBuffer(camera_uniform_buffer.id);
 	}
 
-	glUseProgram(assets.programs.get(GLTF::pbrMetallicRoughness_program_name).id);
-
+	// Update scene tree
 	assets.scene_tree.update_transforms();
+
+	auto const & gltf_pbr_program = assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
+	glUseProgram(gltf_pbr_program.id);
+
+	auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");
+	auto location_TransformMVP = GetLocation(gltf_pbr_program.uniform_mappings, "TransformMVP");
 
 	for (auto & depth: assets.scene_tree.nodes)
 		for (auto & node: depth)
@@ -227,9 +231,9 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 				continue;
 
 			// TODO(bekorn): find a proper locations for these uniforms
-			glUniformMatrix4fv(10, 1, false, begin(node.matrix));
+			glUniformMatrix4fv(location_TransformM, 1, false, begin(node.matrix));
 			auto transform_mvp = view_projection * node.matrix;
-			glUniformMatrix4fv(11, 1, false, begin(transform_mvp));
+			glUniformMatrix4fv(location_TransformMVP, 1, false, begin(transform_mvp));
 
 			for (auto & drawable: node.mesh->drawables)
 			{
@@ -250,7 +254,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	auto & gamma_correct_program = assets.programs.get("gamma_correct"_name);
 	glUseProgram(gamma_correct_program.id);
 	glBindImageTexture(
-		0,
+		GetLocation(gamma_correct_program.uniform_mappings, "img"),
 		framebuffer_color_attachment.id, 0,
 		false, 0,
 		GL_READ_WRITE,

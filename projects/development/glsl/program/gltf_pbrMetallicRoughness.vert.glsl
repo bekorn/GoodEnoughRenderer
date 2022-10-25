@@ -1,6 +1,5 @@
-// TODO(bekorn): find a proper location
-layout(location = 10) uniform mat4 TransformM;
-layout(location = 11) uniform mat4 TransformMVP;
+uniform mat4 TransformM;
+uniform mat4 TransformMVP;
 
 in vec3 position;
 in vec3 normal;

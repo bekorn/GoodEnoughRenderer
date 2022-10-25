@@ -52,4 +52,18 @@ namespace GL
 		};
 		vector<Variable> variables;
 	};
+
+	// results should be cached for better performance
+	auto & GetMapping(std::ranges::range auto const & mappings, auto const & key)
+	{
+		for (auto & mapping: mappings)
+			if (key == mapping.key)
+				return mapping;
+
+		assert(("key not found", false));
+	}
+
+	// results should be cached for better performance
+	GLuint GetLocation(std::ranges::range auto const & mappings, auto const & key)
+	{ return GetMapping(mappings, key).location; }
 }
