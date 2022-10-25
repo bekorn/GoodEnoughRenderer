@@ -51,11 +51,6 @@ void Editor::create()
 			drawable.load(attribute_mappings);
 }
 
-void Editor::update(GLFW::Window const & window, FrameInfo const & frame_info)
-{
-
-}
-
 // TODO(bekorn): as I understand, imgui already has a buffer to keep formatted strings, so this might be unnecessary
 // ImGui + fmtlib utility (especially handy for tables)
 inline static fmt::memory_buffer _buffer;
@@ -154,51 +149,6 @@ void Editor::game_window()
 			reinterpret_cast<void*>(i64(game.framebuffer_depth_attachment.id)),
 			resolution, uv0, uv1
 		);
-	}
-
-	// Draw gizmos
-	{
-		using namespace GL;
-
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
-		glViewport(0, 0, resolution.x, resolution.y);
-		const f32 clear_depth{1};
-		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
-		const f32x4 clear_color{0, 0, 0, 0};
-		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
-
-		glEnable(GL_DEPTH_TEST);
-
-		auto & gizmo_program = editor_assets.programs.get("gizmo"_name);
-		glUseProgram(gizmo_program.id);
-
-		// TODO(bekorn): size of the gizmo should be in screen space (currently 1/6 on the gizmo.vert.glsl)
-		auto transform = f32x3x3(visit([](Camera auto & c){ return c.get_view(); }, game.camera));
-		glUniformMatrix3fv(0, 1, false, begin(transform));
-
-		for (auto & drawable : editor_assets.meshes.get("AxisGizmo:mesh:0:Cube"_name).drawables)
-		{
-			glBindVertexArray(drawable.vertex_array.id);
-			glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
-		}
-	}
-
-	// gamma correction
-	{
-		using namespace GL;
-
-		auto & gamma_correct_program = game.assets.programs.get("gamma_correct"_name);
-		glUseProgram(gamma_correct_program.id);
-		glBindImageTexture(
-			0,
-			framebuffer_color_attachment.id, 0,
-			false, 0,
-			GL_READ_WRITE,
-			GL_RGBA8
-		);
-		glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
-		//	make sure writing to image has finished before read, see https://learnopengl.com/Guest-Articles/2022/Compute-Shaders/Introduction
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
 
 	End();
@@ -779,7 +729,7 @@ void Editor::workspaces()
 	End();
 }
 
-void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds)
+void Editor::update(GLFW::Window const & window, FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds)
 {
 	workspaces();
 
@@ -796,5 +746,51 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info, f
 	program_window();
 	camera_window();
 
-//	ImGui::ShowDemoWindow();
+	//	ImGui::ShowDemoWindow();
+}
+
+void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
+{
+	using namespace GL;
+
+	// Draw gizmos
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
+		glViewport(0, 0, resolution.x, resolution.y);
+		const f32 clear_depth{1};
+		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
+		const f32x4 clear_color{0, 0, 0, 0};
+		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
+
+		glEnable(GL_DEPTH_TEST);
+
+		auto & gizmo_program = editor_assets.programs.get("gizmo"_name);
+		glUseProgram(gizmo_program.id);
+
+		// TODO(bekorn): size of the gizmo should be in screen space (currently 1/6 on the gizmo.vert.glsl)
+		auto transform = f32x3x3(visit([](Camera auto & c){ return c.get_view(); }, game.camera));
+		glUniformMatrix3fv(0, 1, false, begin(transform));
+
+		for (auto & drawable : editor_assets.meshes.get("AxisGizmo:mesh:0:Cube"_name).drawables)
+		{
+			glBindVertexArray(drawable.vertex_array.id);
+			glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+		}
+	}
+
+	// gamma correction
+	{
+		auto & gamma_correct_program = game.assets.programs.get("gamma_correct"_name);
+		glUseProgram(gamma_correct_program.id);
+		glBindImageTexture(
+			0,
+			framebuffer_color_attachment.id, 0,
+			false, 0,
+			GL_READ_WRITE,
+			GL_RGBA8
+		);
+		glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
+		//	make sure writing to image has finished before read, see https://learnopengl.com/Guest-Articles/2022/Compute-Shaders/Introduction
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	}
 }

@@ -23,8 +23,6 @@ struct Editor
 	void create_framebuffer();
 	void create();
 
-	void update(GLFW::Window const & window, FrameInfo const & frame_info);
-
 	void metrics_window(FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds);
 	bool should_game_render = true;
 	void game_window();
@@ -37,5 +35,7 @@ struct Editor
 	void uniform_buffer_window();
 	void camera_window();
 	void workspaces();
-	void render(GLFW::Window const & window, FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds);
+	void update(GLFW::Window const & window, FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds);
+
+	void render(GLFW::Window const & window, FrameInfo const & frame_info);
 };
