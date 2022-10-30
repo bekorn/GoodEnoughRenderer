@@ -230,7 +230,6 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 			if (node.mesh == nullptr)
 				continue;
 
-			// TODO(bekorn): find a proper locations for these uniforms
 			glUniformMatrix4fv(location_TransformM, 1, false, begin(node.matrix));
 			auto transform_mvp = view_projection * node.matrix;
 			glUniformMatrix4fv(location_TransformMVP, 1, false, begin(transform_mvp));

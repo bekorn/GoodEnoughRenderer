@@ -44,14 +44,14 @@ void Assets::load_glsl_program(Name const & name)
 
 	if (auto expected = GLSL::Program::Convert(loaded_data))
 	{
-		programs.get_or_generate(name) = expected.into_result();
+		programs.generate(name, expected.into_result());
 	}
 	else
 	{
 		auto error = expected.into_error();
-		fmt::print(stderr, "program {} failed to load. Error: {}", name.string, error);
-		programs.get_or_generate(name) = {};
-		program_errors.get_or_generate(name) = error;
+		fmt::print(stderr, "Failed to load GLSL Program {}. Error: {}", name.string, error);
+		programs.generate(name); // so it shows up in the editor
+		program_errors.generate(name, error);
 	}
 }
 
@@ -61,14 +61,14 @@ void Assets::load_glsl_uniform_block(Name const & name)
 
 	if (auto expected = GLSL::UniformBlock::Convert(loaded_data))
 	{
-		uniform_blocks.get_or_generate(name) = expected.into_result();
+		uniform_blocks.generate(name, expected.into_result());
 		program_errors.erase(name);
 	}
 	else
 	{
 		auto error = expected.into_error();
-		fmt::print(stderr, "uniform block {} failed to load. Error: {}", name.string, error);
-		program_errors.get_or_generate(name) = error;
+		fmt::print(stderr, "Failed to load Uniform Block {}. Error: {}", name.string, error);
+		program_errors.generate(name, error);
 	}
 }
 
@@ -78,6 +78,23 @@ void Assets::load_gltf(Name const & name)
 	GLTF::Convert(gltf_data, textures, materials, primitives, meshes, scene_tree);
 }
 
+template<std::ranges::range Range>
+bool IsSubsetOf(Range const & l, Range const & r)
+{
+	auto l_iter = l.begin();
+	auto r_iter = r.begin();
+	auto const l_end = l.end();
+	auto const r_end = r.end();
+
+	for (; l_iter != l_end and r_iter != r_end; ++l_iter)
+		if (GL::SameMappingType(*l_iter, *r_iter))
+			++r_iter;
+
+	if (r_iter == r_end) // all items matched
+		return true;
+	return false;
+}
+
 bool Assets::reload_glsl_program(Name const & name)
 {
 	auto const loaded_data = GLSL::Program::Load(descriptions.glsl.get(name));
@@ -85,29 +102,47 @@ bool Assets::reload_glsl_program(Name const & name)
 	if (auto expected = GLSL::Program::Convert(loaded_data))
 	{
 		auto new_program = expected.into_result();
-		auto & old_program = programs.get_or_generate(name);
 
-		// check if all the shader mappings are the same, prevent shader interface changes on runtime
-		char const * missmatch = nullptr;
-		if (old_program.attribute_mappings != new_program.attribute_mappings)
-			missmatch = "attribute";
-		else if (old_program.uniform_mappings != new_program.uniform_mappings)
-			missmatch = "uniform";
-		else if (old_program.uniform_block_mappings != new_program.uniform_block_mappings)
-			missmatch = "uniform_block";
-		else if (old_program.storage_block_mappings != new_program.storage_block_mappings)
-			missmatch = "storage_block";
-
-		if (missmatch != nullptr)
+		if (programs.get(name).id != 0)
 		{
-			auto error = fmt::format("{} failed to reload. Shader {} interface mismatched\n", name.string, missmatch);
-			// TODO(bekorn): logging only because the asset_kitchen is not stable enough, should be removed later
-			fmt::print(stderr, "{}", error);
-			program_errors.get_or_generate(name) = error;
-			return false;
+			// the first time reloading this program
+			if (auto iter = initial_program_interfaces.find(name); iter == initial_program_interfaces.end())
+			{
+				auto & program = programs.get(name);
+				auto & interface = initial_program_interfaces.generate(name).data;
+				interface.attribute_mappings = program.attribute_mappings;
+				interface.uniform_mappings = program.uniform_mappings;
+				interface.uniform_block_mappings = program.uniform_block_mappings;
+				interface.storage_block_mappings = program.storage_block_mappings;
+			}
+
+			auto & interface = initial_program_interfaces.get(name);
+
+			// check if the new program's interface are a subset of the old, prevent shader interface additions on runtime
+			char const * missmatch = nullptr;
+			if (not IsSubsetOf(interface.attribute_mappings, new_program.attribute_mappings))
+				missmatch = "attribute";
+			else if (not IsSubsetOf(interface.uniform_mappings, new_program.uniform_mappings))
+				missmatch = "uniform";
+			else if (not IsSubsetOf(interface.uniform_block_mappings, new_program.uniform_block_mappings))
+				missmatch = "uniform_block";
+			else if (not IsSubsetOf(interface.storage_block_mappings, new_program.storage_block_mappings))
+				missmatch = "storage_block";
+
+			if (missmatch != nullptr)
+			{
+				auto error = fmt::format(
+					"Failed to reload GLSL Program {}: {} mappings is not a subset of the previous\n",
+					name.string, missmatch
+				);
+				// TODO(bekorn): logging only because the asset_kitchen is not stable enough, should be removed later
+				fmt::print(stderr, "{}", error);
+				program_errors.get_or_generate(name) = error;
+				return false;
+			}
 		}
 
-		old_program = move(new_program);
+		programs.get(name) = move(new_program);
 		program_errors.erase(name);
 		return true;
 	}
@@ -115,7 +150,7 @@ bool Assets::reload_glsl_program(Name const & name)
 	{
 		auto error = expected.into_error();
 		// TODO(bekorn): logging only because the asset_kitchen is not stable enough, should be removed later
-		fmt::print(stderr, "{} failed to reload. Error: {}\n", name.string, error);
+		fmt::print(stderr, "Failed to reload GLSL Program {}. Error: {}\n", name.string, error);
 		program_errors.get_or_generate(name) = error;
 		return false;
 	}

@@ -16,7 +16,6 @@ struct Assets
 	// GL resources
 	Managed<GL::UniformBlock> uniform_blocks;
 	Managed<GL::ShaderProgram> programs;
-	Managed<std::string> program_errors;
 	Managed<GL::Texture2D> textures;
 	// Render resources
 	Managed<Geometry::Primitive> primitives;
@@ -24,6 +23,10 @@ struct Assets
 	Managed<Render::Mesh> meshes;
 	// Scene resources
 	Scene::Tree scene_tree;
+
+	// For editing purposes
+	Managed<GL::ShaderProgram> initial_program_interfaces;
+	Managed<std::string> program_errors;
 
 	explicit Assets(Descriptions const & desriptions) :
 		descriptions(desriptions)
@@ -36,6 +39,8 @@ struct Assets
 	{
 		for (auto const & [name, _] : descriptions.uniform_block)
 			load_glsl_uniform_block(name);
+		// TODO(bekorn): currently some uniform buffers are populated outside of render functions
+		//  therefore can't be stopped with should_game_render. However there might be a way to gracefully resolve this.
 		if (not program_errors.empty())
 			std::exit(1);
 
@@ -49,6 +54,6 @@ struct Assets
 	void load_glsl_program(Name const & name);
 	void load_glsl_uniform_block(Name const & name);
 	void load_gltf(Name const & name);
-	// For rapid editing purposes
+	// For editing purposes
 	bool reload_glsl_program(Name const & name);
 };
