@@ -52,8 +52,9 @@ void Editor::create()
 		for (auto & drawable : mesh.drawables)
 			drawable.load(attribute_mappings);
 
+	has_program_errors = not game.assets.program_errors.empty() or not editor_assets.program_errors.empty();
 	// Game should not render if any program failed to compile
-	if (not game.assets.program_errors.empty() or not editor_assets.program_errors.empty())
+	if (has_program_errors)
 		should_game_render = false;
 }
 
@@ -126,12 +127,16 @@ void Editor::game_window()
 
 	Begin("Game", nullptr, ImGuiWindowFlags_NoCollapse);
 
+	BeginDisabled(has_program_errors);
+
 	Checkbox("Render", &should_game_render);
 	static bool render_single_frame;
 	if (render_single_frame)
 		render_single_frame = should_game_render = false;
 	if (render_single_frame = (SameLine(), Button("Render Single Frame")))
 		should_game_render = true;
+
+	EndDisabled();
 
 	{
 		f32 scale = 0.5;
@@ -142,13 +147,17 @@ void Editor::game_window()
 		auto uv0 = ImVec2(0, 1);
 		auto uv1 = ImVec2(1, 0);
 
+		auto border_color = ImVec4{0, 0, 0, 1};
+		if (has_program_errors)
+			border_color.x = 1;
+
 		Image(
 			reinterpret_cast<void*>(i64(game.framebuffer_color_attachment.id)),
 			resolution, uv0, uv1
 		);
 		SameLine(GetCursorPosX()), Image(
 			reinterpret_cast<void*>(i64(framebuffer_color_attachment.id)),
-			resolution, uv0, uv1
+			resolution, uv0, uv1, {}, border_color
 		);
 
 		SameLine(), Image(
@@ -442,7 +451,15 @@ void Editor::program_window()
 {
 	using namespace ImGui;
 
+	if (has_program_errors)
+	{
+		PushStyleColor(ImGuiCol_Tab, {0.8, 0, 0, 1});
+		PushStyleColor(ImGuiCol_TabActive, {1, 0, 0, 1});
+		PushStyleColor(ImGuiCol_TabHovered, {1, 0, 0, 1});
+	}
 	Begin("Program Info", nullptr);
+	if (has_program_errors)
+		PopStyleColor(3);
 
 	static Name program_name;
 	static Assets * assets = &game.assets;
@@ -746,6 +763,8 @@ void Editor::workspaces()
 
 void Editor::update(GLFW::Window const & window, FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds)
 {
+	has_program_errors = not editor_assets.program_errors.empty() or not game.assets.program_errors.empty();
+
 	workspaces();
 
 	// TODO(bekorn): these windows are monolithic right now,

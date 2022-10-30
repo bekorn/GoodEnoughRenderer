@@ -12,6 +12,9 @@ struct Editor
 	Assets & editor_assets;
 	Game & game;
 
+	bool should_game_render = true;
+	bool has_program_errors;
+
 	explicit Editor(Assets & editor_assets, Game & game) :
 		editor_assets(editor_assets), game(game)
 	{}
@@ -24,7 +27,6 @@ struct Editor
 	void create();
 
 	void metrics_window(FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds);
-	bool should_game_render = true;
 	void game_window();
 	void game_settings_window();
 	void node_settings_window();
