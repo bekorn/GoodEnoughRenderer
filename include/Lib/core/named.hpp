@@ -99,6 +99,9 @@ struct Managed
 	auto find(Name const & name) const
 	{ return resources.find(name); }
 
+	auto empty() const
+	{ return resources.empty(); }
+
 	auto begin()
 	{ return resources.begin(); }
 

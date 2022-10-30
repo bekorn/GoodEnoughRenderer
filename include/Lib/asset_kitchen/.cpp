@@ -38,15 +38,13 @@ void Descriptions::create(std::filesystem::path const & project_root)
 	}
 }
 
-bool Assets::load_glsl_program(Name const & name)
+void Assets::load_glsl_program(Name const & name)
 {
 	auto const loaded_data = GLSL::Program::Load(descriptions.glsl.get(name));
 
 	if (auto expected = GLSL::Program::Convert(loaded_data))
 	{
 		programs.get_or_generate(name) = expected.into_result();
-		program_errors.get_or_generate(name) = {};
-		return true;
 	}
 	else
 	{
@@ -54,26 +52,23 @@ bool Assets::load_glsl_program(Name const & name)
 		fmt::print(stderr, "program {} failed to load. Error: {}", name.string, error);
 		programs.get_or_generate(name) = {};
 		program_errors.get_or_generate(name) = error;
-		return false;
 	}
 }
 
-bool Assets::load_glsl_uniform_block(Name const & name)
+void Assets::load_glsl_uniform_block(Name const & name)
 {
 	auto const loaded_data = GLSL::UniformBlock::Load(descriptions.uniform_block.get(name));
 
 	if (auto expected = GLSL::UniformBlock::Convert(loaded_data))
 	{
 		uniform_blocks.get_or_generate(name) = expected.into_result();
-		program_errors.get_or_generate(name) = {};
-		return true;
+		program_errors.erase(name);
 	}
 	else
 	{
 		auto error = expected.into_error();
 		fmt::print(stderr, "uniform block {} failed to load. Error: {}", name.string, error);
 		program_errors.get_or_generate(name) = error;
-		return false;
 	}
 }
 
@@ -113,7 +108,7 @@ bool Assets::reload_glsl_program(Name const & name)
 		}
 
 		old_program = move(new_program);
-		program_errors.get_or_generate(name) = {};
+		program_errors.erase(name);
 		return true;
 	}
 	else

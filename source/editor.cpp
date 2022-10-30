@@ -53,14 +53,8 @@ void Editor::create()
 			drawable.load(attribute_mappings);
 
 	// Game should not render if any program failed to compile
-	for (auto assets: array{&game.assets, &editor_assets})
-		for(auto & [_, error]: assets->program_errors)
-			if (not error.empty())
-			{
-				should_game_render = false;
-				goto end_error_check;
-			}
-	end_error_check:;
+	if (not game.assets.program_errors.empty() or not editor_assets.program_errors.empty())
+		should_game_render = false;
 }
 
 // TODO(bekorn): as I understand, imgui already has a buffer to keep formatted strings, so this might be unnecessary
@@ -460,7 +454,7 @@ void Editor::program_window()
 			if (Selectable(name.string.data()))
 				program_name = name, assets = &game.assets;
 
-			if (not game.assets.program_errors.get(name).empty())
+			if (game.assets.program_errors.contains(name))
 				SameLine(), TextColored({1, 0, 0, 1}, "ERROR");
 		}
 
@@ -470,7 +464,7 @@ void Editor::program_window()
 			if (Selectable(name.string.data()))
 				program_name = name, assets = &editor_assets;
 
-			if (not editor_assets.program_errors.get(name).empty())
+			if (editor_assets.program_errors.contains(name))
 				SameLine(), TextColored({1, 0, 0, 1}, "ERROR");
 		}
 
@@ -490,9 +484,9 @@ void Editor::program_window()
 		if (not assets->reload_glsl_program(named_program.name))
 			should_game_render = false;
 
-	if (auto const & error = assets->program_errors.get(program_name); not error.empty())
+	if (auto iter = assets->program_errors.find(program_name); iter != assets->program_errors.end())
 	{
-		TextColored({1, 0, 0, 1}, "%s", error.data());
+		TextColored({1, 0, 0, 1}, "%s", iter->second.data());
 		End();
 		return;
 	}
