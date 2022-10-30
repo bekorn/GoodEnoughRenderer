@@ -16,12 +16,18 @@ namespace GL
 		Geometry::Attribute::Key key;
 	};
 
+	inline bool operator==(AttributeMapping const & l, AttributeMapping const & r)
+	{ return l.location == r.location and l.glsl_type == r.glsl_type and l.per_patch == r.per_patch and l.key == r.key; }
+
 	struct UniformMapping
 	{
 		u32 location;
 		GLenum glsl_type; // just for debug purposes
 		std::string key;
 	};
+
+	inline bool operator==(UniformMapping const & l, UniformMapping const & r)
+	{ return l.location == r.location and l.glsl_type == r.glsl_type and l.key == r.key; }
 
 	struct UniformBlockMapping
 	{
@@ -38,6 +44,12 @@ namespace GL
 		vector<Variable> variables;
 	};
 
+	inline bool operator==(UniformBlockMapping::Variable const & l, UniformBlockMapping::Variable const & r)
+	{ return l.offset == r.offset and l.glsl_type == r.glsl_type and l.key == r.key; }
+
+	inline bool operator==(UniformBlockMapping const & l, UniformBlockMapping const & r)
+	{ return l.location == r.location and l.data_size == r.data_size and l.key == r.key and l.variables == r.variables; }
+
 	struct StorageBlockMapping
 	{
 		u32 location;
@@ -52,6 +64,12 @@ namespace GL
 		};
 		vector<Variable> variables;
 	};
+
+	inline bool operator==(StorageBlockMapping::Variable const & l, StorageBlockMapping::Variable const & r)
+	{ return l.offset == r.offset and l.glsl_type == r.glsl_type and l.key == r.key; }
+
+	inline bool operator==(StorageBlockMapping const & l, StorageBlockMapping const & r)
+	{ return l.location == r.location and l.data_size == r.data_size and l.key == r.key and l.variables == r.variables; }
 
 	// results should be cached for better performance
 	auto & GetMapping(std::ranges::range auto const & mappings, auto const & key)

@@ -38,7 +38,7 @@ void Descriptions::create(std::filesystem::path const & project_root)
 	}
 }
 
-void Assets::load_glsl_program(Name const & name)
+bool Assets::load_glsl_program(Name const & name)
 {
 	auto const loaded_data = GLSL::Program::Load(descriptions.glsl.get(name));
 
@@ -46,15 +46,19 @@ void Assets::load_glsl_program(Name const & name)
 	{
 		programs.get_or_generate(name) = expected.into_result();
 		program_errors.get_or_generate(name) = {};
+		return true;
 	}
 	else
 	{
+		auto error = expected.into_error();
+		fmt::print(stderr, "program {} failed to load. Error: {}", name.string, error);
 		programs.get_or_generate(name) = {};
-		program_errors.get_or_generate(name) = expected.into_error();
+		program_errors.get_or_generate(name) = error;
+		return false;
 	}
 }
 
-void Assets::load_glsl_uniform_block(Name const & name)
+bool Assets::load_glsl_uniform_block(Name const & name)
 {
 	auto const loaded_data = GLSL::UniformBlock::Load(descriptions.uniform_block.get(name));
 
@@ -62,11 +66,14 @@ void Assets::load_glsl_uniform_block(Name const & name)
 	{
 		uniform_blocks.get_or_generate(name) = expected.into_result();
 		program_errors.get_or_generate(name) = {};
+		return true;
 	}
 	else
 	{
-		uniform_blocks.get_or_generate(name) = {};
-		program_errors.get_or_generate(name) = expected.into_error();
+		auto error = expected.into_error();
+		fmt::print(stderr, "uniform block {} failed to load. Error: {}", name.string, error);
+		program_errors.get_or_generate(name) = error;
+		return false;
 	}
 }
 
@@ -74,4 +81,47 @@ void Assets::load_gltf(Name const & name)
 {
 	auto const gltf_data = GLTF::Load(descriptions.gltf.get(name));
 	GLTF::Convert(gltf_data, textures, materials, primitives, meshes, scene_tree);
+}
+
+bool Assets::reload_glsl_program(Name const & name)
+{
+	auto const loaded_data = GLSL::Program::Load(descriptions.glsl.get(name));
+
+	if (auto expected = GLSL::Program::Convert(loaded_data))
+	{
+		auto new_program = expected.into_result();
+		auto & old_program = programs.get_or_generate(name);
+
+		// check if all the shader mappings are the same, prevent shader interface changes on runtime
+		char const * missmatch = nullptr;
+		if (old_program.attribute_mappings != new_program.attribute_mappings)
+			missmatch = "attribute";
+		else if (old_program.uniform_mappings != new_program.uniform_mappings)
+			missmatch = "uniform";
+		else if (old_program.uniform_block_mappings != new_program.uniform_block_mappings)
+			missmatch = "uniform_block";
+		else if (old_program.storage_block_mappings != new_program.storage_block_mappings)
+			missmatch = "storage_block";
+
+		if (missmatch != nullptr)
+		{
+			auto error = fmt::format("{} failed to reload. Shader {} interface mismatched\n", name.string, missmatch);
+			// TODO(bekorn): logging only because the asset_kitchen is not stable enough, should be removed later
+			fmt::print(stderr, "{}", error);
+			program_errors.get_or_generate(name) = error;
+			return false;
+		}
+
+		old_program = move(new_program);
+		program_errors.get_or_generate(name) = {};
+		return true;
+	}
+	else
+	{
+		auto error = expected.into_error();
+		// TODO(bekorn): logging only because the asset_kitchen is not stable enough, should be removed later
+		fmt::print(stderr, "{} failed to reload. Error: {}\n", name.string, error);
+		program_errors.get_or_generate(name) = error;
+		return false;
+	}
 }

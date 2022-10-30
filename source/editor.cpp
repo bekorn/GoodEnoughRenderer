@@ -51,6 +51,16 @@ void Editor::create()
 	for (auto & [_, mesh] : editor_assets.meshes)
 		for (auto & drawable : mesh.drawables)
 			drawable.load(attribute_mappings);
+
+	// Game should not render if any program failed to compile
+	for (auto assets: array{&game.assets, &editor_assets})
+		for(auto & [_, error]: assets->program_errors)
+			if (not error.empty())
+			{
+				should_game_render = false;
+				goto end_error_check;
+			}
+	end_error_check:;
 }
 
 // TODO(bekorn): as I understand, imgui already has a buffer to keep formatted strings, so this might be unnecessary
@@ -446,13 +456,23 @@ void Editor::program_window()
 	{
 		Selectable("Game", false, ImGuiSelectableFlags_Disabled);
 		for (auto const & [name, _]: game.assets.programs)
+		{
 			if (Selectable(name.string.data()))
 				program_name = name, assets = &game.assets;
 
+			if (not game.assets.program_errors.get(name).empty())
+				SameLine(), TextColored({1, 0, 0, 1}, "ERROR");
+		}
+
 		Selectable("Editor", false, ImGuiSelectableFlags_Disabled);
 		for (auto const & [name, _]: editor_assets.programs)
+		{
 			if (Selectable(name.string.data()))
 				program_name = name, assets = &editor_assets;
+
+			if (not editor_assets.program_errors.get(name).empty())
+				SameLine(), TextColored({1, 0, 0, 1}, "ERROR");
+		}
 
 		EndCombo();
 	}
@@ -467,10 +487,15 @@ void Editor::program_window()
 	SameLine(), Text("(id: %d)", named_program.data.id);
 
 	if (Button("Reload"))
-		assets->load_glsl_program(named_program.name);
+		if (not assets->reload_glsl_program(named_program.name))
+			should_game_render = false;
 
 	if (auto const & error = assets->program_errors.get(program_name); not error.empty())
-		TextColored({255, 0, 0, 255}, "%s", error.data());
+	{
+		TextColored({1, 0, 0, 1}, "%s", error.data());
+		End();
+		return;
+	}
 
 	if (BeginTable("attribute_mappings", 4, ImGuiTableFlags_BordersInnerH))
 	{
@@ -617,12 +642,6 @@ void Editor::uniform_buffer_window()
 	auto named_uniform_buffer = game.assets.uniform_blocks.get_named(uniform_buffer_name);
 	auto & uniform_buffer = named_uniform_buffer.data;
 
-	if (Button("Reload"))
-		game.assets.load_glsl_uniform_block(named_uniform_buffer.name);
-
-	if (auto const & error = game.assets.program_errors.get(named_uniform_buffer.name); not error.empty())
-		TextColored({255, 0, 0, 255}, "%s", error.data());
-
 	LabelText("Name", "%s", uniform_buffer.key.data());
 	LabelText("Binding", "%d", uniform_buffer.binding);
 	LabelText("Size", "%d", uniform_buffer.data_size);
@@ -754,6 +773,10 @@ void Editor::update(GLFW::Window const & window, FrameInfo const & frame_info, f
 void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 {
 	using namespace GL;
+
+	// if game is not rendering, editor should not as well
+	if (not should_game_render)
+		return;
 
 	// Draw gizmos
 	{

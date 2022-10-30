@@ -143,7 +143,6 @@ namespace GLSL::Program::Helpers
 		i32 resource_size;
 		glGetProgramInterfaceiv(program.id, interface, GL_ACTIVE_RESOURCES, &resource_size);
 
-		program.attribute_mappings.clear();
 		program.attribute_mappings.reserve(resource_size);
 		for (auto i = 0; i < resource_size; ++i)
 		{
@@ -158,6 +157,10 @@ namespace GLSL::Program::Helpers
 				program.id, interface, i,
 				name_buffer.size(), &name_size, name_buffer.data()
 			);
+
+			// skip opengl provided attributes like gl_InstanceID, gl_GlobalInvocationID, etc.
+			if (query_results[0] == -1)
+				continue;
 
 			program.attribute_mappings.emplace_back(
 				GL::AttributeMapping{

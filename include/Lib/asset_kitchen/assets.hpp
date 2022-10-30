@@ -34,8 +34,11 @@ struct Assets
 
 	void create()
 	{
+		auto all_uniform_blocks_laoded = true;
 		for (auto const & [name, _] : descriptions.uniform_block)
-			load_glsl_uniform_block(name);
+			all_uniform_blocks_laoded &= load_glsl_uniform_block(name);
+		if (not all_uniform_blocks_laoded)
+			std::exit(1);
 
 		for (auto const & [name, _] : descriptions.glsl)
 			load_glsl_program(name);
@@ -44,7 +47,9 @@ struct Assets
 			load_gltf(name);
 	}
 
-	void load_glsl_program(Name const & name);
-	void load_glsl_uniform_block(Name const & name);
+	bool load_glsl_program(Name const & name);
+	bool load_glsl_uniform_block(Name const & name);
 	void load_gltf(Name const & name);
+	// For rapid editing purposes
+	bool reload_glsl_program(Name const & name);
 };
