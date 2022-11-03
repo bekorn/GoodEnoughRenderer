@@ -79,8 +79,7 @@ void Game::create_uniform_buffers()
 	auto & camera_uniform_block = assets.uniform_blocks.get("Camera"_name);
 
 	camera_uniform_buffer.create(
-		Buffer::UniformBlockDescription{
-			.usage = GL_DYNAMIC_DRAW,
+		ImmutableBuffer::UniformBlockDescription{
 			.uniform_block = camera_uniform_block,
 			.array_size = 1,
 		}
@@ -202,12 +201,11 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	// Update Camera Uniform Buffer
 	{
 		auto & camera_block = assets.uniform_blocks.get("Camera"_name);
-		auto * map = (byte *) glMapNamedBuffer(camera_uniform_buffer.id, GL_WRITE_ONLY);
-		camera_block.set(map, "CameraWorldPosition", camera_position);
-		camera_block.set(map, "TransformV", view);
-		camera_block.set(map, "TransformP", projection);
-		camera_block.set(map, "TransformVP", view_projection);
-		glUnmapNamedBuffer(camera_uniform_buffer.id);
+		camera_block.set(camera_uniform_buffer.map, "CameraWorldPosition", camera_position);
+		camera_block.set(camera_uniform_buffer.map, "TransformV", view);
+		camera_block.set(camera_uniform_buffer.map, "TransformP", projection);
+		camera_block.set(camera_uniform_buffer.map, "TransformVP", view_projection);
+		glFlushMappedNamedBufferRange(camera_uniform_buffer.id, 0, camera_block.aligned_size);
 	}
 
 	// Update scene tree
