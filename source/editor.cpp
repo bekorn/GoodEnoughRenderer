@@ -2,12 +2,11 @@
 
 void Editor::create_framebuffer()
 {
-	resolution = game.resolution / 2;
-
 	framebuffer_color_attachment.create(
 		GL::Texture2D::AttachmentDescription{
 			.dimensions = resolution,
 			.internal_format = GL::GL_RGBA8,
+			.mag_filter = GL::GL_NEAREST,
 		}
 	);
 
@@ -36,6 +35,8 @@ void Editor::create_framebuffer()
 
 void Editor::create()
 {
+	resolution = game.resolution;
+
 	create_framebuffer();
 
 	// Enable docking
@@ -139,8 +140,9 @@ void Editor::game_window()
 	EndDisabled();
 
 	{
-		f32 scale = 0.5;
-		Text("Resolution: %dx%d, Scale: %.2f", game.resolution.x, game.resolution.y, scale);
+		Text("Resolution: %dx%d", game.resolution.x, game.resolution.y);
+		static f32 scale = 0.5;
+		SameLine(), SliderFloat("Scale", &scale, 0.1, 10.0, "%.1f");
 
 		auto resolution = ImVec2(f32(game.resolution.x) * scale, f32(game.resolution.y) * scale);
 		// custom uvs because defaults are flipped on y-axis
@@ -151,13 +153,15 @@ void Editor::game_window()
 		if (has_program_errors)
 			border_color.x = 1;
 
+		auto game_pos = GetCursorPos();
 		Image(
 			reinterpret_cast<void*>(i64(game.framebuffer_color_attachment.id)),
 			resolution, uv0, uv1
 		);
-		SameLine(GetCursorPosX()), Image(
+		auto editor_pos = ImVec2(game_pos.x - 1, game_pos.y - 1); // because of image borders
+		SetCursorPos(editor_pos), Image(
 			reinterpret_cast<void*>(i64(framebuffer_color_attachment.id)),
-			resolution, uv0, uv1, {}, border_color
+			resolution, uv0, uv1, {1, 1, 1, 1}, border_color
 		);
 
 		SameLine(), Image(
@@ -805,9 +809,17 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto & gizmo_program = editor_assets.programs.get("gizmo"_name);
 		glUseProgram(gizmo_program.id);
 
-		// TODO(bekorn): size of the gizmo should be in screen space (currently 1/6 on the gizmo.vert.glsl)
-		auto transform = f32x3x3(visit([](Camera auto & c){ return c.get_view(); }, game.camera));
-		glUniformMatrix3fv(0, 1, false, begin(transform));
+		auto size = glm::max(50.f, 0.1f * glm::compMin(resolution));
+		auto const padding = 8;
+		glViewport(resolution.x - size - padding, resolution.y - size - padding, size, size);
+
+		auto view = visit([](Camera auto & c){ return glm::lookAt(f32x3(0), c.target - c.position, c.up); }, game.camera);
+		auto proj = glm::ortho<f32>(-1, +1, -1, +1, -1, +1);
+		auto transform = proj * view;
+		glUniformMatrix4fv(
+			GetLocation(gizmo_program.uniform_mappings, "transform"),
+			1, false, begin(transform)
+		);
 
 		for (auto & drawable : editor_assets.meshes.get("AxisGizmo:mesh:0:Cube"_name).drawables)
 		{

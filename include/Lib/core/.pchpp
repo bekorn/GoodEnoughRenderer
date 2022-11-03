@@ -2,9 +2,14 @@
 #pragma message("-- read CORE/.PCHpp --")
 
 // glm
+// setup (https://glm.g-truc.net/0.9.9/api/a00153_source.html)
 #define GLM_FORCE_NO_CTOR_INIT
 #define GLM_FORCE_EXPLICIT_CTOR
-#define GLM_FORCE_INTRINSICS
+// SIMD does not make a big difference for now and brakes some code because of alignment
+//#define GLM_FORCE_INTRINSICS
+//#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define GLM_FORCE_INLINE
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 // extensions (http://glm.g-truc.net/glm.pdf)
 #include <glm/gtc/type_precision.hpp>
@@ -21,6 +26,7 @@
 // fmt
 #include <fmt/core.h>
 #include <fmt/std.h>
+#include <fmt/chrono.h>
 
 // std classes
 #include <memory>
@@ -35,4 +41,5 @@
 // std utilities
 #include <sstream> // TODO(bekorn): replace with a better lib
 #include <chrono>
+#include <random>
 #include <source_location>

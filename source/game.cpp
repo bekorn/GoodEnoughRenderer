@@ -9,6 +9,7 @@ void Game::create_framebuffer()
 		GL::Texture2D::AttachmentDescription{
 			.dimensions = resolution,
 			.internal_format = GL::GL_RGBA8, // GL_RGB8 does not work with compute shaders
+			.mag_filter = GL::GL_NEAREST,
 		}
 	);
 
@@ -151,7 +152,7 @@ void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
 		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) dir.y += 1;
 		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) dir.y -= 1;
 
-		const auto speed = 2.f;
+		const auto speed = 4.f;
 		auto movement = speed * frame_info.seconds_since_last_frame * dir;
 		if (any(notEqual(movement, f32x3(0))))
 		{
@@ -164,6 +165,9 @@ void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
 				visit([movement](Camera auto & c) { c.position += movement; }, camera);
 		}
 	}
+
+	// Update scene tree
+	assets.scene_tree.update_transforms();
 }
 
 void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
@@ -214,9 +218,6 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		camera_block.set(map, "TransformVP", view_projection);
 		glUnmapNamedBuffer(camera_uniform_buffer.id);
 	}
-
-	// Update scene tree
-	assets.scene_tree.update_transforms();
 
 	auto const & gltf_pbr_program = assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
 	glUseProgram(gltf_pbr_program.id);

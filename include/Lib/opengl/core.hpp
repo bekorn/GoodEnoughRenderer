@@ -29,4 +29,10 @@ namespace GL
 			return *this;
 		};
 	};
+
+	inline void create()
+	{
+		// configure NDC z to be [0, 1]
+		glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+	}
 }
