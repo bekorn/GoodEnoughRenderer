@@ -61,6 +61,8 @@ i32 main(i32 argc, char** argv)
 	imgui_context.create({.window = window});
 	fmt::print("{}\n", GL::GetContextInfo());
 
+	GL::create();
+
 	// Project assets
 	Descriptions descriptions;
 	descriptions.create(project_root);
