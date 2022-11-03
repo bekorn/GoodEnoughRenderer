@@ -163,6 +163,9 @@ void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
 				visit([movement](Camera auto & c) { c.position += movement; }, camera);
 		}
 	}
+
+	// Update scene tree
+	assets.scene_tree.update_transforms();
 }
 
 void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
@@ -191,8 +194,6 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		}
 	}
 
-	glEnable(GL_DEPTH_TEST);
-
 	auto camera_position = visit([](Camera auto & c) { return c.position; }, camera);
 	auto view = visit([](Camera auto & c) { return c.get_view(); }, camera);
 	auto projection = visit([](Camera auto & c) { return c.get_projection(); }, camera);
@@ -207,9 +208,6 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		camera_block.set(camera_uniform_buffer.map, "TransformVP", view_projection);
 		glFlushMappedNamedBufferRange(camera_uniform_buffer.id, 0, camera_block.aligned_size);
 	}
-
-	// Update scene tree
-	assets.scene_tree.update_transforms();
 
 	// clear framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);

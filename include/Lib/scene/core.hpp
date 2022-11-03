@@ -16,10 +16,16 @@ namespace Scene
 
 		f32x4x4 calculate_transform() const
 		{
-			f32x4x4 transform(1);
-			transform *= glm::translate(position);
-			transform *= glm::mat4_cast(rotation);
-			transform *= glm::scale(scale);
+			f32x4x4 transform = glm::mat4_cast(rotation);
+
+			// inlines -> transform = glm::translate(transform, position);
+			transform[3] = f32x4(position, 1);
+
+			// inlines -> transform = glm::scale(transform, scale);
+			transform[0] *= scale[0];
+			transform[1] *= scale[1];
+			transform[2] *= scale[2];
+
 			return transform;
 		}
 	};

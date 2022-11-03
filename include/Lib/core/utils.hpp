@@ -2,6 +2,7 @@
 
 #include "core.hpp"
 
+template<typename Duration = std::chrono::microseconds>
 struct Timer
 {
 	// https://en.cppreference.com/w/cpp/chrono/high_resolution_clock see Notes paragraph 2
@@ -18,17 +19,17 @@ struct Timer
 
 	struct TimeElapsed
 	{
-		std::chrono::microseconds cpu;
-		std::chrono::microseconds wall;
+		Duration cpu;
+		Duration wall;
 	};
 
 	TimeElapsed timeit()
 	{
 		auto cpu_now = cpu_clock::now();
-		auto cpu_diff = std::chrono::duration_cast<std::chrono::microseconds>(cpu_now - cpu_last);
+		auto cpu_diff = std::chrono::duration_cast<Duration>(cpu_now - cpu_last);
 
 		auto wall_now = wall_clock::now();
-		auto wall_diff = std::chrono::duration_cast<std::chrono::microseconds>(wall_now - wall_last);
+		auto wall_diff = std::chrono::duration_cast<Duration>(wall_now - wall_last);
 
 		cpu_last = cpu_now;
 		wall_last = wall_now;
@@ -36,15 +37,15 @@ struct Timer
 		return {cpu_diff, wall_diff};
 	};
 
-	void timeit(std::ostream & out, std::string_view tag)
+	void timeit(FILE * out, std::string_view tag)
 	{
 		auto time_elapsed = timeit();
 
-		out << std::right
-			<< std::setw(32) << tag
-			<< " | CPU:" << std::setw(16) << time_elapsed.cpu
-			<< " | Wall:" << std::setw(16) << time_elapsed.wall
-			<< '\n' << std::left;
+		fmt::print(
+			out,
+			"{:>32} | CPU: {:>16} | Wall: {:>16}\n",
+			tag, time_elapsed.cpu, time_elapsed.wall
+		);
 	}
 };
 
