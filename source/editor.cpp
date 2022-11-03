@@ -157,7 +157,7 @@ void Editor::game_window()
 		);
 		SameLine(GetCursorPosX()), Image(
 			reinterpret_cast<void*>(i64(framebuffer_color_attachment.id)),
-			resolution, uv0, uv1, {}, border_color
+			resolution, uv0, uv1, {1, 1, 1, 1}, border_color
 		);
 
 		SameLine(), Image(
@@ -797,12 +797,13 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
 		glViewport(0, 0, resolution.x, resolution.y);
+		glColorMask(true, true, true, true), glDepthMask(true);
 		const f32 clear_depth{1};
 		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
 		const f32x4 clear_color{0, 0, 0, 0};
 		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
 
-		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS);
 
 		auto & gizmo_program = editor_assets.programs.get("gizmo"_name);
 		glUseProgram(gizmo_program.id);
