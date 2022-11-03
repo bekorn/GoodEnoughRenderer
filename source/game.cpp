@@ -151,7 +151,7 @@ void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
 		if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) dir.y += 1;
 		if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) dir.y -= 1;
 
-		const auto speed = 2.f;
+		const auto speed = 4.f;
 		auto movement = speed * frame_info.seconds_since_last_frame * dir;
 		if (any(notEqual(movement, f32x3(0))))
 		{
@@ -192,11 +192,6 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		}
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
-	glViewport(0, 0, resolution.x, resolution.y);
-	glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
-	glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
-
 	glEnable(GL_DEPTH_TEST);
 
 	auto camera_position = visit([](Camera auto & c) { return c.position; }, camera);
@@ -218,36 +213,80 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	// Update scene tree
 	assets.scene_tree.update_transforms();
 
-	auto const & gltf_pbr_program = assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
-	glUseProgram(gltf_pbr_program.id);
+	// clear framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
+	glViewport(0, 0, resolution.x, resolution.y);
+	glColorMask(true, true, true, true), glDepthMask(true);
+	glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
+	glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
 
-	auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");
-	auto location_TransformMVP = GetLocation(gltf_pbr_program.uniform_mappings, "TransformMVP");
+	// zpass
+	if (is_zpass_on)
+	{
+		glColorMask(false, false, false, false), glDepthMask(true), glDepthFunc(GL_LESS);
 
-	for (auto & depth: assets.scene_tree.nodes)
-		for (auto & node: depth)
-		{
-			if (node.mesh == nullptr)
-				continue;
+		auto const & zpas_program = assets.programs.get("zpass");
+		glUseProgram(zpas_program.id);
 
-			glUniformMatrix4fv(location_TransformM, 1, false, begin(node.matrix));
-			auto transform_mvp = view_projection * node.matrix;
-			glUniformMatrix4fv(location_TransformMVP, 1, false, begin(transform_mvp));
+		auto location_TransformMVP = GetLocation(zpas_program.uniform_mappings, "TransformMVP");
 
-			for (auto & drawable: node.mesh->drawables)
+		for (auto & depth: assets.scene_tree.nodes)
+			for (auto & node: depth)
 			{
-				// Bind Material Buffer
-				auto & material_block = Render::Material_gltf_pbrMetallicRoughness::block;
-				glBindBufferRange(
-					GL_SHADER_STORAGE_BUFFER, material_block.binding, gltf_material_buffer.id,
-					gltf_material2index.at(drawable.named_material.name) * material_block.aligned_size,
-					material_block.data_size
-				);
+				if (node.mesh == nullptr)
+					continue;
 
-				glBindVertexArray(drawable.vertex_array.id);
-				glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+				auto transform_mvp = view_projection * node.matrix;
+				glUniformMatrix4fv(location_TransformMVP, 1, false, begin(transform_mvp));
+
+				for (auto & drawable: node.mesh->drawables)
+				{
+					// TODO(bekorn): position being in location 0 for both pbr and zpass program is just coincidence,
+					//  make it a guarantee!
+					glBindVertexArray(drawable.vertex_array.id);
+					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+				}
 			}
-		}
+
+		glColorMask(true, true, true, true), glDepthMask(false), glDepthFunc(GL_EQUAL);
+	}
+
+	// shading pass
+	{
+		if (not is_zpass_on)
+			glColorMask(true, true, true, true), glDepthMask(true), glDepthFunc(GL_LESS);
+
+		auto const & gltf_pbr_program = assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
+		glUseProgram(gltf_pbr_program.id);
+
+		auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");
+		auto location_TransformMVP = GetLocation(gltf_pbr_program.uniform_mappings, "TransformMVP");
+
+		for (auto & depth: assets.scene_tree.nodes)
+			for (auto & node: depth)
+			{
+				if (node.mesh == nullptr)
+					continue;
+
+				glUniformMatrix4fv(location_TransformM, 1, false, begin(node.matrix));
+				auto transform_mvp = view_projection * node.matrix;
+				glUniformMatrix4fv(location_TransformMVP, 1, false, begin(transform_mvp));
+
+				for (auto & drawable: node.mesh->drawables)
+				{
+					// Bind Material Buffer
+					auto & material_block = Render::Material_gltf_pbrMetallicRoughness::block;
+					glBindBufferRange(
+						GL_SHADER_STORAGE_BUFFER, material_block.binding, gltf_material_buffer.id,
+						gltf_material2index.at(drawable.named_material.name) * material_block.aligned_size,
+						material_block.data_size
+					);
+
+					glBindVertexArray(drawable.vertex_array.id);
+					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+				}
+			}
+	}
 
 	// gamma correction
 	auto & gamma_correct_program = assets.programs.get("gamma_correct"_name);

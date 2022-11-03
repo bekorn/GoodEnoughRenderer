@@ -177,6 +177,8 @@ void Editor::game_settings_window()
 
 	ColorEdit3("Clear color", begin(game.clear_color));
 
+	Checkbox("Zpass", &game.is_zpass_on);
+
 	End();
 }
 

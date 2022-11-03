@@ -26,6 +26,7 @@ struct Game
 	GL::FrameBuffer framebuffer;
 	GL::Texture2D framebuffer_depth_attachment;
 	GL::Texture2D framebuffer_color_attachment;
+	bool is_zpass_on = true;
 
 	variant<PerspectiveCamera, OrthographicCamera> camera;
 
