@@ -37,4 +37,5 @@
 // std utilities
 #include <sstream> // TODO(bekorn): replace with a better lib
 #include <chrono>
+#include <random>
 #include <source_location>
