@@ -139,8 +139,9 @@ void Editor::game_window()
 	EndDisabled();
 
 	{
-		f32 scale = 0.5;
-		Text("Resolution: %dx%d, Scale: %.2f", game.resolution.x, game.resolution.y, scale);
+		Text("Resolution: %dx%d", game.resolution.x, game.resolution.y);
+		static f32 scale = 0.5;
+		SameLine(), SliderFloat("Scale", &scale, 0.1, 1.0, "%.1f");
 
 		auto resolution = ImVec2(f32(game.resolution.x) * scale, f32(game.resolution.y) * scale);
 		// custom uvs because defaults are flipped on y-axis
