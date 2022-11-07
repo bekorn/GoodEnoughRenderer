@@ -2,7 +2,7 @@
 
 #include "Lib/asset_kitchen/assets.hpp"
 #include "Lib/opengl/core.hpp"
-#include "Lib/opengl/immutable_buffer.hpp"
+#include "Lib/opengl/mapped_buffer.hpp"
 #include "Lib/opengl/framebuffer.hpp"
 #include "Lib/glfw/core.hpp"
 
@@ -32,7 +32,7 @@ struct Game
 	variant<PerspectiveCamera, OrthographicCamera> camera;
 
 	GL::Buffer lights_uniform_buffer;
-	GL::ImmutableBuffer camera_uniform_buffer;
+	GL::MappedBuffer camera_uniform_buffer;
 	GL::Buffer gltf_material_buffer; 									// !!! Temporary
 	std::unordered_map<Name, u32, Name::Hasher> gltf_material2index;	// !!! Temporary
 	std::queue<Name> gltf_material_is_dirty;							// !!! Temporary

@@ -6,15 +6,15 @@
 
 namespace GL
 {
-	struct ImmutableBuffer : OpenGLObject
+	struct MappedBuffer : OpenGLObject
 	{
 		byte * map;
 
-		CTOR(ImmutableBuffer, default);
-		COPY(ImmutableBuffer, delete);
-		MOVE(ImmutableBuffer, default);
+		CTOR(MappedBuffer, default);
+		COPY(MappedBuffer, delete);
+		MOVE(MappedBuffer, default);
 
-		~ImmutableBuffer()
+		~MappedBuffer()
 		{
 			glDeleteBuffers(1, &id);
 		}

@@ -79,7 +79,7 @@ void Game::create_uniform_buffers()
 	auto & camera_uniform_block = assets.uniform_blocks.get("Camera"_name);
 
 	camera_uniform_buffer.create(
-		ImmutableBuffer::UniformBlockDescription{
+		MappedBuffer::UniformBlockDescription{
 			.uniform_block = camera_uniform_block,
 			.array_size = 1,
 		}
