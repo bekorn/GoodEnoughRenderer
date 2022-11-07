@@ -8,11 +8,9 @@ struct Random
 	requires std::integral<T> || std::floating_point<T>
 	static T next(T const & min, T const & max)
 	{
-#if DEBUG
-		static thread_local std::mt19937_64 generator(1337);
-#else
-		static thread_local std::mt19937_64 generator(std::chrono::steady_clock::now().time_since_epoch().count());
-#endif
+		static thread_local std::mt19937_64 generator(
+			DEBUG ? 1337 : std::chrono::steady_clock::now().time_since_epoch().count()
+		);
 
 		if constexpr (std::is_integral_v<T>)
 			return std::uniform_int_distribution<T>(min, max)(generator);
