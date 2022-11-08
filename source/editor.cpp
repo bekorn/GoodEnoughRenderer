@@ -809,9 +809,16 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto & gizmo_program = editor_assets.programs.get("gizmo"_name);
 		glUseProgram(gizmo_program.id);
 
-		// TODO(bekorn): size of the gizmo should be in screen space (currently 1/6 on the gizmo.vert.glsl)
-		auto transform = f32x3x3(visit([](Camera auto & c){ return c.get_view(); }, game.camera));
-		glUniformMatrix3fv(0, 1, false, begin(transform));
+		auto size = glm::max(50.f, 0.1f * glm::min(resolution.x, resolution.y));
+		auto const padding = 8;
+		glViewport(resolution.x - size - padding, resolution.y - size - padding, size, size);
+
+		auto view = visit([](Camera auto & c){ return glm::lookAt(f32x3(0), c.target - c.position, c.up); }, game.camera);
+		auto proj = glm::ortho<f32>(-1, +1, -1, +1, -1, +1);
+		auto transform = proj * view;
+
+		auto location_TransformMV = GetLocation(gizmo_program.uniform_mappings, "transform");
+		glUniformMatrix4fv(location_TransformMV, 1, false, begin(transform));
 
 		for (auto & drawable : editor_assets.meshes.get("AxisGizmo:mesh:0:Cube"_name).drawables)
 		{
