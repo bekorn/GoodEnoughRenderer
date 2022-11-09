@@ -4,7 +4,8 @@
 
 #include "Lib/core/core.hpp"
 #include "Lib/core/named.hpp"
-#include "Lib/opengl/texture.hpp"
+#include "Lib/opengl/texture_2d.hpp"
+#include "Lib/opengl/texture_cubemap.hpp"
 #include "Lib/render/mesh.hpp"
 #include "Lib/render/material.hpp"
 #include "Lib/scene/core.hpp"
@@ -17,6 +18,7 @@ struct Assets
 	Managed<GL::UniformBlock> uniform_blocks;
 	Managed<GL::ShaderProgram> programs;
 	Managed<GL::Texture2D> textures;
+	Managed<GL::TextureCubemap> texture_cubemaps;
 	// Render resources
 	Managed<Geometry::Primitive> primitives;
 	Managed<unique_one<Render::IMaterial>> materials;
@@ -49,11 +51,15 @@ struct Assets
 
 		for (auto const & [name, _] : descriptions.gltf)
 			load_gltf(name);
+
+		for (auto const & [name, _] : descriptions.cubemap)
+			load_cubemap(name);
 	}
 
 	void load_glsl_program(Name const & name);
 	void load_glsl_uniform_block(Name const & name);
 	void load_gltf(Name const & name);
+	void load_cubemap(Name const & name);
 	// For editing purposes
 	bool reload_glsl_program(Name const & name);
 };

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core.hpp"
-#include "texture.hpp"
+#include "texture_2d.hpp"
 
 namespace GL
 {

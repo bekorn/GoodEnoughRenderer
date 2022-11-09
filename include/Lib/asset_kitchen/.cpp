@@ -3,6 +3,7 @@
 #include "glsl/program/convert.hpp"
 #include "glsl/uniform_block/convert.hpp"
 #include "gltf/convert.hpp"
+#include "cubemap/convert.hpp"
 
 void Descriptions::create(std::filesystem::path const & project_root)
 {
@@ -34,6 +35,13 @@ void Descriptions::create(std::filesystem::path const & project_root)
 			{
 				auto [name, description] = GLTF::Parse(item.GetObject(), project_root);
 				gltf.generate(name, description);
+			}
+
+		if (auto const member = document.FindMember("cubemap"); member != document.MemberEnd())
+			for (auto const & item: member->value.GetArray())
+			{
+				auto [name, description] = Cubemap::Parse(item.GetObject(), project_root);
+				cubemap.generate(name, description);
 			}
 	}
 }
@@ -76,6 +84,12 @@ void Assets::load_gltf(Name const & name)
 {
 	auto const gltf_data = GLTF::Load(descriptions.gltf.get(name));
 	GLTF::Convert(gltf_data, textures, materials, primitives, meshes, scene_tree);
+}
+
+void Assets::load_cubemap(Name const & name)
+{
+	auto cubemap_data = Cubemap::Load(descriptions.cubemap.get(name));
+	texture_cubemaps.generate(name, move(Cubemap::Convert(cubemap_data)));
 }
 
 template<std::ranges::range Range>

@@ -10,6 +10,9 @@
     {"name": "OrientationTest", "path": "model/orientation test/OrientationTest.gltf"},
     {"name": "ThreeOfSwords", "path": "model/Three of Swords/scene.gltf"}
   ],
+  "cubemap": [
+    {"name":  "cubemap", "path":  "cubemap/cube_map_H.png"}
+  ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},
     {"name": "Camera", "path": "glsl/uniform_block/camera.unib.glsl"}
