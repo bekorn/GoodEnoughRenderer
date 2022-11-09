@@ -47,6 +47,9 @@ namespace GL
 			bool has_alpha = false;
 			bool is_sRGB = false;
 
+			// levels = 0 to generate mips all the wasy to 1x1
+			i32 levels = 1;
+
 			GLenum min_filter = GL_LINEAR;
 			GLenum mag_filter = GL_LINEAR;
 
@@ -69,7 +72,7 @@ namespace GL
 
 			glTextureStorage2D(
 				id,
-				1,
+				description.levels != 0 ? description.levels : 1 + glm::log2(f32(glm::compMax(description.dimensions))),
 				description.is_sRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8,
 				description.dimensions.x, description.dimensions.y
 			);

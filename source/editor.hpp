@@ -32,7 +32,8 @@ struct Editor
 	void node_settings_window();
 	void mesh_settings_window();
 	void material_settings_window();
-	void textures_window();
+	GL::Texture2D texture_view;
+	void texture_2ds_window();
 	void program_window();
 	void uniform_buffer_window();
 	void camera_window();

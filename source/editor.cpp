@@ -416,18 +416,19 @@ void Editor::material_settings_window()
 	End();
 }
 
-void Editor::textures_window()
+void Editor::texture_2ds_window()
 {
 	using namespace ImGui;
 
 	Begin("Textures");
 
+	static bool is_texture_changed = false;
 	static Name texture_name;
 	if (BeginCombo("Texture", texture_name.string.data()))
 	{
 		for (auto & [name, _]: game.assets.textures)
 			if (Selectable(name.string.data()))
-				texture_name = name;
+				texture_name = name, is_texture_changed = true;
 
 		EndCombo();
 	}
@@ -435,11 +436,42 @@ void Editor::textures_window()
 	{
 		auto & [_, texture] = *it;
 		SameLine(), Text("(id %d)", texture.id);
-		LabelText("Handle", "%llu", texture.handle);
 
+		static bool is_level_changed = false;
+		static i32 texture_levels = 0, current_level = 0;
+		if (is_texture_changed)
+		{
+			current_level = 0;
+			GL::glGetTextureParameteriv(texture.id, GL::GL_TEXTURE_IMMUTABLE_LEVELS, &texture_levels);
+
+			GL::glDeleteTextures(1, &texture_view.id);
+			GL::glGenTextures(1, &texture_view.id);
+			GL::glTextureView(texture_view.id, GL::GL_TEXTURE_2D, texture.id, GL::GL_RGBA8, 0, texture_levels, 0, 1);
+
+			is_texture_changed = false;
+			is_level_changed = true;
+		}
+
+		if (SliderInt("Level", &current_level, 0, texture_levels - 1))
+			is_level_changed = true;
+
+		static f32x2 texture_size, view_size;
+		if (is_level_changed)
+		{
+			GL::glTextureParameteri(texture_view.id, GL::GL_TEXTURE_BASE_LEVEL, current_level);
+
+			GL::glGetTextureLevelParameterfv(texture_view.id, current_level, GL::GL_TEXTURE_WIDTH, &texture_size.x);
+			GL::glGetTextureLevelParameterfv(texture_view.id, current_level, GL::GL_TEXTURE_HEIGHT, &texture_size.y);
+
+			f32 const max_resolution = 240;
+			view_size = max_resolution / glm::compMax(texture_size) * texture_size;
+
+			is_level_changed = false;
+		}
+		LabelText("Resolution", "%d x %d", i32(texture_size.x), i32(texture_size.y));
 		Image(
-			reinterpret_cast<void*>(i64(texture.id)),
-			{240, 240}
+			reinterpret_cast<void*>(i64(texture_view.id)),
+			{view_size.x, view_size.y}
 		);
 	}
 	else
@@ -778,7 +810,7 @@ void Editor::update(GLFW::Window const & window, FrameInfo const & frame_info, f
 	node_settings_window();
 	mesh_settings_window();
 	material_settings_window();
-	textures_window();
+	texture_2ds_window();
 	uniform_buffer_window();
 	program_window();
 	camera_window();
