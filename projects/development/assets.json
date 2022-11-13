@@ -15,7 +15,8 @@
   ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},
-    {"name": "Camera", "path": "glsl/uniform_block/camera.unib.glsl"}
+    {"name": "Camera", "path": "glsl/uniform_block/camera.unib.glsl"},
+    {"name": "FrameInfo", "path": "glsl/uniform_block/frame_info.unib.glsl"}
   ],
   "glsl_program": [
     {

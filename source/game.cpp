@@ -39,6 +39,19 @@ void Game::create_uniform_buffers()
 {
 	using namespace GL;
 
+	// Setup FrameInfo uniform buffer
+	auto & frame_info_uniform_block = assets.uniform_blocks.get("FrameInfo"_name);
+
+	frame_info_uniform_buffer.create(
+		MappedBuffer::UniformBlockDescription{
+			.uniform_block = frame_info_uniform_block,
+			.array_size = 1,
+		}
+	);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, frame_info_uniform_block.binding, frame_info_uniform_buffer.id);
+
+
 	// Setup Lights Uniform Buffer
 	auto & lights_uniform_block = assets.uniform_blocks.get("Lights"_name);
 
@@ -194,6 +207,17 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		}
 	}
 
+	// Update FrameInfo uniform buffer
+	{
+		auto & frame_info_block = assets.uniform_blocks.get("FrameInfo"_name);
+		frame_info_block.set(frame_info_uniform_buffer.map, "DepthAttachmentHandle", framebuffer_depth_attachment.handle);
+		frame_info_block.set(frame_info_uniform_buffer.map, "ColorAttachmentHandle", framebuffer_color_attachment.handle);
+		frame_info_block.set(frame_info_uniform_buffer.map, "FrameIdx", frame_info.idx);
+		frame_info_block.set(frame_info_uniform_buffer.map, "SecondsSinceStart", frame_info.seconds_since_start);
+		frame_info_block.set(frame_info_uniform_buffer.map, "SecondsSinceLastFrame", frame_info.seconds_since_last_frame);
+		glFlushMappedNamedBufferRange(frame_info_uniform_buffer.id, 0, frame_info_block.aligned_size);
+	}
+
 	auto camera_position = visit([](Camera auto & c) { return c.position; }, camera);
 	auto view = visit([](Camera auto & c) { return c.get_view(); }, camera);
 	auto projection = visit([](Camera auto & c) { return c.get_projection(); }, camera);
@@ -206,6 +230,9 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		camera_block.set(camera_uniform_buffer.map, "TransformV", view);
 		camera_block.set(camera_uniform_buffer.map, "TransformP", projection);
 		camera_block.set(camera_uniform_buffer.map, "TransformVP", view_projection);
+		camera_block.set(camera_uniform_buffer.map, "TransformV_inv", glm::inverse(view));
+		camera_block.set(camera_uniform_buffer.map, "TransformP_inv", glm::inverse(projection));
+		camera_block.set(camera_uniform_buffer.map, "TransformVP_inv", glm::inverse(view_projection));
 		glFlushMappedNamedBufferRange(camera_uniform_buffer.id, 0, camera_block.aligned_size);
 	}
 

@@ -31,6 +31,7 @@ struct Game
 
 	variant<PerspectiveCamera, OrthographicCamera> camera;
 
+	GL::MappedBuffer frame_info_uniform_buffer;
 	GL::Buffer lights_uniform_buffer;
 	GL::MappedBuffer camera_uniform_buffer;
 	GL::Buffer gltf_material_buffer; 									// !!! Temporary
