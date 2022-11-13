@@ -122,6 +122,7 @@ namespace GLSL::Program
 				description.include_paths.push_back(root_dir / item.GetString());
 
 		description.include_strings.push_back(GL::GLSL_VERSION_MACRO);
+		description.include_strings.push_back(GL::GLSL_COMMON_EXTENSIONS);
 		if (auto member = o.FindMember("include_strings"); member != o.MemberEnd())
 			for (auto & item: member->value.GetArray())
 				description.include_strings.emplace_back(item.GetString());

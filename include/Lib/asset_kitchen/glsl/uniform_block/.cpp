@@ -25,6 +25,7 @@ namespace GLSL::UniformBlock
 				.stage = GL::GL_VERTEX_SHADER,
 				.sources = {
 					GL::GLSL_VERSION_MACRO.data(),
+					GL::GLSL_COMMON_EXTENSIONS.data(),
 					"#line 1\n",
 					loaded.source.data(),
 					"void main(){}"

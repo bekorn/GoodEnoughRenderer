@@ -1,7 +1,3 @@
-// TODO(bekorn): find a proper place to sprecify extensions
-#extension GL_ARB_bindless_texture : enable
-#extension GL_ARB_gpu_shader_int64 : enable
-
 struct Light
 {
     vec3 position;
