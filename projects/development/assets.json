@@ -11,7 +11,8 @@
     {"name": "ThreeOfSwords", "path": "model/Three of Swords/scene.gltf"}
   ],
   "cubemap": [
-    {"name":  "cubemap", "path":  "cubemap/cube_map_H.png"}
+    {"name":  "environment_map", "path":  "cubemap/environment_map.png"},
+    {"name":  "environment_map_test", "path":  "cubemap/test.png"}
   ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},
@@ -38,9 +39,29 @@
       }
     },
     {
-      "name": "gamma_correct",
+      "name": "gamma_correction_comp",
       "stages": {
-        "comp": "glsl/program/gamma_correct.comp.glsl"
+        "comp": "glsl/program/gamma_correction.comp.glsl"
+      }
+    },
+    {
+      "name": "gamma_correction_pipe",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/gamma_correction.frag.glsl"
+      }
+    },
+    {
+      "name": "environment_map_comp",
+      "stages": {
+        "comp": "glsl/program/environment_map.comp.glsl"
+      }
+    },
+    {
+      "name": "environment_map_pipe",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/environment_map.frag.glsl"
       }
     }
   ]

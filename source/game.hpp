@@ -4,6 +4,7 @@
 #include "Lib/opengl/core.hpp"
 #include "Lib/opengl/mapped_buffer.hpp"
 #include "Lib/opengl/framebuffer.hpp"
+#include "Lib/opengl/timer.hpp"
 #include "Lib/glfw/core.hpp"
 
 #include "frame_info.hpp"
@@ -27,7 +28,17 @@ struct Game
 	GL::FrameBuffer framebuffer;
 	GL::Texture2D framebuffer_depth_attachment;
 	GL::Texture2D framebuffer_color_attachment;
-	bool is_zpass_on = true;
+
+	struct Settings
+	{
+		bool is_zpass_on = false;
+
+		bool is_environment_mapping_comp = false;
+		bool is_environment_map_test = true;
+		Name environment_map_name = "environment_map";
+
+		bool is_gamma_correction_comp = false;
+	} settings;
 
 	variant<PerspectiveCamera, OrthographicCamera> camera;
 
@@ -37,6 +48,9 @@ struct Game
 	GL::Buffer gltf_material_buffer; 									// !!! Temporary
 	std::unordered_map<Name, u32, Name::Hasher> gltf_material2index;	// !!! Temporary
 	std::queue<Name> gltf_material_is_dirty;							// !!! Temporary
+
+	GL::Timer environment_map_timer;
+	GL::Timer gamma_correction_timer;
 
 	void create_framebuffer();
 	void create_uniform_buffers();

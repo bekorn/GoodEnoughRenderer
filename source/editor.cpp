@@ -118,6 +118,12 @@ void Editor::metrics_window(FrameInfo const & frame_info, f64 game_update_in_sec
 
 	TextFMT("Frame: {:6}, Time: {:7.2f}", frame_info.idx, frame_info.seconds_since_start);
 
+	auto environment_map_time = game.environment_map_timer.get_time_elapsed_in_nanoseconds(frame_info.idx);
+	TextFMT("Enrironment Mapping: {:6} us | {:6} ns", environment_map_time / 1'000, environment_map_time);
+
+	auto gamma_correction_time = game.gamma_correction_timer.get_time_elapsed_in_nanoseconds(frame_info.idx);
+	TextFMT("Gamma Correction: {:6} us | {:6} ns", gamma_correction_time / 1'000, gamma_correction_time);
+
 	End();
 }
 
@@ -178,7 +184,16 @@ void Editor::game_settings_window()
 
 	ColorEdit3("Clear color", begin(game.clear_color));
 
-	Checkbox("Zpass", &game.is_zpass_on);
+	Checkbox("Zpass", &game.settings.is_zpass_on);
+	SameLine(), Checkbox("is env map comp", &game.settings.is_environment_mapping_comp);
+
+	SameLine();
+	if (Checkbox("is env map test", &game.settings.is_environment_map_test))
+		game.settings.environment_map_name = game.settings.is_environment_map_test
+			? "environment_map_test"_name
+			: "environment_map"_name;
+
+	Checkbox("is gamma correction comp", &game.settings.is_gamma_correction_comp);
 
 	End();
 }
@@ -861,17 +876,14 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	// gamma correction
 	{
-		auto & gamma_correct_program = game.assets.programs.get("gamma_correct"_name);
-		glUseProgram(gamma_correct_program.id);
-		glBindImageTexture(
-			GetLocation(gamma_correct_program.uniform_mappings, "img"),
-			framebuffer_color_attachment.id, 0,
-			false, 0,
-			GL_READ_WRITE,
-			GL_RGBA8
+		glViewport(0, 0, resolution.x, resolution.y);
+		glDepthMask(false), glDepthFunc(GL_ALWAYS);
+		auto & gamma_correction_program = game.assets.programs.get("gamma_correction_pipe"_name);
+		glUseProgram(gamma_correction_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment_handle"),
+			framebuffer_color_attachment.handle
 		);
-		glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
-		//	make sure writing to image has finished before read, see https://learnopengl.com/Guest-Articles/2022/Compute-Shaders/Introduction
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 }
