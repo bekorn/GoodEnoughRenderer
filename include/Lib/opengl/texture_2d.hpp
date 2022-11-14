@@ -74,9 +74,14 @@ namespace GL
 			if (not aligns_to_4)
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+			// Pick correct levels
+			i32 levels = description.levels != 0
+				? description.levels
+				: 1 + i32(glm::log2(f32(glm::compMax(description.dimensions))));
+
 			glTextureStorage2D(
 				id,
-				description.levels != 0 ? description.levels : 1 + glm::log2(f32(glm::compMax(description.dimensions))),
+				levels,
 				description.is_sRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8,
 				description.dimensions.x, description.dimensions.y
 			);

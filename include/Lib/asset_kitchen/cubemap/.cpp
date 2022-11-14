@@ -5,6 +5,39 @@
 
 namespace Cubemap
 {
+	namespace Helpers
+	{
+		GL::GLenum ToGLenum(std::string_view filter)
+		{
+			using namespace std::string_view_literals;
+			if (filter == "NEAREST"sv) return GL::GL_NEAREST;
+			if (filter == "LINEAR"sv) return GL::GL_LINEAR;
+			if (filter == "NEAREST_MIPMAP_NEAREST"sv) return GL::GL_NEAREST_MIPMAP_NEAREST;
+			if (filter == "NEAREST_MIPMAP_LINEAR"sv) return GL::GL_NEAREST_MIPMAP_LINEAR;
+			if (filter == "LINEAR_MIPMAP_NEAREST"sv) return GL::GL_LINEAR_MIPMAP_NEAREST;
+			if (filter == "LINEAR_MIPMAP_LINEAR"sv) return GL::GL_LINEAR_MIPMAP_LINEAR;
+			assert(("Cubemap filter is unknown", false));
+		}
+	}
+
+	std::pair<Name, Description> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
+	{
+		Description description;
+		description.path = root_dir / o.FindMember("path")->value.GetString();
+		description.levels = File::JSON::GetI32(o, "levels", 1);
+		description.min_filter = Helpers::ToGLenum(
+			File::JSON::GetString(o, "min_filter", description.levels == 1 ? "LINEAR" : "LINEAR_MIPMAP_LINEAR")
+		);
+		description.mag_filter = Helpers::ToGLenum(
+			File::JSON::GetString(o, "mag_filter", "LINEAR")
+		);
+
+		return {
+			o.FindMember("name")->value.GetString(),
+			description
+		};
+	}
+
 	LoadedData Load(Description const & description)
 	{
 		auto image_file = File::LoadImage(description.path);
@@ -30,6 +63,9 @@ namespace Cubemap
 			.face_dimensions = face_dimensions,
 			.channels = image_file.channels,
 			.is_sRGB = false,
+			.levels = description.levels,
+			.min_filter = description.min_filter,
+			.mag_filter = description.mag_filter,
 		};
 	}
 
@@ -41,21 +77,12 @@ namespace Cubemap
 				.face_dimensions = loaded.face_dimensions,
 				.has_alpha = loaded.channels == 4,
 				.is_sRGB = loaded.is_sRGB,
-				.min_filter = GL::GL_LINEAR_MIPMAP_LINEAR,
-				.mag_filter = GL::GL_LINEAR,
+				.levels = loaded.levels,
+				.min_filter = loaded.min_filter,
+				.mag_filter = loaded.mag_filter,
 				.data = loaded.data.span_as<byte>(),
 			}
 		);
 		return cubemap;
-	}
-
-	std::pair<Name, Description> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
-	{
-		return {
-			o.FindMember("name")->value.GetString(),
-			{
-				.path = root_dir / o.FindMember("path")->value.GetString(),
-			}
-		};
 	}
 }

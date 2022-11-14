@@ -12,6 +12,15 @@ namespace File::JSON
 		return obj[key.data()].GetUint();
 	}
 
+	inline i32 GetI32(JSONObj obj, Key key, i32 def_value)
+	{
+		auto member = obj.FindMember(key.data());
+		if (member != obj.MemberEnd())
+			return member->value.GetInt();
+		else
+			return def_value;
+	}
+
 	inline u32 GetU32(JSONObj obj, Key key, u32 def_value)
 	{
 		auto member = obj.FindMember(key.data());

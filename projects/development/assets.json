@@ -11,8 +11,14 @@
     {"name": "ThreeOfSwords", "path": "model/Three of Swords/scene.gltf"}
   ],
   "cubemap": [
-    {"name":  "environment_map", "path":  "cubemap/environment_map.png"},
-    {"name":  "environment_map_test", "path":  "cubemap/test.png"}
+    {
+      "name":  "environment_map", "path": "cubemap/environment_map.png",
+      "levels":  0
+    },
+    {
+      "name":  "environment_map_test", "path": "cubemap/test.png",
+      "min_filter": "NEAREST", "mag_filter": "NEAREST"
+    }
   ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},
