@@ -285,6 +285,10 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto const & gltf_pbr_program = assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
 		glUseProgram(gltf_pbr_program.id);
 
+		auto const & environment_map = assets.texture_cubemaps.get(settings.environment_map_name);
+		auto environment_map_handle_loction = GetLocation(gltf_pbr_program.uniform_mappings, "environment_map_handle");
+		glUniformHandleui64ARB(environment_map_handle_loction, environment_map.handle);
+
 		auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");
 		auto location_TransformMVP = GetLocation(gltf_pbr_program.uniform_mappings, "TransformMVP");
 

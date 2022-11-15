@@ -8,6 +8,8 @@ in Vertex
     vec2 texcoord;
 } vertex;
 
+uniform uint64_t environment_map_handle;
+
 layout(binding = 3) readonly buffer Material
 {
     uint64_t base_color_texture_handle;
@@ -51,6 +53,24 @@ vec3 get_base_color()
     }
 
     return base_color;
+}
+
+void get_metallic_roughness(out float metallic, out float roughness)
+{
+    // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_material_pbrmetallicroughness_metallicroughnesstexture
+    vec2 metalic_rouhgness;
+
+    if (is_handle_set(material.metallic_roughness_texture_handle))
+    {
+        metalic_rouhgness = texture(sampler2D(material.metallic_roughness_texture_handle), vertex.texcoord).bg;
+    }
+    else
+    {
+        metalic_rouhgness = material.metallic_roughness_factor;
+    }
+
+    metallic = metalic_rouhgness[0];
+    roughness = metalic_rouhgness[1];
 }
 
 vec3 get_emission()
@@ -97,6 +117,9 @@ void main()
     vec3 base_color = get_base_color();
     float occlusion = get_occlusion();
 
+    float metallic, roughness;
+    get_metallic_roughness(metallic, roughness);
+
     vec3 diffuse_color = vec3(0);
     for (int i = 0; i < Lights.length(); ++i)
     {
@@ -111,10 +134,14 @@ void main()
         intensity *= occlusion;
         intensity *= light.intensity / dist_sqr;
 
-        diffuse_color += base_color * light.color * max(0, intensity);
+        diffuse_color += light.color * max(0, intensity);
     }
+    diffuse_color *= base_color;
 
-    vec3 ambient_color = vec3(0.01);
+    samplerCube environment_map = samplerCube(environment_map_handle);
+    float level = roughness * textureQueryLevels(environment_map);
+    vec3 to_environment = reflect(vertex.world_position - CameraWorldPosition, normal);
+    vec3 ambient_color = base_color * textureLod(environment_map, to_environment, level).rgb;
 
     vec3 emission_color = get_emission();
 
