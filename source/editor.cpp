@@ -944,7 +944,7 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto & environment_map_program = game.assets.programs.get("environment_map_pipe");
 		glUseProgram(environment_map_program.id);
 		glUniformHandleui64ARB(
-			GetLocation(environment_map_program.uniform_mappings, "environment_map_handle"),
+			GetLocation(environment_map_program.uniform_mappings, "environment_map"),
 			cubemap_view.handle
 		);
 		auto view = visit([](Camera auto & c) { return c.get_view(); }, game.camera);
@@ -967,7 +967,7 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 			auto & gamma_correction_program = game.assets.programs.get("gamma_correction_pipe"_name);
 			glUseProgram(gamma_correction_program.id);
 			glUniformHandleui64ARB(
-				GetLocation(gamma_correction_program.uniform_mappings, "color_attachment_handle"),
+				GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
 				cubemap_framebuffer_color_attachment.handle
 			);
 			glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -1018,7 +1018,7 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto & gamma_correction_program = game.assets.programs.get("gamma_correction_pipe"_name);
 		glUseProgram(gamma_correction_program.id);
 		glUniformHandleui64ARB(
-			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment_handle"),
+			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
 			framebuffer_color_attachment.handle
 		);
 		glDrawArrays(GL_TRIANGLES, 0, 3);

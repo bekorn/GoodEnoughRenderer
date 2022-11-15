@@ -1,7 +1,7 @@
 in vec2 uv;
 
 uniform mat4x3 view_directions;
-uniform uint64_t environment_map_handle;
+uniform samplerCube environment_map;
 
 out vec4 out_color;
 
@@ -18,5 +18,5 @@ void main()
         uv.y
     );
 
-    out_color = texture(samplerCube(environment_map_handle), view_dir);
+    out_color = texture(environment_map, view_dir);
 }

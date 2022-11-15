@@ -8,7 +8,7 @@ in Vertex
     vec2 texcoord;
 } vertex;
 
-uniform uint64_t environment_map_handle;
+uniform samplerCube environment_map;
 
 layout(binding = 3) readonly buffer Material
 {
@@ -138,7 +138,6 @@ void main()
     }
     diffuse_color *= base_color;
 
-    samplerCube environment_map = samplerCube(environment_map_handle);
     float level = roughness * textureQueryLevels(environment_map);
     vec3 to_environment = reflect(vertex.world_position - CameraWorldPosition, normal);
     vec3 ambient_color = base_color * textureLod(environment_map, to_environment, level).rgb;

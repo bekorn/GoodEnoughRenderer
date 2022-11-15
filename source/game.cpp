@@ -285,9 +285,10 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto const & gltf_pbr_program = assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
 		glUseProgram(gltf_pbr_program.id);
 
-		auto const & environment_map = assets.texture_cubemaps.get(settings.environment_map_name);
-		auto environment_map_handle_loction = GetLocation(gltf_pbr_program.uniform_mappings, "environment_map_handle");
-		glUniformHandleui64ARB(environment_map_handle_loction, environment_map.handle);
+		glUniformHandleui64ARB(
+			GetLocation(gltf_pbr_program.uniform_mappings, "environment_map"),
+			assets.texture_cubemaps.get(settings.environment_map_name).handle
+		);
 
 		auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");
 		auto location_TransformMVP = GetLocation(gltf_pbr_program.uniform_mappings, "TransformMVP");
@@ -325,7 +326,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto & environment_map_program = assets.programs.get("environment_map_comp");
 		glUseProgram(environment_map_program.id);
 		glUniformHandleui64ARB(
-			GetLocation(environment_map_program.uniform_mappings, "depth_attachment_handle"),
+			GetLocation(environment_map_program.uniform_mappings, "depth_attachment"),
 			framebuffer_depth_attachment.handle
 		);
 		glBindImageTexture(
@@ -341,7 +342,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 			1, begin(framebuffer_size)
 		);
 		glUniformHandleui64ARB(
-			GetLocation(environment_map_program.uniform_mappings, "environment_map_handle"),
+			GetLocation(environment_map_program.uniform_mappings, "environment_map"),
 			assets.texture_cubemaps.get(settings.environment_map_name).handle
 		);
 		auto invVP = glm::inverse(f32x3x3(view_projection));
@@ -364,7 +365,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto & environment_map_program = assets.programs.get("environment_map_pipe");
 		glUseProgram(environment_map_program.id);
 		glUniformHandleui64ARB(
-			GetLocation(environment_map_program.uniform_mappings, "environment_map_handle"),
+			GetLocation(environment_map_program.uniform_mappings, "environment_map"),
 			assets.texture_cubemaps.get(settings.environment_map_name).handle
 		);
 		auto invVP = glm::inverse(f32x3x3(view_projection));
@@ -404,7 +405,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto & gamma_correction_program = assets.programs.get("gamma_correction_pipe"_name);
 		glUseProgram(gamma_correction_program.id);
 		glUniformHandleui64ARB(
-			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment_handle"),
+			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
 			framebuffer_color_attachment.handle
 		);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
