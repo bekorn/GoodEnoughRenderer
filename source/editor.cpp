@@ -34,9 +34,33 @@ void Editor::create_framebuffer()
 	);
 }
 
+void Editor::create_cubemap_framebuffer()
+{
+	auto view_resolution = i32x2(240, 240);
+
+	cubemap_framebuffer_color_attachment.create(
+		GL::Texture2D::AttachmentDescription{
+			.dimensions = view_resolution,
+			.internal_format = GL::GL_RGBA8,
+		}
+	);
+
+	cubemap_framebuffer.create(
+		GL::FrameBuffer::Description{
+			.attachments = {
+				{
+					.type = GL::GL_COLOR_ATTACHMENT0,
+					.texture = cubemap_framebuffer_color_attachment,
+				}
+			}
+		}
+	);
+}
+
 void Editor::create()
 {
 	create_framebuffer();
+	create_cubemap_framebuffer();
 
 	// Enable docking
 	auto & io = ImGui::GetIO();
@@ -497,6 +521,80 @@ void Editor::texture_2ds_window()
 	End();
 }
 
+void Editor::texture_cubemaps_window()
+{
+	using namespace ImGui;
+
+	Begin("Cubemaps");
+
+	static bool is_cubemap_changed = false;
+	static Name cubemap_name;
+	if (BeginCombo("Cubemap", cubemap_name.string.data()))
+	{
+		for (auto & [name, _]: game.assets.texture_cubemaps)
+			if (Selectable(name.string.data()))
+				cubemap_name = name, is_cubemap_changed = true;
+
+		EndCombo();
+	}
+	// TODO(bekorn): maybe rename Assets::texture_cubemaps -> Assets::cubemaps
+	if (auto it = game.assets.texture_cubemaps.find(cubemap_name); it != game.assets.texture_cubemaps.end())
+	{
+		auto & [_, cubemap] = *it;
+		SameLine(), Text("(id %d)", cubemap.id);
+
+		static bool is_level_changed = false;
+		static i32 cubemap_levels = 0, current_level = 0;
+		if (is_cubemap_changed)
+		{
+			using namespace GL;
+
+			current_level = 0;
+			glGetTextureParameteriv(cubemap.id, GL_TEXTURE_IMMUTABLE_LEVELS, &cubemap_levels);
+
+			is_cubemap_changed = false;
+			is_level_changed = true;
+		}
+
+		if (SliderInt("Level", &current_level, 0, cubemap_levels - 1))
+			is_level_changed = true;
+
+		static f32x2 cubemap_size, view_size;
+		if (is_level_changed)
+		{
+			using namespace GL;
+
+			glDeleteTextures(1, &cubemap_view.id);
+			glGenTextures(1, &cubemap_view.id);
+			glTextureView(cubemap_view.id, GL_TEXTURE_CUBE_MAP, cubemap.id, GL_RGBA8, 0, cubemap_levels, 0, 6);
+			glTextureParameteri(cubemap_view.id, GL_TEXTURE_BASE_LEVEL, current_level);
+
+			cubemap_view.handle = glGetTextureHandleARB(cubemap_view.id);
+			glMakeTextureHandleResidentARB(cubemap_view.handle);
+
+			glGetTextureLevelParameterfv(cubemap_view.id, current_level, GL_TEXTURE_WIDTH, &cubemap_size.x);
+			glGetTextureLevelParameterfv(cubemap_view.id, current_level, GL_TEXTURE_HEIGHT, &cubemap_size.y);
+
+			f32 const max_resolution = 240;
+			view_size = max_resolution / glm::compMax(cubemap_size) * cubemap_size;
+
+			is_level_changed = false;
+		}
+		LabelText("Resolution", "%d x %d", i32(cubemap_size.x), i32(cubemap_size.y));
+		Image(
+			reinterpret_cast<void*>(i64(cubemap_framebuffer_color_attachment.id)),
+			{view_size.x, view_size.y},
+			{0, 1}, {1, 0}
+		);
+	}
+	else
+	{
+		Text("Pick a cubemap");
+	}
+
+	End();
+}
+
 void Editor::program_window()
 {
 	using namespace ImGui;
@@ -826,6 +924,7 @@ void Editor::update(GLFW::Window const & window, FrameInfo const & frame_info, f
 	mesh_settings_window();
 	material_settings_window();
 	texture_2ds_window();
+	texture_cubemaps_window();
 	uniform_buffer_window();
 	program_window();
 	camera_window();
@@ -836,6 +935,44 @@ void Editor::update(GLFW::Window const & window, FrameInfo const & frame_info, f
 void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 {
 	using namespace GL;
+
+	// Render cubemap framebuffer
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, cubemap_framebuffer.id);
+		glViewport(0, 0, 240, 240);
+
+		auto & environment_map_program = game.assets.programs.get("environment_map_pipe");
+		glUseProgram(environment_map_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(environment_map_program.uniform_mappings, "environment_map_handle"),
+			cubemap_view.handle
+		);
+		auto view = visit([](Camera auto & c) { return c.get_view(); }, game.camera);
+		auto projection = visit([](Camera auto & c) { return c.get_projection(); }, game.camera);
+		auto view_projection = projection * view;
+		auto invVP = glm::inverse(f32x3x3(view_projection));
+		f32x4x3 view_dirs;
+		view_dirs[0] = invVP * f32x3(-1, -1, 1); // left   bottom
+		view_dirs[1] = invVP * f32x3(+1, -1, 1); // right  bottom
+		view_dirs[2] = invVP * f32x3(-1, +1, 1); // left   up
+		view_dirs[3] = invVP * f32x3(+1, +1, 1); // right  up
+		glUniformMatrix4x3fv(
+			GetLocation(environment_map_program.uniform_mappings, "view_directions"),
+			1, false, begin(view_dirs)
+		);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		// gamma correction
+		{
+			auto & gamma_correction_program = game.assets.programs.get("gamma_correction_pipe"_name);
+			glUseProgram(gamma_correction_program.id);
+			glUniformHandleui64ARB(
+				GetLocation(gamma_correction_program.uniform_mappings, "color_attachment_handle"),
+				cubemap_framebuffer_color_attachment.handle
+			);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+		}
+	}
 
 	// if game is not rendering, editor should not as well
 	if (not should_game_render)

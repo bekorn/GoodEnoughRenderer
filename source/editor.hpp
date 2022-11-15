@@ -24,6 +24,7 @@ struct Editor
 	GL::Texture2D framebuffer_depth_attachment;
 	GL::Texture2D framebuffer_color_attachment;
 	void create_framebuffer();
+	void create_cubemap_framebuffer();
 	void create();
 
 	void metrics_window(FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds);
@@ -34,6 +35,10 @@ struct Editor
 	void material_settings_window();
 	GL::Texture2D texture_view;
 	void texture_2ds_window();
+	GL::Texture2D cubemap_view;
+	GL::FrameBuffer cubemap_framebuffer;
+	GL::Texture2D cubemap_framebuffer_color_attachment;
+	void texture_cubemaps_window();
 	void program_window();
 	void uniform_buffer_window();
 	void camera_window();
