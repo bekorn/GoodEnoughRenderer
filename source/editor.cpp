@@ -2,7 +2,7 @@
 
 void Editor::create_framebuffer()
 {
-	resolution = game.resolution / 2;
+	resolution = game.resolution;
 
 	framebuffer_color_attachment.create(
 		GL::Texture2D::AttachmentDescription{
@@ -143,10 +143,10 @@ void Editor::metrics_window(FrameInfo const & frame_info, f64 game_update_in_sec
 	TextFMT("Frame: {:6}, Time: {:7.2f}", frame_info.idx, frame_info.seconds_since_start);
 
 	auto environment_map_time = game.environment_map_timer.get_time_elapsed_in_nanoseconds(frame_info.idx);
-	TextFMT("Enrironment Mapping: {:6} us | {:6} ns", environment_map_time / 1'000, environment_map_time);
+	TextFMT("{:30} {:6} us | {:6} ns", "Enrironment Mapping", environment_map_time / 1'000, environment_map_time);
 
 	auto gamma_correction_time = game.gamma_correction_timer.get_time_elapsed_in_nanoseconds(frame_info.idx);
-	TextFMT("Gamma Correction: {:6} us | {:6} ns", gamma_correction_time / 1'000, gamma_correction_time);
+	TextFMT("{:30} {:6} us | {:6} ns", "Gamma Correction", gamma_correction_time / 1'000, gamma_correction_time);
 
 	End();
 }
@@ -206,16 +206,17 @@ void Editor::game_settings_window()
 
 	Begin("Game Settings", nullptr, ImGuiWindowFlags_NoCollapse);
 
-	ColorEdit3("Clear color", begin(game.clear_color));
+	if (BeginCombo("Environment Map", game.settings.environment_map_name.string.data()))
+	{
+		for (auto & [name, _]: game.assets.texture_cubemaps)
+			if (Selectable(name.string.data()))
+				game.settings.environment_map_name = name;
+
+		EndCombo();
+	}
 
 	Checkbox("Zpass", &game.settings.is_zpass_on);
 	SameLine(), Checkbox("is env map comp", &game.settings.is_environment_mapping_comp);
-
-	SameLine();
-	if (Checkbox("is env map test", &game.settings.is_environment_map_test))
-		game.settings.environment_map_name = game.settings.is_environment_map_test
-			? "environment_map_test"_name
-			: "environment_map"_name;
 
 	Checkbox("is gamma correction comp", &game.settings.is_gamma_correction_comp);
 
