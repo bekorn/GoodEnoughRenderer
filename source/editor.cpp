@@ -567,14 +567,13 @@ void Editor::texture_cubemaps_window()
 
 			glDeleteTextures(1, &cubemap_view.id);
 			glGenTextures(1, &cubemap_view.id);
-			glTextureView(cubemap_view.id, GL_TEXTURE_CUBE_MAP, cubemap.id, GL_RGBA8, 0, cubemap_levels, 0, 6);
-			glTextureParameteri(cubemap_view.id, GL_TEXTURE_BASE_LEVEL, current_level);
+			glTextureView(cubemap_view.id, GL_TEXTURE_CUBE_MAP, cubemap.id, GL_RGBA8, current_level, 1, 0, 6);
 
 			cubemap_view.handle = glGetTextureHandleARB(cubemap_view.id);
 			glMakeTextureHandleResidentARB(cubemap_view.handle);
 
-			glGetTextureLevelParameterfv(cubemap_view.id, current_level, GL_TEXTURE_WIDTH, &cubemap_size.x);
-			glGetTextureLevelParameterfv(cubemap_view.id, current_level, GL_TEXTURE_HEIGHT, &cubemap_size.y);
+			glGetTextureLevelParameterfv(cubemap_view.id, 0, GL_TEXTURE_WIDTH, &cubemap_size.x);
+			glGetTextureLevelParameterfv(cubemap_view.id, 0, GL_TEXTURE_HEIGHT, &cubemap_size.y);
 
 			f32 const max_resolution = 240;
 			view_size = max_resolution / glm::compMax(cubemap_size) * cubemap_size;
