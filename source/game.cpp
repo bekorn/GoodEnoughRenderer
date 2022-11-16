@@ -246,6 +246,8 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
 	glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
 
+	glEnable(GL_CULL_FACE), glCullFace(GL_BACK);
+
 	// zpass
 	if (settings.is_zpass_on)
 	{
@@ -320,95 +322,93 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	}
 
 	// environment mapping
-	environment_map_timer.begin(frame_info.idx);
-	if (settings.is_environment_mapping_comp)
 	{
-		auto & environment_map_program = assets.programs.get("environment_map_comp");
-		glUseProgram(environment_map_program.id);
-		glUniformHandleui64ARB(
-			GetLocation(environment_map_program.uniform_mappings, "depth_attachment"),
-			framebuffer_depth_attachment.handle
-		);
-		glBindImageTexture(
-			GetLocation(environment_map_program.uniform_mappings, "color_attachment"),
-			framebuffer_color_attachment.id, 0,
-			false, 0,
-			GL_READ_WRITE,
-			GL_RGBA8
-		);
-		auto framebuffer_size = f32x2(resolution);
-		glUniform2fv(
-			GetLocation(environment_map_program.uniform_mappings, "framebuffer_size"),
-			1, begin(framebuffer_size)
-		);
-		glUniformHandleui64ARB(
-			GetLocation(environment_map_program.uniform_mappings, "environment_map"),
-			assets.texture_cubemaps.get(settings.environment_map_name).handle
-		);
-		auto invVP = glm::inverse(f32x3x3(view_projection));
-		f32x4x3 view_dirs;
-		view_dirs[0] = invVP * f32x3(-1, -1, 1); // left   bottom
-		view_dirs[1] = invVP * f32x3(+1, -1, 1); // right  bottom
-		view_dirs[2] = invVP * f32x3(-1, +1, 1); // left   up
-		view_dirs[3] = invVP * f32x3(+1, +1, 1); // right  up
-		glUniformMatrix4x3fv(
-			GetLocation(environment_map_program.uniform_mappings, "view_directions"),
-			1, false, begin(view_dirs)
-		);
-		glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
-		//	make sure writing to image has finished before read, see https://learnopengl.com/Guest-Articles/2022/Compute-Shaders/Introduction
+		environment_map_timer.begin(frame_info.idx);
 		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
-	}
-	else
-	{
-		glDepthMask(false), glDepthFunc(GL_LEQUAL);
-		auto & environment_map_program = assets.programs.get("environment_map_pipe");
-		glUseProgram(environment_map_program.id);
-		glUniformHandleui64ARB(
-			GetLocation(environment_map_program.uniform_mappings, "environment_map"),
-			assets.texture_cubemaps.get(settings.environment_map_name).handle
-		);
+
 		auto invVP = glm::inverse(f32x3x3(view_projection));
 		f32x4x3 view_dirs;
 		view_dirs[0] = invVP * f32x3(-1, -1, 1); // left   bottom
 		view_dirs[1] = invVP * f32x3(+1, -1, 1); // right  bottom
 		view_dirs[2] = invVP * f32x3(-1, +1, 1); // left   up
 		view_dirs[3] = invVP * f32x3(+1, +1, 1); // right  up
-		glUniformMatrix4x3fv(
-			GetLocation(environment_map_program.uniform_mappings, "view_directions"),
-			1, false, begin(view_dirs)
-		);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		if (settings.is_environment_mapping_comp)
+		{
+			auto & environment_map_program = assets.programs.get("environment_map_comp");
+			glUseProgram(environment_map_program.id);
+			glUniformHandleui64ARB(
+				GetLocation(environment_map_program.uniform_mappings, "depth_attachment"),
+				framebuffer_depth_attachment.handle
+			);
+			glBindImageTexture(
+				GetLocation(environment_map_program.uniform_mappings, "color_attachment"),
+				framebuffer_color_attachment.id, 0,
+				false, 0,
+				GL_READ_WRITE,
+				GL_RGBA8
+			);
+			auto framebuffer_size = f32x2(resolution);
+			glUniform2fv(
+				GetLocation(environment_map_program.uniform_mappings, "framebuffer_size"),
+				1, begin(framebuffer_size)
+			);
+			glUniformHandleui64ARB(
+				GetLocation(environment_map_program.uniform_mappings, "environment_map"),
+				assets.texture_cubemaps.get(settings.environment_map_name).handle
+			);
+			glUniformMatrix4x3fv(
+				GetLocation(environment_map_program.uniform_mappings, "view_directions"),
+				1, false, begin(view_dirs)
+			);
+			glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
+		}
+		else
+		{
+			glDepthMask(false), glDepthFunc(GL_LEQUAL);
+			auto & environment_map_program = assets.programs.get("environment_map_pipe");
+			glUseProgram(environment_map_program.id);
+			glUniformHandleui64ARB(
+				GetLocation(environment_map_program.uniform_mappings, "environment_map"),
+				assets.texture_cubemaps.get(settings.environment_map_name).handle
+			);
+			glUniformMatrix4x3fv(
+				GetLocation(environment_map_program.uniform_mappings, "view_directions"),
+				1, false, begin(view_dirs)
+			);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+		}
+		environment_map_timer.end();
 	}
-	environment_map_timer.end();
 
 	// gamma correction
-	gamma_correction_timer.begin(frame_info.idx);
-	if (settings.is_gamma_correction_comp)
 	{
-		auto & gamma_correct_program = assets.programs.get("gamma_correction_comp"_name);
-		glUseProgram(gamma_correct_program.id);
-		glBindImageTexture(
-			GetLocation(gamma_correct_program.uniform_mappings, "img"),
-			framebuffer_color_attachment.id, 0,
-			false, 0,
-			GL_READ_WRITE,
-			GL_RGBA8
-		);
-		glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
-		//	make sure writing to image has finished before read, see https://learnopengl.com/Guest-Articles/2022/Compute-Shaders/Introduction
+		gamma_correction_timer.begin(frame_info.idx);
 		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+		if (settings.is_gamma_correction_comp)
+		{
+			auto & gamma_correct_program = assets.programs.get("gamma_correction_comp"_name);
+			glUseProgram(gamma_correct_program.id);
+			glBindImageTexture(
+				GetLocation(gamma_correct_program.uniform_mappings, "img"),
+				framebuffer_color_attachment.id, 0,
+				false, 0,
+				GL_READ_WRITE,
+				GL_RGBA8
+			);
+			glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
+		}
+		else
+		{
+			glDepthMask(false), glDepthFunc(GL_ALWAYS);
+			auto & gamma_correction_program = assets.programs.get("gamma_correction_pipe"_name);
+			glUseProgram(gamma_correction_program.id);
+			glUniformHandleui64ARB(
+				GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
+				framebuffer_color_attachment.handle
+			);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+		}
+		gamma_correction_timer.end();
 	}
-	else
-	{
-		glDepthMask(false), glDepthFunc(GL_ALWAYS);
-		auto & gamma_correction_program = assets.programs.get("gamma_correction_pipe"_name);
-		glUseProgram(gamma_correction_program.id);
-		glUniformHandleui64ARB(
-			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
-			framebuffer_color_attachment.handle
-		);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
-	gamma_correction_timer.end();
 }

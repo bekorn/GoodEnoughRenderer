@@ -34,7 +34,6 @@ struct Game
 		bool is_zpass_on = false;
 
 		bool is_environment_mapping_comp = false;
-		bool is_environment_map_test = true;
 		Name environment_map_name = "environment_map";
 
 		bool is_gamma_correction_comp = false;

@@ -220,6 +220,10 @@ void Editor::game_settings_window()
 
 	Checkbox("is gamma correction comp", &game.settings.is_gamma_correction_comp);
 
+	static bool is_vsync_on = true;
+	if (Checkbox("is vsync on", &is_vsync_on))
+		glfwSwapInterval(is_vsync_on ? 1 : 0);
+
 	End();
 }
 
@@ -988,6 +992,7 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		const f32x4 clear_color{0, 0, 0, 0};
 		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
 
+		glEnable(GL_CULL_FACE), glCullFace(GL_BACK);
 		glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS);
 
 		auto & gizmo_program = editor_assets.programs.get("gizmo"_name);
@@ -1013,6 +1018,7 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	// gamma correction
 	{
+		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
 		glViewport(0, 0, resolution.x, resolution.y);
 		glDepthMask(false), glDepthFunc(GL_ALWAYS);
 		auto & gamma_correction_program = game.assets.programs.get("gamma_correction_pipe"_name);
