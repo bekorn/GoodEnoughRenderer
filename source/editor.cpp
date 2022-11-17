@@ -142,10 +142,10 @@ void Editor::metrics_window(FrameInfo const & frame_info, f64 game_update_in_sec
 
 	TextFMT("Frame: {:6}, Time: {:7.2f}", frame_info.idx, frame_info.seconds_since_start);
 
-	auto environment_map_time = game.environment_map_timer.get_time_elapsed_in_nanoseconds(frame_info.idx);
+	auto environment_map_time = game.environment_map_timer.average_in_nanoseconds;
 	TextFMT("{:30} {:6} us | {:6} ns", "Enrironment Mapping", environment_map_time / 1'000, environment_map_time);
 
-	auto gamma_correction_time = game.gamma_correction_timer.get_time_elapsed_in_nanoseconds(frame_info.idx);
+	auto gamma_correction_time = game.gamma_correction_timer.average_in_nanoseconds;
 	TextFMT("{:30} {:6} us | {:6} ns", "Gamma Correction", gamma_correction_time / 1'000, gamma_correction_time);
 
 	End();

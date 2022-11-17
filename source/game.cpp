@@ -323,7 +323,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	// environment mapping
 	{
-		environment_map_timer.begin(frame_info.idx);
+		environment_map_timer.begin(frame_info.idx, frame_info.seconds_since_start);
 		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
 
 		auto invVP = glm::inverse(f32x3x3(view_projection));
@@ -383,7 +383,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	// gamma correction
 	{
-		gamma_correction_timer.begin(frame_info.idx);
+		gamma_correction_timer.begin(frame_info.idx, frame_info.seconds_since_start);
 		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
 		if (settings.is_gamma_correction_comp)
 		{
