@@ -60,11 +60,14 @@ using f64x3 = glm::f64vec3;
 using f32x4 = glm::f32vec4;
 using f64x4 = glm::f64vec4;
 
-using f32x4x4 = glm::f32mat4x4;
-using f64x4x4 = glm::f64mat4x4;
-
 using f32x3x3 = glm::f32mat3x3;
 using f64x3x3 = glm::f64mat3x3;
+
+using f32x4x3 = glm::f32mat4x3;
+using f64x4x3 = glm::f64mat4x3;
+
+using f32x4x4 = glm::f32mat4x4;
+using f64x4x4 = glm::f64mat4x4;
 
 
 using f32quat = glm::f32quat;

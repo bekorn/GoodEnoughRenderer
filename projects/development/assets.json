@@ -10,6 +10,16 @@
     {"name": "OrientationTest", "path": "model/orientation test/OrientationTest.gltf"},
     {"name": "ThreeOfSwords", "path": "model/Three of Swords/scene.gltf"}
   ],
+  "cubemap": [
+    {
+      "name":  "environment_map", "path": "cubemap/environment_map.png",
+      "levels":  0
+    },
+    {
+      "name":  "environment_map_test", "path": "cubemap/test.png",
+      "min_filter": "NEAREST", "mag_filter": "NEAREST"
+    }
+  ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},
     {"name": "Camera", "path": "glsl/uniform_block/camera.unib.glsl"},
@@ -32,6 +42,13 @@
       "stages": {
         "vert": "glsl/program/screen_pass.vert.glsl",
         "frag": "glsl/program/gamma_correction.frag.glsl"
+      }
+    },
+    {
+      "name": "environment_mapping",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/environment_mapping.frag.glsl"
       }
     }
   ]

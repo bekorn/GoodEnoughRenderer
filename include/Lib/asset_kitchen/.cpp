@@ -3,6 +3,8 @@
 #include "glsl/program/convert.hpp"
 #include "glsl/uniform_block/convert.hpp"
 #include "gltf/convert.hpp"
+#include "texture/convert.hpp"
+#include "cubemap/convert.hpp"
 
 void Descriptions::create(std::filesystem::path const & project_root)
 {
@@ -14,6 +16,7 @@ void Descriptions::create(std::filesystem::path const & project_root)
 
 		Document document;
 		document.Parse(File::LoadAsString(asset_decription_path).c_str());
+		assert(("assets.json is invalid", document.IsObject()));
 
 		if (auto const member = document.FindMember("glsl_uniform_block"); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
@@ -34,6 +37,20 @@ void Descriptions::create(std::filesystem::path const & project_root)
 			{
 				auto [name, description] = GLTF::Parse(item.GetObject(), project_root);
 				gltf.generate(name, description);
+			}
+
+		if (auto const member = document.FindMember("texture"); member != document.MemberEnd())
+			for (auto const & item: member->value.GetArray())
+			{
+				auto [name, description] = Texture::Parse(item.GetObject(), project_root);
+				texture.generate(name, description);
+			}
+
+		if (auto const member = document.FindMember("cubemap"); member != document.MemberEnd())
+			for (auto const & item: member->value.GetArray())
+			{
+				auto [name, description] = Cubemap::Parse(item.GetObject(), project_root);
+				cubemap.generate(name, description);
 			}
 	}
 }
@@ -76,6 +93,18 @@ void Assets::load_gltf(Name const & name)
 {
 	auto const gltf_data = GLTF::Load(descriptions.gltf.get(name));
 	GLTF::Convert(gltf_data, textures, materials, primitives, meshes, scene_tree);
+}
+
+void Assets::load_texture(const Name & name)
+{
+	auto texture_data = Texture::Load(descriptions.texture.get(name));
+	textures.generate(name, move(Texture::Convert(texture_data)));
+}
+
+void Assets::load_cubemap(Name const & name)
+{
+	auto cubemap_data = Cubemap::Load(descriptions.cubemap.get(name));
+	texture_cubemaps.generate(name, move(Cubemap::Convert(cubemap_data)));
 }
 
 template<std::ranges::range Range>

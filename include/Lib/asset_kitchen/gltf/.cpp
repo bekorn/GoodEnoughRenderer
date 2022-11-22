@@ -413,11 +413,18 @@ namespace GLTF
 									? loaded.samplers[loaded_texture.sampler_index.value()]
 									: GLTF::SamplerDefault;
 
+			auto should_have_mipmaps = not (
+				GL::GLenum(loaded_sampler.min_filter) == GL::GL_LINEAR or
+				GL::GLenum(loaded_sampler.min_filter) == GL::GL_NEAREST
+			);
+
 			textures.generate(loaded_texture.name).data.create(
 				GL::Texture2D::ImageDescription{
 					.dimensions = loaded_image.dimensions,
 					.has_alpha = loaded_image.channels == 4,
 					.is_sRGB = loaded_image.is_sRGB,
+
+					.levels = should_have_mipmaps ? 0 : 1,
 
 					.min_filter = GL::GLenum(loaded_sampler.min_filter),
 					.mag_filter = GL::GLenum(loaded_sampler.mag_filter),
