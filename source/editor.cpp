@@ -6,6 +6,7 @@ void Editor::create_framebuffer()
 		GL::Texture2D::AttachmentDescription{
 			.dimensions = resolution,
 			.internal_format = GL::GL_RGBA8,
+			.mag_filter = GL::GL_NEAREST,
 		}
 	);
 
@@ -197,7 +198,7 @@ void Editor::game_window()
 	{
 		Text("Resolution: %dx%d", game.resolution.x, game.resolution.y);
 		static f32 scale = 0.5;
-		SameLine(), SliderFloat("Scale", &scale, 0.1, 1.0, "%.1f");
+		SameLine(), SliderFloat("Scale", &scale, 0.1, 10.0, "%.1f");
 
 		auto resolution = ImVec2(f32(game.resolution.x) * scale, f32(game.resolution.y) * scale);
 		// custom uvs because defaults are flipped on y-axis

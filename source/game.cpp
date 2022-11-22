@@ -9,6 +9,7 @@ void Game::create_framebuffer()
 		GL::Texture2D::AttachmentDescription{
 			.dimensions = resolution,
 			.internal_format = GL::GL_RGBA8, // GL_RGB8 does not work with compute shaders
+			.mag_filter = GL::GL_NEAREST,
 		}
 	);
 
