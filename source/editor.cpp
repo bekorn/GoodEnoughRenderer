@@ -1092,6 +1092,10 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 				GetLocation(border_program.uniform_mappings, "positions"),
 				selection_framebuffer_color_attachments[not pingpong_destination].handle
 			);
+			glUniformHandleui64ARB(
+				GetLocation(border_program.uniform_mappings, "border_map"),
+				editor_assets.textures.get("border_map"_name).handle
+			);
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
 	}

@@ -2,7 +2,9 @@
   "gltf": [
     {"name": "AxisGizmo", "path": "model/axis gizmo/axis gizmo.gltf"}
   ],
-  "glsl_uniform_block": [],
+  "texture": [
+    {"name": "border_map", "path": "textures/border_contrast.png"}
+  ],
   "glsl_program": [
     {
       "name": "gizmo",
