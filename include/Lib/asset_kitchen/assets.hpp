@@ -52,6 +52,9 @@ struct Assets
 		for (auto const & [name, _] : descriptions.gltf)
 			load_gltf(name);
 
+		for (auto const & [name, _] : descriptions.texture)
+			load_texture(name);
+
 		for (auto const & [name, _] : descriptions.cubemap)
 			load_cubemap(name);
 	}
@@ -59,6 +62,7 @@ struct Assets
 	void load_glsl_program(Name const & name);
 	void load_glsl_uniform_block(Name const & name);
 	void load_gltf(Name const & name);
+	void load_texture(Name const & name);
 	void load_cubemap(Name const & name);
 	// For editing purposes
 	bool reload_glsl_program(Name const & name);
