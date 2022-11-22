@@ -10,6 +10,27 @@
         "vert": "glsl/program/gizmo.vert.glsl",
         "frag": "glsl/program/gizmo.frag.glsl"
       }
+    },
+    {
+      "name": "jump_flood_init",
+      "stages": {
+        "vert": "glsl/program/jump_flood_init.vert.glsl",
+        "frag": "glsl/program/jump_flood_init.frag.glsl"
+      }
+    },
+    {
+      "name": "jump_flood",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/jump_flood.frag.glsl"
+      }
+    },
+    {
+      "name": "border",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/border.frag.glsl"
+      }
     }
   ]
 }

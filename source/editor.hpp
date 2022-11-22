@@ -25,11 +25,18 @@ struct Editor
 	GL::Texture2D framebuffer_color_attachment;
 	void create_framebuffer();
 	void create_cubemap_framebuffer();
+	void create_selection_framebuffer();
 	void create();
 
 	void metrics_window(FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds);
 	void game_window();
 	void game_settings_window();
+	// TODO(bekorn): framebuffers can keep their resolution
+	// TODO(bekorn): a specilization for double buffered framebuffers might be handy
+	i32x2 selection_framebuffer_resolution;
+	GL::FrameBuffer selection_framebuffers[2];
+	GL::Texture2D selection_framebuffer_color_attachments[2];
+	Name selected_node_name;
 	void node_settings_window();
 	void mesh_settings_window();
 	void material_settings_window();

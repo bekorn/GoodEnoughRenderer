@@ -2,8 +2,6 @@
 
 void Editor::create_framebuffer()
 {
-	resolution = game.resolution;
-
 	framebuffer_color_attachment.create(
 		GL::Texture2D::AttachmentDescription{
 			.dimensions = resolution,
@@ -57,10 +55,38 @@ void Editor::create_cubemap_framebuffer()
 	);
 }
 
+void Editor::create_selection_framebuffer()
+{
+	selection_framebuffer_resolution = resolution;
+
+	for (auto i = 0; i < 2; ++i)
+	{
+		selection_framebuffer_color_attachments[i].create(
+			GL::Texture2D::AttachmentDescription{
+				.dimensions = selection_framebuffer_resolution,
+				.internal_format = GL::GL_RG16UI,
+			}
+		);
+		selection_framebuffers[i].create(
+			GL::FrameBuffer::Description{
+				.attachments = {
+					{
+						.type = GL::GL_COLOR_ATTACHMENT0,
+						.texture = selection_framebuffer_color_attachments[i],
+					}
+				}
+			}
+		);
+	}
+}
+
 void Editor::create()
 {
+	resolution = game.resolution;
+
 	create_framebuffer();
 	create_cubemap_framebuffer();
+	create_selection_framebuffer();
 
 	// Enable docking
 	auto & io = ImGui::GetIO();
@@ -182,11 +208,13 @@ void Editor::game_window()
 		if (has_program_errors)
 			border_color.x = 1;
 
+		auto game_pos = GetCursorPos();
 		Image(
 			reinterpret_cast<void*>(i64(game.framebuffer_color_attachment.id)),
 			resolution, uv0, uv1
 		);
-		SameLine(GetCursorPosX()), Image(
+		auto editor_pos = ImVec2(game_pos.x - 1, game_pos.y - 1); // because of image borders
+		SetCursorPos(editor_pos), Image(
 			reinterpret_cast<void*>(i64(framebuffer_color_attachment.id)),
 			resolution, uv0, uv1, {1, 1, 1, 1}, border_color
 		);
@@ -233,30 +261,33 @@ void Editor::node_settings_window()
 
 	Begin("Node Settings", nullptr, ImGuiWindowFlags_NoCollapse);
 
-	static Name node_name;
 	bool node_changed = false;
-	if (BeginCombo("Node", node_name.string.data()))
+	if (BeginCombo("Node", selected_node_name.string.data()))
 	{
+		// provide empty option to deselect
+		if (Selectable("##"))
+			selected_node_name = "", node_changed = true;
+
 		auto indent = ImGui::GetStyle().IndentSpacing;
 		for (auto & node: game.assets.scene_tree.depth_first())
 		{
 			if (node.depth) Indent(indent * node.depth);
 
 			if (Selectable(node.name.string.data()))
-				node_name = node.name, node_changed = true;
+				selected_node_name = node.name, node_changed = true;
 
 			if (node.depth) ImGui::Unindent(indent * node.depth);
 		}
 
 		EndCombo();
 	}
-	if (not game.assets.scene_tree.named_indices.contains(node_name))
+	if (not game.assets.scene_tree.named_indices.contains(selected_node_name))
 	{
 		Text("Pick a node");
 		End();
 		return;
 	}
-	auto & node_index = game.assets.scene_tree.named_indices.get(node_name);
+	auto & node_index = game.assets.scene_tree.named_indices.get(selected_node_name);
 	auto & node = game.assets.scene_tree.get(node_index);
 
 
@@ -982,15 +1013,93 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	if (not should_game_render)
 		return;
 
+	// Clear framebuffer
+	glColorMask(true, true, true, true), glDepthMask(true);
+	const f32 clear_depth{1};
+	glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
+	const f32x4 clear_color{0, 0, 0, 0};
+	glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
+
+	// Draw selection border
+	if (
+		auto it = game.assets.scene_tree.named_indices.find(selected_node_name);
+		it != game.assets.scene_tree.named_indices.end()
+	)
+	{
+		auto const & node = game.assets.scene_tree.get(it->second);
+		if (node.mesh != nullptr)
+		{
+			using namespace GL;
+
+			glViewport(0, 0, selection_framebuffer_resolution.x, selection_framebuffer_resolution.y);
+
+			glDisable(GL_DEPTH_TEST);
+			glColorMask(true, true, true, true), glDepthMask(false);
+
+			auto const clear_color = i32x2(-1);
+			glClearNamedFramebufferiv(selection_framebuffers[0].id, GL_COLOR, 0, begin(clear_color));
+			glClearNamedFramebufferiv(selection_framebuffers[1].id, GL_COLOR, 0, begin(clear_color));
+
+			glBindFramebuffer(GL_FRAMEBUFFER, selection_framebuffers[0].id);
+
+			// initialize
+			auto & jump_flood_init_program = editor_assets.programs.get("jump_flood_init");
+			glUseProgram(jump_flood_init_program.id);
+			auto view = visit([](Camera auto & c){ return c.get_view(); }, game.camera);
+			auto proj = visit([](Camera auto & c){ return c.get_projection(); }, game.camera);
+			auto transform = proj * view * node.matrix;
+			glUniformMatrix4fv(
+				GetLocation(jump_flood_init_program.uniform_mappings, "transform"),
+				1, false, begin(transform)
+			);
+			for (auto & drawable: node.mesh->drawables)
+			{
+				glBindVertexArray(drawable.vertex_array.id);
+				glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+			}
+
+			// jump flood
+			auto & jump_flood_program = editor_assets.programs.get("jump_flood");
+			glUseProgram(jump_flood_program.id);
+
+			i32 step = glm::compMax(selection_framebuffer_resolution) / 2;
+			bool pingpong_destination = 1;
+
+			while (step != 0)
+			{
+				glBindFramebuffer(GL_FRAMEBUFFER , selection_framebuffers[pingpong_destination].id);
+				glUniformHandleui64ARB(
+					GetLocation(jump_flood_program.uniform_mappings, "positions"),
+					selection_framebuffer_color_attachments[not pingpong_destination].handle
+				);
+				glUniform1i(
+					GetLocation(jump_flood_program.uniform_mappings, "step"),
+					step
+				);
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+
+				step /= 2;
+				pingpong_destination = not pingpong_destination;
+			}
+
+			// finalize
+			glViewport(0, 0, resolution.x, resolution.y);
+			auto & border_program = editor_assets.programs.get("border");
+			glUseProgram(border_program.id);
+			glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
+			glUniformHandleui64ARB(
+				GetLocation(border_program.uniform_mappings, "positions"),
+				selection_framebuffer_color_attachments[not pingpong_destination].handle
+			);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+		}
+	}
+
 	// Draw gizmos
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
 		glViewport(0, 0, resolution.x, resolution.y);
 		glColorMask(true, true, true, true), glDepthMask(true);
-		const f32 clear_depth{1};
-		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
-		const f32x4 clear_color{0, 0, 0, 0};
-		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
 
 		glEnable(GL_CULL_FACE), glCullFace(GL_BACK);
 		glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS);
