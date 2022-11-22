@@ -2,6 +2,7 @@
 
 #include "Lib/asset_kitchen/assets.hpp"
 #include "Lib/opengl/core.hpp"
+#include "Lib/opengl/mapped_buffer.hpp"
 #include "Lib/opengl/framebuffer.hpp"
 #include "Lib/glfw/core.hpp"
 
@@ -29,8 +30,9 @@ struct Game
 
 	variant<PerspectiveCamera, OrthographicCamera> camera;
 
+	GL::MappedBuffer frame_info_uniform_buffer;
 	GL::Buffer lights_uniform_buffer;
-	GL::Buffer camera_uniform_buffer;
+	GL::MappedBuffer camera_uniform_buffer;
 	GL::Buffer gltf_material_buffer; 									// !!! Temporary
 	std::unordered_map<Name, u32, Name::Hasher> gltf_material2index;	// !!! Temporary
 	std::queue<Name> gltf_material_is_dirty;							// !!! Temporary

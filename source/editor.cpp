@@ -181,6 +181,10 @@ void Editor::game_settings_window()
 
 	ColorEdit3("Clear color", begin(game.clear_color));
 
+	static bool is_vsync_on = true;
+	if (Checkbox("is vsync on", &is_vsync_on))
+		glfwSwapInterval(is_vsync_on ? 1 : 0);
+
 	End();
 }
 
@@ -795,16 +799,23 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	if (not should_game_render)
 		return;
 
-	// Draw gizmos
+	// Clear framebuffer
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
 		glViewport(0, 0, resolution.x, resolution.y);
+		glColorMask(true, true, true, true), glDepthMask(true);
 		const f32 clear_depth{1};
 		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
 		const f32x4 clear_color{0, 0, 0, 0};
 		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
+	}
 
-		glEnable(GL_DEPTH_TEST);
+	// Draw gizmos
+	{
+		glEnable(GL_CULL_FACE), glCullFace(GL_BACK);
+		glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS);
+		glColorMask(true, true, true, true), glDepthMask(true);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
 
 		auto & gizmo_program = editor_assets.programs.get("gizmo"_name);
 		glUseProgram(gizmo_program.id);
@@ -830,17 +841,18 @@ void Editor::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	// gamma correction
 	{
-		auto & gamma_correct_program = game.assets.programs.get("gamma_correct"_name);
-		glUseProgram(gamma_correct_program.id);
-		glBindImageTexture(
-			GetLocation(gamma_correct_program.uniform_mappings, "img"),
-			framebuffer_color_attachment.id, 0,
-			false, 0,
-			GL_READ_WRITE,
-			GL_RGBA8
+		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+
+		glViewport(0, 0, resolution.x, resolution.y);
+		glDepthMask(false), glDepthFunc(GL_ALWAYS);
+
+		// TODO(bekorn): move this into the core project (a new project besides game and editor)
+		auto & gamma_correction_program = game.assets.programs.get("gamma_correction"_name);
+		glUseProgram(gamma_correction_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
+			framebuffer_color_attachment.handle
 		);
-		glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
-		//	make sure writing to image has finished before read, see https://learnopengl.com/Guest-Articles/2022/Compute-Shaders/Introduction
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 }

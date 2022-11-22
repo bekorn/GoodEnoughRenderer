@@ -40,6 +40,18 @@ void Game::create_uniform_buffers()
 {
 	using namespace GL;
 
+	// Setup FrameInfo uniform buffer
+	auto & frame_info_uniform_block = assets.uniform_blocks.get("FrameInfo"_name);
+
+	frame_info_uniform_buffer.create(
+		MappedBuffer::UniformBlockDescription{
+			.uniform_block = frame_info_uniform_block,
+			.array_size = 1,
+		}
+	);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, frame_info_uniform_block.binding, frame_info_uniform_buffer.id);
+
 	// Setup Lights Uniform Buffer
 	auto & lights_uniform_block = assets.uniform_blocks.get("Lights"_name);
 
@@ -80,8 +92,7 @@ void Game::create_uniform_buffers()
 	auto & camera_uniform_block = assets.uniform_blocks.get("Camera"_name);
 
 	camera_uniform_buffer.create(
-		Buffer::UniformBlockDescription{
-			.usage = GL_DYNAMIC_DRAW,
+		MappedBuffer::UniformBlockDescription{
 			.uniform_block = camera_uniform_block,
 			.array_size = 1,
 		}
@@ -196,12 +207,17 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		}
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
-	glViewport(0, 0, resolution.x, resolution.y);
-	glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
-	glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
-
-	glEnable(GL_DEPTH_TEST);
+	// Update FrameInfo uniform buffer
+	{
+		auto & map = frame_info_uniform_buffer.map;
+		auto & block = assets.uniform_blocks.get("FrameInfo"_name);
+		block.set(map, "DepthAttachmentHandle", framebuffer_depth_attachment.handle);
+		block.set(map, "ColorAttachmentHandle", framebuffer_color_attachment.handle);
+		block.set(map, "FrameIdx", frame_info.idx);
+		block.set(map, "SecondsSinceStart", frame_info.seconds_since_start);
+		block.set(map, "SecondsSinceLastFrame", frame_info.seconds_since_last_frame);
+		glFlushMappedNamedBufferRange(frame_info_uniform_buffer.id, 0, block.aligned_size);
+	}
 
 	auto camera_position = visit([](Camera auto & c) { return c.position; }, camera);
 	auto view = visit([](Camera auto & c) { return c.get_view(); }, camera);
@@ -210,57 +226,78 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	// Update Camera Uniform Buffer
 	{
-		auto & camera_block = assets.uniform_blocks.get("Camera"_name);
-		auto * map = (byte *) glMapNamedBuffer(camera_uniform_buffer.id, GL_WRITE_ONLY);
-		camera_block.set(map, "CameraWorldPosition", camera_position);
-		camera_block.set(map, "TransformV", view);
-		camera_block.set(map, "TransformP", projection);
-		camera_block.set(map, "TransformVP", view_projection);
-		glUnmapNamedBuffer(camera_uniform_buffer.id);
+		auto & map = camera_uniform_buffer.map;
+		auto & block = assets.uniform_blocks.get("Camera"_name);
+		block.set(map, "TransformV", view);
+		block.set(map, "TransformP", projection);
+		block.set(map, "TransformVP", view_projection);
+		block.set(map, "TransformV_inv", glm::inverse(view));
+		block.set(map, "TransformP_inv", glm::inverse(projection));
+		block.set(map, "TransformVP_inv", glm::inverse(view_projection));
+		block.set(map, "CameraWorldPosition", camera_position);
+		glFlushMappedNamedBufferRange(camera_uniform_buffer.id, 0, block.aligned_size);
 	}
 
-	auto const & gltf_pbr_program = assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
-	glUseProgram(gltf_pbr_program.id);
+	// Clear framebuffer
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
+		glViewport(0, 0, resolution.x, resolution.y);
+		glColorMask(true, true, true, true), glDepthMask(true);
+		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
+		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
+	}
 
-	auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");
-	auto location_TransformMVP = GetLocation(gltf_pbr_program.uniform_mappings, "TransformMVP");
+	// Shading
+	{
+		glEnable(GL_CULL_FACE), glCullFace(GL_BACK);
+		glColorMask(true, true, true, true), glDepthMask(true), glDepthFunc(GL_LESS);
 
-	for (auto & depth: assets.scene_tree.nodes)
-		for (auto & node: depth)
-		{
-			if (node.mesh == nullptr)
-				continue;
+		auto const & gltf_pbr_program = assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
+		glUseProgram(gltf_pbr_program.id);
 
-			glUniformMatrix4fv(location_TransformM, 1, false, begin(node.matrix));
-			auto transform_mvp = view_projection * node.matrix;
-			glUniformMatrix4fv(location_TransformMVP, 1, false, begin(transform_mvp));
+		auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");
+		auto location_TransformMVP = GetLocation(gltf_pbr_program.uniform_mappings, "TransformMVP");
 
-			for (auto & drawable: node.mesh->drawables)
+		for (auto & depth: assets.scene_tree.nodes)
+			for (auto & node: depth)
 			{
-				// Bind Material Buffer
-				auto & material_block = Render::Material_gltf_pbrMetallicRoughness::block;
-				glBindBufferRange(
-					GL_SHADER_STORAGE_BUFFER, material_block.binding, gltf_material_buffer.id,
-					gltf_material2index.at(drawable.named_material.name) * material_block.aligned_size,
-					material_block.data_size
-				);
+				if (node.mesh == nullptr)
+					continue;
 
-				glBindVertexArray(drawable.vertex_array.id);
-				glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+				glUniformMatrix4fv(location_TransformM, 1, false, begin(node.matrix));
+				auto transform_mvp = view_projection * node.matrix;
+				glUniformMatrix4fv(location_TransformMVP, 1, false, begin(transform_mvp));
+
+				for (auto & drawable: node.mesh->drawables)
+				{
+					// Bind Material Buffer
+					auto & material_block = Render::Material_gltf_pbrMetallicRoughness::block;
+					glBindBufferRange(
+						GL_SHADER_STORAGE_BUFFER, material_block.binding, gltf_material_buffer.id,
+						gltf_material2index.at(drawable.named_material.name) * material_block.aligned_size,
+						material_block.data_size
+					);
+
+					glBindVertexArray(drawable.vertex_array.id);
+					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+				}
 			}
-		}
+	}
 
 	// gamma correction
-	auto & gamma_correct_program = assets.programs.get("gamma_correct"_name);
-	glUseProgram(gamma_correct_program.id);
-	glBindImageTexture(
-		GetLocation(gamma_correct_program.uniform_mappings, "img"),
-		framebuffer_color_attachment.id, 0,
-		false, 0,
-		GL_READ_WRITE,
-		GL_RGBA8
-	);
-	glDispatchCompute(resolution.x / 8, resolution.y / 8, 1);
-	//	make sure writing to image has finished before read, see https://learnopengl.com/Guest-Articles/2022/Compute-Shaders/Introduction
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	{
+		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+
+		glViewport(0, 0, resolution.x, resolution.y);
+		glDepthMask(false), glDepthFunc(GL_ALWAYS);
+
+		// TODO(bekorn): move this into the core project (a new project besides game and editor)
+		auto & gamma_correction_program = assets.programs.get("gamma_correction"_name);
+		glUseProgram(gamma_correction_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
+			framebuffer_color_attachment.handle
+		);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
 }

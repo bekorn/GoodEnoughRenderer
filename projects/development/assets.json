@@ -12,7 +12,8 @@
   ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},
-    {"name": "Camera", "path": "glsl/uniform_block/camera.unib.glsl"}
+    {"name": "Camera", "path": "glsl/uniform_block/camera.unib.glsl"},
+    {"name": "FrameInfo", "path": "glsl/uniform_block/frame_info.unib.glsl"}
   ],
   "glsl_program": [
     {
@@ -27,9 +28,10 @@
       ]
     },
     {
-      "name": "gamma_correct",
+      "name": "gamma_correction",
       "stages": {
-        "comp": "glsl/program/gamma_correct.comp.glsl"
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/gamma_correction.frag.glsl"
       }
     }
   ]

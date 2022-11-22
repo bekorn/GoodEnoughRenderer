@@ -39,6 +39,10 @@ namespace GL
 
 			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, description.min_filter);
 			glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, description.mag_filter);
+
+			handle = glGetTextureHandleARB(id);
+			// Since all the textures will always be needed, their residency doesn't need management
+			glMakeTextureHandleResidentARB(handle);
 		}
 
 		struct ImageDescription
