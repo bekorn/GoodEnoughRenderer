@@ -73,7 +73,7 @@ namespace Cubemap
 	{
 		GL::TextureCubemap cubemap;
 		cubemap.create(
-			GL::TextureCubemap::CubeMapImageDescription{
+			GL::TextureCubemap::ImageDescription{
 				.face_dimensions = loaded.face_dimensions,
 				.has_alpha = loaded.channels == 4,
 				.is_sRGB = loaded.is_sRGB,

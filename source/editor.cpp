@@ -473,10 +473,6 @@ void Editor::texture_2ds_window()
 			current_level = 0;
 			GL::glGetTextureParameteriv(texture.id, GL::GL_TEXTURE_IMMUTABLE_LEVELS, &texture_levels);
 
-			GL::glDeleteTextures(1, &texture_view.id);
-			GL::glGenTextures(1, &texture_view.id);
-			GL::glTextureView(texture_view.id, GL::GL_TEXTURE_2D, texture.id, GL::GL_RGBA8, 0, texture_levels, 0, 1);
-
 			is_texture_changed = false;
 			is_level_changed = true;
 		}
@@ -487,10 +483,18 @@ void Editor::texture_2ds_window()
 		static f32x2 texture_size, view_size;
 		if (is_level_changed)
 		{
-			GL::glTextureParameteri(texture_view.id, GL::GL_TEXTURE_BASE_LEVEL, current_level);
+			GL::Texture2D new_view;
+			new_view.create(
+				GL::Texture2D::ViewDescription{
+					.source = texture,
+					.base_level = current_level,
+					.level_count = 1
+				}
+			);
+			texture_view = move(new_view);
 
-			GL::glGetTextureLevelParameterfv(texture_view.id, current_level, GL::GL_TEXTURE_WIDTH, &texture_size.x);
-			GL::glGetTextureLevelParameterfv(texture_view.id, current_level, GL::GL_TEXTURE_HEIGHT, &texture_size.y);
+			GL::glGetTextureLevelParameterfv(texture_view.id, 0, GL::GL_TEXTURE_WIDTH, &texture_size.x);
+			GL::glGetTextureLevelParameterfv(texture_view.id, 0, GL::GL_TEXTURE_HEIGHT, &texture_size.y);
 
 			f32 const max_resolution = 240;
 			view_size = max_resolution / glm::compMax(texture_size) * texture_size;
@@ -537,10 +541,8 @@ void Editor::texture_cubemaps_window()
 		static i32 cubemap_levels = 0, current_level = 0;
 		if (is_cubemap_changed)
 		{
-			using namespace GL;
-
 			current_level = 0;
-			glGetTextureParameteriv(cubemap.id, GL_TEXTURE_IMMUTABLE_LEVELS, &cubemap_levels);
+			GL::glGetTextureParameteriv(cubemap.id, GL::GL_TEXTURE_IMMUTABLE_LEVELS, &cubemap_levels);
 
 			is_cubemap_changed = false;
 			is_level_changed = true;
@@ -552,18 +554,18 @@ void Editor::texture_cubemaps_window()
 		static f32x2 cubemap_size, view_size;
 		if (is_level_changed)
 		{
-			using namespace GL;
+			GL::TextureCubemap new_view;
+			new_view.create(
+				GL::TextureCubemap::ViewDescription{
+					.source = cubemap,
+					.base_level = current_level,
+					.level_count = 1
+				}
+			);
+			cubemap_view = move(new_view);
 
-			glDeleteTextures(1, &cubemap_view.id);
-			glGenTextures(1, &cubemap_view.id);
-			glTextureView(cubemap_view.id, GL_TEXTURE_CUBE_MAP, cubemap.id, GL_RGBA8, 0, cubemap_levels, 0, 6);
-			glTextureParameteri(cubemap_view.id, GL_TEXTURE_BASE_LEVEL, current_level);
-
-			cubemap_view.handle = glGetTextureHandleARB(cubemap_view.id);
-			glMakeTextureHandleResidentARB(cubemap_view.handle);
-
-			glGetTextureLevelParameterfv(cubemap_view.id, current_level, GL_TEXTURE_WIDTH, &cubemap_size.x);
-			glGetTextureLevelParameterfv(cubemap_view.id, current_level, GL_TEXTURE_HEIGHT, &cubemap_size.y);
+			GL::glGetTextureLevelParameterfv(cubemap_view.id, 0, GL::GL_TEXTURE_WIDTH, &cubemap_size.x);
+			GL::glGetTextureLevelParameterfv(cubemap_view.id, 0, GL::GL_TEXTURE_HEIGHT, &cubemap_size.y);
 
 			f32 const max_resolution = 240;
 			view_size = max_resolution / glm::compMax(cubemap_size) * cubemap_size;

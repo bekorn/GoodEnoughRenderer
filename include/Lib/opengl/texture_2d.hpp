@@ -109,5 +109,72 @@ namespace GL
 			// Since all the textures will always be needed, their residency doesn't need management
 			glMakeTextureHandleResidentARB(handle);
 		}
+
+		struct ViewDescription
+		{
+			Texture2D const & source;
+
+			i32 base_level = 0;
+			i32 level_count = 0; // 0 -> all levels
+
+			optional<GLenum> min_filter = nullopt;
+			optional<GLenum> mag_filter = nullopt;
+
+			optional<GLenum> wrap_s = nullopt;
+			optional<GLenum> wrap_t = nullopt;
+		};
+
+		void create(ViewDescription const & description)
+		{
+			i32 level_count;
+
+			if (description.level_count != 0)
+				level_count = description.level_count;
+			else
+				glGetTextureParameteriv(description.source.id, GL_TEXTURE_IMMUTABLE_LEVELS, &level_count);
+
+			GLenum min_filter, mag_filter;
+
+			if (description.min_filter.has_value())
+				min_filter = description.min_filter.value();
+			else
+				glGetTextureParameteriv(description.source.id, GL_TEXTURE_MIN_FILTER, &min_filter);
+
+			if (description.mag_filter.has_value())
+				mag_filter = description.mag_filter.value();
+			else
+				glGetTextureParameteriv(description.source.id, GL_TEXTURE_MAG_FILTER, &mag_filter);
+
+			GLenum wrap_s, wrap_t;
+
+			if (description.wrap_s.has_value())
+				wrap_s = description.wrap_s.value();
+			else
+				glGetTextureParameteriv(description.source.id, GL_TEXTURE_WRAP_S, &wrap_s);
+
+			if (description.wrap_t.has_value())
+				wrap_t = description.wrap_t.value();
+			else
+				glGetTextureParameteriv(description.source.id, GL_TEXTURE_WRAP_T, &wrap_t);
+
+
+			glGenTextures(1, &id);
+			glTextureView(
+				id, GL_TEXTURE_2D, description.source.id,
+				GL_RGBA8,
+				description.base_level, level_count,
+				0, 1
+			);
+
+			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, min_filter);
+			glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, mag_filter);
+
+			glTextureParameteri(id, GL_TEXTURE_WRAP_S, wrap_s);
+			glTextureParameteri(id, GL_TEXTURE_WRAP_T, wrap_t);
+
+			handle = glGetTextureHandleARB(id);
+			// Since all the textures will always be needed, their residency doesn't need management
+			glMakeTextureHandleResidentARB(handle);
+		}
 	};
 }

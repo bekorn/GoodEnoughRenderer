@@ -35,7 +35,7 @@ struct Editor
 	void material_settings_window();
 	GL::Texture2D texture_view;
 	void texture_2ds_window();
-	GL::Texture2D cubemap_view;
+	GL::TextureCubemap cubemap_view;
 	GL::FrameBuffer cubemap_framebuffer;
 	GL::Texture2D cubemap_framebuffer_color_attachment;
 	void texture_cubemaps_window();
