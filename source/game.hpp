@@ -5,31 +5,19 @@
 #include "Lib/opengl/mapped_buffer.hpp"
 #include "Lib/opengl/framebuffer.hpp"
 #include "Lib/glfw/core.hpp"
+#include "Lib/render/frame_info.hpp"
+#include "Lib/render/game_base.hpp"
 
-#include "frame_info.hpp"
-#include "camera.hpp"
-
-struct Game
+struct Game : Render::GameBase
 {
-	Assets & assets;
-
-	explicit Game(Assets & assets) :
-		assets(assets)
+	explicit Game(Assets & assets):
+		Render::GameBase(assets)
 	{}
 
 	MOVE(Game, delete)
 	COPY(Game, delete)
 
 	// Settings
-	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
-	f32 clear_depth = 1;
-	i32x2 resolution{720, 720};
-	GL::FrameBuffer framebuffer;
-	GL::Texture2D framebuffer_depth_attachment;
-	GL::Texture2D framebuffer_color_attachment;
-
-	variant<PerspectiveCamera, OrthographicCamera> camera;
-
 	GL::MappedBuffer frame_info_uniform_buffer;
 	GL::Buffer lights_uniform_buffer;
 	GL::MappedBuffer camera_uniform_buffer;
@@ -39,7 +27,7 @@ struct Game
 
 	void create_framebuffer();
 	void create_uniform_buffers();
-	void create();
-	void update(GLFW::Window const & window, FrameInfo const & frame_info);
-	void render(GLFW::Window const & window, FrameInfo const & frame_info);
+	void create() override;
+	void update(GLFW::Window const & window, FrameInfo const & frame_info) override;
+	void render(GLFW::Window const & window, FrameInfo const & frame_info) override;
 };

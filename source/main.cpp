@@ -4,10 +4,11 @@
 #include "Lib/glfw/core.hpp"
 #include "Lib/imgui/core.hpp"
 #include "Lib/asset_kitchen/assets.hpp"
+#include "Lib/render/frame_info.hpp"
+#include "Lib/editor/core.hpp"
+#include "Lib/editor/core_windows.hpp"
 
 #include "game.hpp"
-#include "editor.hpp"
-#include "frame_info.hpp"
 
 i32 main(i32 argc, char** argv)
 {
@@ -66,8 +67,8 @@ i32 main(i32 argc, char** argv)
 	// Project assets
 	Descriptions descriptions;
 	descriptions.create(project_root);
-	Assets assets(descriptions);
-	assets.create();
+	Assets game_assets(descriptions);
+	game_assets.create();
 
 	// Editor assets
 	Descriptions editor_descriptions;
@@ -75,11 +76,12 @@ i32 main(i32 argc, char** argv)
 	Assets editor_assets(editor_descriptions);
 	editor_assets.create();
 
-	Game game(assets);
-	Editor editor(editor_assets, game);
+	Game game(game_assets);
+	Editor::Context editor_ctx(game, editor_assets, window);
+	Editor::add_all_core_windows(editor_ctx);
 
 	game.create();
-	editor.create();
+	editor_ctx.create();
 
 	FrameInfo frame_info;
 	FrameInfo previous_frame_info{
@@ -104,18 +106,18 @@ i32 main(i32 argc, char** argv)
 		static f64 game_update_in_seconds = 0;
 		static f64 game_render_in_seconds = 0;
 
-		editor.update(window, frame_info, game_update_in_seconds, game_render_in_seconds);
+		editor_ctx.update_windows(frame_info, game_update_in_seconds, game_render_in_seconds);
 
 		auto before_game_update = glfwGetTime();
 		game.update(window, frame_info);
 		game_update_in_seconds = glfwGetTime() - before_game_update;
 
-		auto before_game_Render = glfwGetTime();
-		if (editor.should_game_render)
+		auto before_game_render = glfwGetTime();
+		if (editor_ctx.state.should_game_render)
 			game.render(window, frame_info);
-		game_render_in_seconds = glfwGetTime() - before_game_Render;
+		game_render_in_seconds = glfwGetTime() - before_game_render;
 
-		editor.render(window, frame_info);
+		editor_ctx.render_windows();
 
 		{
 			using namespace GL;

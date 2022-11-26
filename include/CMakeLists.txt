@@ -64,20 +64,28 @@ target_link_libraries(asset_kitchen PRIVATE
 target_include_directories(asset_kitchen PUBLIC
     ${STB_INCLUDE_DIRS})
 
+# editor
+list(APPEND LIBS editor)
+add_library(editor STATIC)
+target_sources(editor PRIVATE
+    Lib/editor/utils.cpp
+    Lib/editor/core_windows.cpp
+)
+target_link_libraries(editor PRIVATE
+    core
+    opengl
+    asset_kitchen)
+target_precompile_headers(editor PUBLIC
+    Lib/editor/.pchpp
+    Lib/glfw/.pchpp
+    Lib/imgui/.pchpp)
+target_link_libraries(editor PUBLIC
+    glfw
+    imgui::imgui)
 
 # export libs to parent scope
 set(LIBS ${LIBS} PARENT_SCOPE)
 
-# rest
 add_library(Lib INTERFACE)
-target_include_directories(Lib INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR})
-
-target_precompile_headers(Lib INTERFACE
-    Lib/glfw/.pchpp
-    Lib/imgui/.pchpp)
-
-target_link_libraries(Lib INTERFACE
-    ${LIBS}
-    glfw
-    imgui::imgui)
+target_include_directories(Lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(Lib INTERFACE ${LIBS})
