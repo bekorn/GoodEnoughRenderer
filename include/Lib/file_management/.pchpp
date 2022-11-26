@@ -3,4 +3,5 @@
 
 #include <filesystem>
 
+#define RAPIDJSON_PARSE_DEFAULT_FLAGS (kParseCommentsFlag | kParseTrailingCommasFlag)
 #include <rapidjson/document.h>
