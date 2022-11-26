@@ -1,0 +1,84 @@
+#include "editor_windows.hpp"
+
+#include "game.hpp"
+
+void GameSettingsWindow::update(Editor::Context & ctx)
+{
+	using namespace ImGui;
+
+	auto & game = static_cast<Game&>(ctx.game);
+
+	ColorEdit3("Clear color", begin(game.clear_color));
+
+	static bool is_vsync_on = true;
+	if (Checkbox("is vsync on", &is_vsync_on))
+		glfwSwapInterval(is_vsync_on ? 1 : 0);
+}
+
+void MaterialWindow::update(Editor::Context & ctx)
+{
+	using namespace ImGui;
+
+	auto & game = static_cast<Game&>(ctx.game);
+
+	static Name material_name;
+	if (BeginCombo("Material", material_name.string.data()))
+	{
+		for (auto const & [name, _]: game.assets.materials)
+			if (Selectable(name.string.data()))
+				material_name = name;
+
+		EndCombo();
+	}
+	if (not game.assets.materials.contains(material_name))
+	{
+		Text("Pick a material");
+		return;
+	}
+	auto & material = game.assets.materials.get(material_name);
+	auto & block = material->get_block();
+
+	auto buffer = ByteBuffer(block.data_size);
+	material->write_to_buffer(buffer.begin());
+
+	bool edited = false;
+	for (auto & [name, variable]: block.variables)
+		switch (variable.glsl_type)
+		{
+		case GL::GL_FLOAT:
+		{
+			edited |= DragFloat(name.data(), buffer.data_as<f32>(variable.offset));
+			break;
+		}
+		case GL::GL_FLOAT_VEC2:
+		{
+			edited |= DragFloat2(name.data(), buffer.data_as<f32>(variable.offset));
+			break;
+		}
+		case GL::GL_FLOAT_VEC3:
+		{
+			edited |= ColorEdit3(name.data(), buffer.data_as<f32>(variable.offset));
+			break;
+		}
+		case GL::GL_FLOAT_VEC4:
+		{
+			edited |= ColorEdit4(name.data(), buffer.data_as<f32>(variable.offset));
+			break;
+		}
+		case GL::GL_UNSIGNED_INT64_ARB:
+		{
+			// TODO(bekorn): display the texture
+			// TODO(bekorn): should be editable
+			LabelText(name.data(), "%llu", *buffer.data_as<u64>(variable.offset));
+			break;
+		}
+		default:
+		{ LabelText(name.data(), "%s is not supported", GL::GLSLTypeToString(variable.glsl_type).data()); }
+		}
+
+	if (edited)
+	{
+		material->read_from_buffer(buffer.begin());
+		game.gltf_material_is_dirty.push(material_name); // !!! Temporary
+	}
+}

@@ -93,22 +93,6 @@ struct CameraWindow : WindowBase
 	void update(Context & ctx) override;
 };
 
-struct GameSettingsWindow : WindowBase
-{
-	const char * get_name() override
-	{ return "Game Settings"; }
-
-	void update(Context & ctx) override;
-};
-
-struct MaterialWindow : WindowBase
-{
-	const char * get_name() override
-	{ return "Material Window"; }
-
-	void update(Context & ctx) override;
-};
-
 inline void add_all_core_windows(Context & ctx)
 {
 	ctx.add_window(make_unique_one<GameWindow>());
@@ -120,8 +104,6 @@ inline void add_all_core_windows(Context & ctx)
 	ctx.add_window(make_unique_one<MeshWindow>());
 	ctx.add_window(make_unique_one<NodeEditor>());
 	ctx.add_window(make_unique_one<CameraWindow>());
-	ctx.add_window(make_unique_one<GameSettingsWindow>());
-	ctx.add_window(make_unique_one<MaterialWindow>());
 }
 
 }

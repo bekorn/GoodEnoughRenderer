@@ -154,27 +154,29 @@ struct Context
 
 		workspaces();
 
+		using namespace ImGui;
+
 		for (auto & window: windows)
 		{
 			auto pushed_color_count = 0;
 			if (window->state == WindowBase::State::ERROR)
 			{
-				ImGui::PushStyleColor(ImGuiCol_Tab, {0.8, 0, 0, 1});
-				ImGui::PushStyleColor(ImGuiCol_TabActive, {1, 0, 0, 1});
-				ImGui::PushStyleColor(ImGuiCol_TabUnfocused, {0.8, 0, 0, 1});
-				ImGui::PushStyleColor(ImGuiCol_TabUnfocusedActive, {0.8, 0, 0, 1});
-				ImGui::PushStyleColor(ImGuiCol_TabHovered, {1, 0, 0, 1});
+				PushStyleColor(ImGuiCol_Tab, {0.8, 0, 0, 1});
+				PushStyleColor(ImGuiCol_TabActive, {1, 0, 0, 1});
+				PushStyleColor(ImGuiCol_TabUnfocused, {0.8, 0, 0, 1});
+				PushStyleColor(ImGuiCol_TabUnfocusedActive, {0.8, 0, 0, 1});
+				PushStyleColor(ImGuiCol_TabHovered, {1, 0, 0, 1});
 				pushed_color_count = 5;
 			}
 
-			auto is_visible = ImGui::Begin(window->get_name(), nullptr, ImGuiWindowFlags_NoCollapse);
+			auto is_visible = Begin(window->get_name(), nullptr, ImGuiWindowFlags_NoCollapse);
 
-			ImGui::PopStyleColor(pushed_color_count);
+			PopStyleColor(pushed_color_count);
 
 			if (is_visible)
 				window->update(*this);
 
-			ImGui::End();
+			End();
 		}
 
 //		ImGui::ShowDemoWindow();
