@@ -51,20 +51,20 @@
       }
     },
     {
-      "name": "gamma_correction_pipe",
+      "name": "gamma_correction",
       "stages": {
         "vert": "glsl/program/screen_pass.vert.glsl",
         "frag": "glsl/program/gamma_correction.frag.glsl"
       }
     },
     {
-      "name": "environment_map_comp",
+      "name": "environment_mapping_comp",
       "stages": {
         "comp": "glsl/program/environment_map.comp.glsl"
       }
     },
     {
-      "name": "environment_map_pipe",
+      "name": "environment_mapping",
       "stages": {
         "vert": "glsl/program/screen_pass.vert.glsl",
         "frag": "glsl/program/environment_map.frag.glsl"

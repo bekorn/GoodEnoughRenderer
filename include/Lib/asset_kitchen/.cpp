@@ -16,6 +16,7 @@ void Descriptions::create(std::filesystem::path const & project_root)
 
 		Document document;
 		document.Parse(File::LoadAsString(asset_decription_path).c_str());
+		assert(("assets.json is invalid", document.IsObject()));
 
 		if (auto const member = document.FindMember("glsl_uniform_block"); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())

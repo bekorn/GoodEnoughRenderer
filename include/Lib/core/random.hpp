@@ -61,4 +61,3 @@ struct Random
 		return normalize(next_in_unit_sphere());
 	}
 };
-

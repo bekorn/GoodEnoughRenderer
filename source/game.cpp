@@ -135,7 +135,7 @@ void Game::create()
 	create_framebuffer();
 	create_uniform_buffers();
 
-	environment_map_timer.create();
+	environment_mapping_timer.create();
 	gamma_correction_timer.create();
 
 	camera = PerspectiveCamera{
@@ -171,9 +171,8 @@ void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto movement = speed * frame_info.seconds_since_last_frame * dir;
 		if (any(notEqual(movement, f32x3(0))))
 		{
-			movement = visit(
-				[movement](Camera auto & c) { return f32x3(inverse(c.get_view()) * f32x4(movement, 0)); }, camera
-			);
+			auto view = visit([](Camera auto & c) { return f32x3x3(c.get_view()); }, camera);
+			movement = inverse(view) * movement;
 			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
 				visit([movement](Camera auto & c) { c.target += movement; }, camera);
 			else
@@ -213,13 +212,14 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	// Update FrameInfo uniform buffer
 	{
-		auto & frame_info_block = assets.uniform_blocks.get("FrameInfo"_name);
-		frame_info_block.set(frame_info_uniform_buffer.map, "DepthAttachmentHandle", framebuffer_depth_attachment.handle);
-		frame_info_block.set(frame_info_uniform_buffer.map, "ColorAttachmentHandle", framebuffer_color_attachment.handle);
-		frame_info_block.set(frame_info_uniform_buffer.map, "FrameIdx", frame_info.idx);
-		frame_info_block.set(frame_info_uniform_buffer.map, "SecondsSinceStart", frame_info.seconds_since_start);
-		frame_info_block.set(frame_info_uniform_buffer.map, "SecondsSinceLastFrame", frame_info.seconds_since_last_frame);
-		glFlushMappedNamedBufferRange(frame_info_uniform_buffer.id, 0, frame_info_block.aligned_size);
+		auto & map = frame_info_uniform_buffer.map;
+		auto & block = assets.uniform_blocks.get("FrameInfo"_name);
+		block.set(map, "DepthAttachmentHandle", framebuffer_depth_attachment.handle);
+		block.set(map, "ColorAttachmentHandle", framebuffer_color_attachment.handle);
+		block.set(map, "FrameIdx", frame_info.idx);
+		block.set(map, "SecondsSinceStart", frame_info.seconds_since_start);
+		block.set(map, "SecondsSinceLastFrame", frame_info.seconds_since_last_frame);
+		glFlushMappedNamedBufferRange(frame_info_uniform_buffer.id, 0, block.aligned_size);
 	}
 
 	auto camera_position = visit([](Camera auto & c) { return c.position; }, camera);
@@ -229,23 +229,26 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	// Update Camera Uniform Buffer
 	{
-		auto & camera_block = assets.uniform_blocks.get("Camera"_name);
-		camera_block.set(camera_uniform_buffer.map, "CameraWorldPosition", camera_position);
-		camera_block.set(camera_uniform_buffer.map, "TransformV", view);
-		camera_block.set(camera_uniform_buffer.map, "TransformP", projection);
-		camera_block.set(camera_uniform_buffer.map, "TransformVP", view_projection);
-		camera_block.set(camera_uniform_buffer.map, "TransformV_inv", glm::inverse(view));
-		camera_block.set(camera_uniform_buffer.map, "TransformP_inv", glm::inverse(projection));
-		camera_block.set(camera_uniform_buffer.map, "TransformVP_inv", glm::inverse(view_projection));
-		glFlushMappedNamedBufferRange(camera_uniform_buffer.id, 0, camera_block.aligned_size);
+		auto & map = camera_uniform_buffer.map;
+		auto & block = assets.uniform_blocks.get("Camera"_name);
+		block.set(map, "TransformV", view);
+		block.set(map, "TransformP", projection);
+		block.set(map, "TransformVP", view_projection);
+		block.set(map, "TransformV_inv", glm::inverse(view));
+		block.set(map, "TransformP_inv", glm::inverse(projection));
+		block.set(map, "TransformVP_inv", glm::inverse(view_projection));
+		block.set(map, "CameraWorldPosition", camera_position);
+		glFlushMappedNamedBufferRange(camera_uniform_buffer.id, 0, block.aligned_size);
 	}
 
-	// clear framebuffer
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
-	glViewport(0, 0, resolution.x, resolution.y);
-	glColorMask(true, true, true, true), glDepthMask(true);
-	glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
-	glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
+	// Clear framebuffer
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
+		glViewport(0, 0, resolution.x, resolution.y);
+		glColorMask(true, true, true, true), glDepthMask(true);
+		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
+		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
+	}
 
 	glEnable(GL_CULL_FACE), glCullFace(GL_BACK);
 
@@ -324,7 +327,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 	// environment mapping
 	{
-		environment_map_timer.begin(frame_info.idx, frame_info.seconds_since_start);
+		environment_mapping_timer.begin(frame_info.idx, frame_info.seconds_since_start);
 		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
 
 		auto invVP = glm::inverse(f32x3x3(view_projection));
@@ -336,7 +339,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 		if (settings.is_environment_mapping_comp)
 		{
-			auto & environment_map_program = assets.programs.get("environment_map_comp");
+			auto & environment_map_program = assets.programs.get("environment_mapping_comp");
 			glUseProgram(environment_map_program.id);
 			glUniformHandleui64ARB(
 				GetLocation(environment_map_program.uniform_mappings, "depth_attachment"),
@@ -367,7 +370,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		else
 		{
 			glDepthMask(false), glDepthFunc(GL_LEQUAL);
-			auto & environment_map_program = assets.programs.get("environment_map_pipe");
+			auto & environment_map_program = assets.programs.get("environment_mapping");
 			glUseProgram(environment_map_program.id);
 			glUniformHandleui64ARB(
 				GetLocation(environment_map_program.uniform_mappings, "environment_map"),
@@ -379,7 +382,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 			);
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
-		environment_map_timer.end();
+		environment_mapping_timer.end();
 	}
 
 	// gamma correction
@@ -402,7 +405,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		else
 		{
 			glDepthMask(false), glDepthFunc(GL_ALWAYS);
-			auto & gamma_correction_program = assets.programs.get("gamma_correction_pipe"_name);
+			auto & gamma_correction_program = assets.programs.get("gamma_correction"_name);
 			glUseProgram(gamma_correction_program.id);
 			glUniformHandleui64ARB(
 				GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
