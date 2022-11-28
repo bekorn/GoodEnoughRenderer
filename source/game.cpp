@@ -167,9 +167,8 @@ void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto movement = speed * frame_info.seconds_since_last_frame * dir;
 		if (any(notEqual(movement, f32x3(0))))
 		{
-			movement = visit(
-				[movement](Camera auto & c) { return f32x3(inverse(c.get_view()) * f32x4(movement, 0)); }, camera
-			);
+			auto view = visit([](Camera auto & c) { return f32x3x3(c.get_view()); }, camera);
+			movement = inverse(view) * movement;
 			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
 				visit([movement](Camera auto & c) { c.target += movement; }, camera);
 			else
