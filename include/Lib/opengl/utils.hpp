@@ -21,4 +21,16 @@ namespace GL
 	GLenum IntoGLenum(Geometry::Attribute::Type::Value type);
 
 	Geometry::Attribute::Type IntoAttributeType(GLenum type, bool is_normalized);
+
+
+	// shortcuts
+	// (using <original-function>; prevents name hiding)
+
+	using gl::glViewport;
+	inline void glViewport(i32x2 offset, i32x2 size)
+	{ glViewport(offset.x, offset.y, size.x, size.y); }
+
+	using gl::glScissor;
+	inline void glScissor(i32x2 offset, i32x2 size)
+	{ glScissor(offset.x, offset.y, size.x, size.y); }
 }

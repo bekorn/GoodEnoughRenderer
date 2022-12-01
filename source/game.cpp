@@ -233,7 +233,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	// Clear framebuffer
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
-		glViewport(0, 0, framebuffer.resolution.x, framebuffer.resolution.y);
+		glViewport(i32x2(0), framebuffer.resolution);
 		glColorMask(true, true, true, true), glDepthMask(true);
 		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
 		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);

@@ -88,7 +88,7 @@ void GameWindow::render(Context const & ctx)
 
 	// Clear framebuffer
 	{
-		glViewport(0, 0, framebuffer.resolution.x, framebuffer.resolution.y);
+		glViewport(i32x2(0), framebuffer.resolution);
 		glColorMask(true, true, true, true), glDepthMask(true);
 		const f32 clear_depth{1};
 		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
@@ -110,12 +110,9 @@ void GameWindow::render(Context const & ctx)
 		auto & gizmo_program = ctx.editor_assets.programs.get("gizmo"_name);
 		glUseProgram(gizmo_program.id);
 
-		auto size = glm::max(50.f, 0.1f * glm::compMin(framebuffer.resolution));
+		i32 size = glm::max(50.f, 0.1f * glm::compMin(framebuffer.resolution));
 		auto const padding = 8;
-		glViewport(
-			framebuffer.resolution.x - size - padding, framebuffer.resolution.y - size - padding,
-			size, size
-		);
+		glViewport(framebuffer.resolution - (size + padding), i32x2(size));
 
 		auto view = visit([](Camera auto & c) { return c.get_view_without_translate(); }, ctx.game.camera);
 		auto proj = glm::ortho<f32>(-1, +1, -1, +1, -1, +1);
@@ -136,7 +133,7 @@ void GameWindow::render(Context const & ctx)
 	{
 		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
 
-		glViewport(0, 0, framebuffer.resolution.x, framebuffer.resolution.y);
+		glViewport(i32x2(0), framebuffer.resolution);
 		glDepthMask(false), glDepthFunc(GL_ALWAYS);
 
 		// TODO(bekorn): move this into the core project (a new project besides game and editor)
@@ -182,7 +179,7 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 
 	using namespace GL;
 
-	glViewport(0, 0, framebuffers[0].resolution.x, framebuffers[0].resolution.y);
+	glViewport(i32x2(0), framebuffers[0].resolution);
 
 	glDisable(GL_DEPTH_TEST);
 	glColorMask(true, true, true, true), glDepthMask(false);
@@ -194,11 +191,7 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffers[0].id);
 
 	// initialize
-	glEnable(GL_SCISSOR_TEST);
-	glScissor(
-		border_width, border_width,
-		framebuffers[0].resolution.x - 2 * border_width, framebuffers[0].resolution.y - 2 * border_width
-	);
+	glEnable(GL_SCISSOR_TEST), glScissor(i32x2(border_width), framebuffers[0].resolution - i32(2 * border_width));
 
 	auto & jump_flood_init_program = ctx.editor_assets.programs.get("jump_flood_init");
 	glUseProgram(jump_flood_init_program.id);
@@ -242,7 +235,7 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 	}
 
 	// finalize
-	glViewport(0, 0, game_window.framebuffer.resolution.x, game_window.framebuffer.resolution.y);
+	glViewport(i32x2(0), game_window.framebuffer.resolution);
 	auto & border_program = ctx.editor_assets.programs.get("border");
 	glUseProgram(border_program.id);
 	glBindFramebuffer(GL_FRAMEBUFFER, game_window.framebuffer.id);
@@ -668,7 +661,7 @@ void CubemapWindow::render(const Context & ctx)
 	should_render = false;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
-	glViewport(0, 0, 240, 240);
+	glViewport(i32x2(0), framebuffer.resolution);
 
 	auto & environment_mapping_program = ctx.game.assets.programs.get("environment_mapping");
 	glUseProgram(environment_mapping_program.id);
