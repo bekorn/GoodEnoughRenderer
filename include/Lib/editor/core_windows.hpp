@@ -10,21 +10,15 @@ struct GameWindow : WindowBase
 	const char * get_name() override
 	{ return "Game"; }
 
-	i32x2 resolution;
 	GL::FrameBuffer framebuffer;
-	GL::Texture2D depth_attachment;
-	GL::Texture2D color_attachment;
 
 	bool render_single_frame = false;
 	f32 scale = 0.5;
 
 	struct Border
 	{
-		// TODO(bekorn): framebuffers can keep their resolution
 		// TODO(bekorn): a specilization for double buffered framebuffers might be handy
-		i32x2 resolution;
 		GL::FrameBuffer framebuffers[2];
-		GL::Texture2D color_attachments[2];
 		float border_width = 10;
 
 		void create(Context const & ctx, GameWindow const & game_window);
@@ -104,7 +98,6 @@ struct CubemapWindow : WindowBase
 
 	GL::TextureCubemap view;
 	GL::FrameBuffer framebuffer;
-	GL::Texture2D framebuffer_color_attachment;
 
 	bool should_render;
 	bool is_changed = false;

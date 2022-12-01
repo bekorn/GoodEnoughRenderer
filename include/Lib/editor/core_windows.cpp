@@ -4,37 +4,24 @@ namespace Editor
 {
 void GameWindow::create(Context const & ctx)
 {
-	resolution = ctx.game.resolution;
-
-	color_attachment.create(
-		GL::Texture2D::AttachmentDescription{
-			.dimensions = resolution,
-			.internal_format = GL::GL_RGBA8,
-			.mag_filter = GL::GL_NEAREST,
-		}
-	);
-
-	depth_attachment.create(
-		GL::Texture2D::AttachmentDescription{
-			.dimensions = resolution,
-			.internal_format = GL::GL_DEPTH_COMPONENT16,
-		}
-	);
-
-	framebuffer.create(
-		GL::FrameBuffer::Description{
-			.attachments = {
-				{
-					.type = GL::GL_COLOR_ATTACHMENT0,
-					.texture = color_attachment,
+	framebuffer.create(GL::FrameBuffer::Description{
+		.resolution = ctx.game.framebuffer.resolution,
+		.attachments = {
+			{
+				.type = &GL::FrameBuffer::color0,
+				.description= GL::Texture2D::AttachmentDescription{
+					.internal_format = GL::GL_RGBA8,
+					.mag_filter = GL::GL_NEAREST,
 				},
-				{
-					.type = GL::GL_DEPTH_ATTACHMENT,
-					.texture = depth_attachment,
+			},
+			{
+				.type = &GL::FrameBuffer::depth,
+				.description = GL::Texture2D::AttachmentDescription{
+					.internal_format = GL::GL_DEPTH_COMPONENT16,
 				},
-			}
+			},
 		}
-	);
+	});
 
 	// border
 	border.create(ctx, *this);
@@ -61,10 +48,10 @@ void GameWindow::update(Context & ctx)
 	EndDisabled();
 
 	{
-		Text("Resolution: %dx%d", ctx.game.resolution.x, ctx.game.resolution.y);
+		Text("Resolution: %dx%d", ctx.game.framebuffer.resolution.x, ctx.game.framebuffer.resolution.y);
 		SameLine(), SliderFloat("Scale", &scale, 0.1, 10.0, "%.1f");
 
-		auto resolution = ImVec2(f32(ctx.game.resolution.x) * scale, f32(ctx.game.resolution.y) * scale);
+		auto resolution = ImVec2(f32(ctx.game.framebuffer.resolution.x) * scale, f32(ctx.game.framebuffer.resolution.y) * scale);
 		// custom uvs because defaults are flipped on y-axis
 		auto uv0 = ImVec2(0, 1);
 		auto uv1 = ImVec2(1, 0);
@@ -75,17 +62,17 @@ void GameWindow::update(Context & ctx)
 
 		auto game_pos = GetCursorPos();
 		Image(
-			reinterpret_cast<void *>(i64(ctx.game.framebuffer_color_attachment.id)),
+			reinterpret_cast<void *>(i64(ctx.game.framebuffer.color0.id)),
 			resolution, uv0, uv1
 		);
 		auto editor_pos = ImVec2(game_pos.x - 1, game_pos.y - 1); // because of image borders
 		SetCursorPos(editor_pos), Image(
-			reinterpret_cast<void *>(i64(color_attachment.id)),
+			reinterpret_cast<void *>(i64(framebuffer.color0.id)),
 			resolution, uv0, uv1, {1, 1, 1, 1}, border_color
 		);
 
 		SameLine(), Image(
-			reinterpret_cast<void *>(i64(ctx.game.framebuffer_depth_attachment.id)),
+			reinterpret_cast<void *>(i64(ctx.game.framebuffer.depth.id)),
 			resolution, uv0, uv1
 		);
 	}
@@ -101,7 +88,7 @@ void GameWindow::render(Context const & ctx)
 
 	// Clear framebuffer
 	{
-		glViewport(0, 0, resolution.x, resolution.y);
+		glViewport(0, 0, framebuffer.resolution.x, framebuffer.resolution.y);
 		glColorMask(true, true, true, true), glDepthMask(true);
 		const f32 clear_depth{1};
 		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
@@ -123,9 +110,12 @@ void GameWindow::render(Context const & ctx)
 		auto & gizmo_program = ctx.editor_assets.programs.get("gizmo"_name);
 		glUseProgram(gizmo_program.id);
 
-		auto size = glm::max(50.f, 0.1f * glm::compMin(resolution));
+		auto size = glm::max(50.f, 0.1f * glm::compMin(framebuffer.resolution));
 		auto const padding = 8;
-		glViewport(resolution.x - size - padding, resolution.y - size - padding, size, size);
+		glViewport(
+			framebuffer.resolution.x - size - padding, framebuffer.resolution.y - size - padding,
+			size, size
+		);
 
 		auto view = visit([](Camera auto & c) { return c.get_view_without_translate(); }, ctx.game.camera);
 		auto proj = glm::ortho<f32>(-1, +1, -1, +1, -1, +1);
@@ -146,7 +136,7 @@ void GameWindow::render(Context const & ctx)
 	{
 		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
 
-		glViewport(0, 0, resolution.x, resolution.y);
+		glViewport(0, 0, framebuffer.resolution.x, framebuffer.resolution.y);
 		glDepthMask(false), glDepthFunc(GL_ALWAYS);
 
 		// TODO(bekorn): move this into the core project (a new project besides game and editor)
@@ -154,7 +144,7 @@ void GameWindow::render(Context const & ctx)
 		glUseProgram(gamma_correction_program.id);
 		glUniformHandleui64ARB(
 			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
-			color_attachment.handle
+			framebuffer.color0.handle
 		);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
@@ -162,27 +152,18 @@ void GameWindow::render(Context const & ctx)
 
 void GameWindow::Border::create(Context const & ctx, GameWindow const & game_window)
 {
-	resolution = game_window.resolution;
-
-	for (auto i = 0; i < 2; ++i)
-	{
-		color_attachments[i].create(
-			GL::Texture2D::AttachmentDescription{
-				.dimensions = resolution,
-				.internal_format = GL::GL_RG16UI,
-			}
-		);
-		framebuffers[i].create(
-			GL::FrameBuffer::Description{
-				.attachments = {
-					{
-						.type = GL::GL_COLOR_ATTACHMENT0,
-						.texture = color_attachments[i],
-					}
+	for (auto & framebuffer: framebuffers)
+		framebuffer.create(GL::FrameBuffer::Description{
+			.resolution = game_window.framebuffer.resolution,
+			.attachments = {
+				{
+					.type = &GL::FrameBuffer::color0,
+					.description = GL::Texture2D::AttachmentDescription{
+						.internal_format = GL::GL_RG16UI,
+					},
 				}
 			}
-		);
-	}
+		});
 }
 
 void GameWindow::Border::render(Context const & ctx, GameWindow const & game_window)
@@ -201,7 +182,7 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 
 	using namespace GL;
 
-	glViewport(0, 0, resolution.x, resolution.y);
+	glViewport(0, 0, framebuffers[0].resolution.x, framebuffers[0].resolution.y);
 
 	glDisable(GL_DEPTH_TEST);
 	glColorMask(true, true, true, true), glDepthMask(false);
@@ -216,7 +197,7 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(
 		border_width, border_width,
-		resolution.x - 2 * border_width, resolution.y - 2 * border_width
+		framebuffers[0].resolution.x - 2 * border_width, framebuffers[0].resolution.y - 2 * border_width
 	);
 
 	auto & jump_flood_init_program = ctx.editor_assets.programs.get("jump_flood_init");
@@ -240,7 +221,7 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 	auto & jump_flood_program = ctx.editor_assets.programs.get("jump_flood");
 	glUseProgram(jump_flood_program.id);
 
-	i32 step = glm::compMax(resolution) / 2;
+	i32 step = glm::compMax(framebuffers[0].resolution) / 2;
 	bool pingpong_destination = 1;
 
 	while (step != 0)
@@ -248,7 +229,7 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 		glBindFramebuffer(GL_FRAMEBUFFER , framebuffers[pingpong_destination].id);
 		glUniformHandleui64ARB(
 			GetLocation(jump_flood_program.uniform_mappings, "positions"),
-			color_attachments[not pingpong_destination].handle
+			framebuffers[not pingpong_destination].color0.handle
 		);
 		glUniform1i(
 			GetLocation(jump_flood_program.uniform_mappings, "step"),
@@ -261,13 +242,13 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 	}
 
 	// finalize
-	glViewport(0, 0, game_window.resolution.x, game_window.resolution.y);
+	glViewport(0, 0, game_window.framebuffer.resolution.x, game_window.framebuffer.resolution.y);
 	auto & border_program = ctx.editor_assets.programs.get("border");
 	glUseProgram(border_program.id);
 	glBindFramebuffer(GL_FRAMEBUFFER, game_window.framebuffer.id);
 	glUniformHandleui64ARB(
 		GetLocation(border_program.uniform_mappings, "positions"),
-		color_attachments[not pingpong_destination].handle
+		framebuffers[not pingpong_destination].color0.handle
 	);
 	glUniformHandleui64ARB(
 		GetLocation(border_program.uniform_mappings, "border_map"),
@@ -594,19 +575,15 @@ void CubemapWindow::create(const Context & ctx)
 {
 	auto view_resolution = i32x2(240, 240);
 
-	framebuffer_color_attachment.create(
-		GL::Texture2D::AttachmentDescription{
-			.dimensions = view_resolution,
-			.internal_format = GL::GL_RGBA8,
-		}
-	);
-
 	framebuffer.create(
 		GL::FrameBuffer::Description{
+			.resolution = view_resolution,
 			.attachments = {
 				{
-					.type = GL::GL_COLOR_ATTACHMENT0,
-					.texture = framebuffer_color_attachment,
+					.type = &GL::FrameBuffer::color0,
+					.description = GL::Texture2D::AttachmentDescription{
+						.internal_format = GL::GL_RGBA8,
+					},
 				}
 			}
 		}
@@ -670,7 +647,7 @@ void CubemapWindow::update(Context & ctx)
 		}
 		LabelText("Resolution", "%d x %d", i32(size.x), i32(size.y));
 		Image(
-			reinterpret_cast<void *>(i64(framebuffer_color_attachment.id)),
+			reinterpret_cast<void *>(i64(framebuffer.color0.id)),
 			{view_size.x, view_size.y},
 			{0, 1}, {1, 0}
 		);
@@ -725,7 +702,7 @@ void CubemapWindow::render(const Context & ctx)
 		glUseProgram(gamma_correction_program.id);
 		glUniformHandleui64ARB(
 			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
-			framebuffer_color_attachment.handle
+			framebuffer.color0.handle
 		);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}

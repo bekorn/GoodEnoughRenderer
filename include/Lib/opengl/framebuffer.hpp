@@ -7,6 +7,10 @@ namespace GL
 {
 	struct FrameBuffer : OpenGLObject
 	{
+		i32x2 resolution;
+		Texture2D color0, color1, color2, color3;
+		Texture2D depth, stencil;
+
 		CTOR(FrameBuffer, default)
 		COPY(FrameBuffer, delete)
 		MOVE(FrameBuffer, default)
@@ -18,26 +22,36 @@ namespace GL
 
 		struct Description
 		{
+			i32x2 resolution;
+
 			struct Attachment
 			{
-				GLenum type;
-				Texture2D const & texture;
+				Texture2D FrameBuffer::* type;
+				Texture2D::AttachmentDescription const & description;
 			};
-
 			vector<Attachment> const & attachments;
 		};
 
 		void create(Description const & description)
 		{
-			glCreateFramebuffers(1, &id);
+			resolution = description.resolution;
 
-			for (auto const & attachment: description.attachments)
+			for (auto & [attachment_type, attachment_description]: description.attachments)
 			{
-				glNamedFramebufferTexture(
-					id, attachment.type,
-					attachment.texture.id, 0
-				);
+				auto desc = attachment_description;
+				desc.dimensions = resolution;
+
+				Texture2D & attachment = *this.*attachment_type;
+				attachment.create(desc);
 			}
+
+			glCreateFramebuffers(1, &id);
+			glNamedFramebufferTexture(id, GL_DEPTH_ATTACHMENT, depth.id, 0);
+			glNamedFramebufferTexture(id, GL_STENCIL_ATTACHMENT, stencil.id, 0);
+			glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT0, color0.id, 0);
+			glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT1, color1.id, 0);
+			glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT2, color2.id, 0);
+			glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT3, color3.id, 0);
 		}
 	};
 }

@@ -17,10 +17,7 @@ struct GameBase
 
 	f32x4 clear_color{0.45f, 0.55f, 0.60f, 1.00f};
 	f32 clear_depth = 1;
-	i32x2 resolution{720, 720};
 	GL::FrameBuffer framebuffer;
-	GL::Texture2D framebuffer_depth_attachment;
-	GL::Texture2D framebuffer_color_attachment;
 
 	variant<PerspectiveCamera, OrthographicCamera> camera;
 

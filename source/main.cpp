@@ -78,12 +78,12 @@ i32 main(i32 argc, char** argv)
 	editor_assets.create();
 
 	Game game(game_assets);
+	game.create();
+
 	Editor::Context editor_ctx(game, editor_assets, window);
 	Editor::add_all_core_windows(editor_ctx);
 	editor_ctx.add_window(make_unique_one<GameSettingsWindow>());
 	editor_ctx.add_window(make_unique_one<MaterialWindow>());
-
-	game.create();
 	editor_ctx.create();
 
 	FrameInfo frame_info;
