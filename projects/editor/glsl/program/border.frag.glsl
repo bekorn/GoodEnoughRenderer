@@ -1,6 +1,6 @@
 uniform usampler2D positions;
 uniform sampler2D border_map;
-uniform float thickness = 12;
+uniform float border_width = 12;
 
 out vec4 out_color;
 
@@ -13,9 +13,9 @@ void main()
     vec2 diff = abs(ivec2(position - closest));
     float dist = length(diff);
 
-    if (dist < 1 || dist > thickness)
+    if (dist < 1 || dist > border_width)
         discard;
 
-    out_color = textureLod(border_map, vec2(dist / thickness, 0.5), 0);
-    out_color.a *= smoothstep(thickness, thickness - 1, dist);
+    out_color = textureLod(border_map, vec2(dist / border_width, 0.5), 0);
+    out_color.a *= smoothstep(border_width, border_width - 1, dist);
 }

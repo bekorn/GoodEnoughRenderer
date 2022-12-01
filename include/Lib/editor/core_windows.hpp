@@ -18,6 +18,19 @@ struct GameWindow : WindowBase
 	bool render_single_frame = false;
 	f32 scale = 0.5;
 
+	struct Border
+	{
+		// TODO(bekorn): framebuffers can keep their resolution
+		// TODO(bekorn): a specilization for double buffered framebuffers might be handy
+		i32x2 resolution;
+		GL::FrameBuffer framebuffers[2];
+		GL::Texture2D color_attachments[2];
+		float border_width = 10;
+
+		void create(Context const & ctx, GameWindow const & game_window);
+		void render(Context const & ctx, GameWindow const & game_window);
+	} border;
+
 	void create(Context const & ctx) override;
 	void update(Context & ctx) override;
 	void render(Context const & ctx) override;
@@ -56,8 +69,6 @@ struct UniformBufferWindow : WindowBase
 	const char * get_name() override
 	{ return "UniformBuffer"; }
 
-	Name selected_name;
-
 	void update(Context & ctx) override;
 };
 
@@ -66,7 +77,6 @@ struct ProgramWindow : WindowBase
 	const char * get_name() override
 	{ return "Program"; }
 
-	Name selected_name;
 	Assets * assets;
 
 	void create(const Context & ctx) override;
@@ -77,8 +87,6 @@ struct TextureWindow : WindowBase
 {
 	const char * get_name() override
 	{ return "Texture"; }
-
-	Name selected_name;
 
 	GL::Texture2D view;
 	bool is_texture_changed = false;
@@ -98,8 +106,6 @@ struct CubemapWindow : WindowBase
 	GL::FrameBuffer framebuffer;
 	GL::Texture2D framebuffer_color_attachment;
 
-	Name selected_name;
-
 	bool should_render;
 	bool is_changed = false;
 	bool is_level_changed = false;
@@ -116,7 +122,6 @@ struct MeshWindow : WindowBase
 	const char * get_name() override
 	{ return "Mesh"; }
 
-	Name selected_name;
 	u64 drawable_index;
 	u64 min_index = 0, max_index;
 
@@ -128,20 +133,9 @@ struct NodeEditor : WindowBase
 	const char * get_name() override
 	{ return "Node Editor"; }
 
-	Name selected_name;
 	f32x3 mesh_orientation;
 
-	// TODO(bekorn): is drawing an outline a responsibility of the "node editor"??
-	//  maybe another editor-window-like can check the context for a selected node and draw an outline
-	// TODO(bekorn): framebuffers can keep their resolution
-	// TODO(bekorn): a specilization for double buffered framebuffers might be handy
-	i32x2 framebuffer_resolution;
-	GL::FrameBuffer framebuffers[2];
-	GL::Texture2D color_attachments[2];
-
-	void create(const Context & ctx) override;
 	void update(Context & ctx) override;
-	void render(Context const & ctx) override;
 };
 
 struct CameraWindow : WindowBase

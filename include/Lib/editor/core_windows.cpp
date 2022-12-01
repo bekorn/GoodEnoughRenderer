@@ -36,6 +36,8 @@ void GameWindow::create(Context const & ctx)
 		}
 	);
 
+	// border
+	border.create(ctx, *this);
 
 	// Load gizmo meshes
 	auto & attribute_mappings = ctx.editor_assets.programs.get("gizmo"_name).attribute_mappings;
@@ -107,6 +109,9 @@ void GameWindow::render(Context const & ctx)
 		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
 	}
 
+	// Draw the border of the selected node
+	border.render(ctx, *this);
+
 	// Draw gizmos
 	{
 		glEnable(GL_CULL_FACE), glCullFace(GL_BACK);
@@ -155,6 +160,126 @@ void GameWindow::render(Context const & ctx)
 	}
 }
 
+void GameWindow::Border::create(Context const & ctx, GameWindow const & game_window)
+{
+	resolution = game_window.resolution;
+
+	for (auto i = 0; i < 2; ++i)
+	{
+		color_attachments[i].create(
+			GL::Texture2D::AttachmentDescription{
+				.dimensions = resolution,
+				.internal_format = GL::GL_RG16UI,
+			}
+		);
+		framebuffers[i].create(
+			GL::FrameBuffer::Description{
+				.attachments = {
+					{
+						.type = GL::GL_COLOR_ATTACHMENT0,
+						.texture = color_attachments[i],
+					}
+				}
+			}
+		);
+	}
+}
+
+void GameWindow::Border::render(Context const & ctx, GameWindow const & game_window)
+{
+	auto & scene_tree = ctx.game.assets.scene_tree;
+	auto & selected_name = ctx.state.selected_node_name;
+
+	auto it = scene_tree.named_indices.find(selected_name);
+	if (it == scene_tree.named_indices.end())
+		return;
+
+	auto & [_, node_index] = *it;
+	auto const & node = scene_tree.get(node_index);
+	if (node.mesh == nullptr)
+		return;
+
+	using namespace GL;
+
+	glViewport(0, 0, resolution.x, resolution.y);
+
+	glDisable(GL_DEPTH_TEST);
+	glColorMask(true, true, true, true), glDepthMask(false);
+
+	auto const clear_color = i32x2(-1);
+	glClearNamedFramebufferiv(framebuffers[0].id, GL_COLOR, 0, begin(clear_color));
+	glClearNamedFramebufferiv(framebuffers[1].id, GL_COLOR, 0, begin(clear_color));
+
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffers[0].id);
+
+	// initialize
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(
+		border_width, border_width,
+		resolution.x - 2 * border_width, resolution.y - 2 * border_width
+	);
+
+	auto & jump_flood_init_program = ctx.editor_assets.programs.get("jump_flood_init");
+	glUseProgram(jump_flood_init_program.id);
+	auto view = visit([](Camera auto & c){ return c.get_view(); }, ctx.game.camera);
+	auto proj = visit([](Camera auto & c){ return c.get_projection(); }, ctx.game.camera);
+	auto transform = proj * view * node.matrix;
+	glUniformMatrix4fv(
+		GetLocation(jump_flood_init_program.uniform_mappings, "transform"),
+		1, false, begin(transform)
+	);
+	for (auto & drawable: node.mesh->drawables)
+	{
+		glBindVertexArray(drawable.vertex_array.id);
+		glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+	}
+
+	glDisable(GL_SCISSOR_TEST);
+
+	// jump flood
+	auto & jump_flood_program = ctx.editor_assets.programs.get("jump_flood");
+	glUseProgram(jump_flood_program.id);
+
+	i32 step = glm::compMax(resolution) / 2;
+	bool pingpong_destination = 1;
+
+	while (step != 0)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER , framebuffers[pingpong_destination].id);
+		glUniformHandleui64ARB(
+			GetLocation(jump_flood_program.uniform_mappings, "positions"),
+			color_attachments[not pingpong_destination].handle
+		);
+		glUniform1i(
+			GetLocation(jump_flood_program.uniform_mappings, "step"),
+			step
+		);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		step /= 2;
+		pingpong_destination = not pingpong_destination;
+	}
+
+	// finalize
+	glViewport(0, 0, game_window.resolution.x, game_window.resolution.y);
+	auto & border_program = ctx.editor_assets.programs.get("border");
+	glUseProgram(border_program.id);
+	glBindFramebuffer(GL_FRAMEBUFFER, game_window.framebuffer.id);
+	glUniformHandleui64ARB(
+		GetLocation(border_program.uniform_mappings, "positions"),
+		color_attachments[not pingpong_destination].handle
+	);
+	glUniformHandleui64ARB(
+		GetLocation(border_program.uniform_mappings, "border_map"),
+		ctx.editor_assets.textures.get("border_map"_name).handle
+	);
+	glUniform1f(
+		GetLocation(border_program.uniform_mappings, "boder_width"),
+		border_width
+	);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+}
+
 void MetricsWindow::update(Context & ctx)
 {
 	using namespace ImGui;
@@ -182,6 +307,7 @@ void UniformBufferWindow::update(Context & ctx)
 	using namespace ImGui;
 
 	auto & uniform_blocks = ctx.game.assets.uniform_blocks;
+	auto & selected_name = ctx.state.selected_uniform_buffer_name;
 
 	if (BeginCombo("Uniform Buffer", selected_name.string.data()))
 	{
@@ -235,6 +361,8 @@ void ProgramWindow::update(Context & ctx)
 		state = State::ERROR;
 	else
 		state = State::OKAY;
+
+	auto & selected_name = ctx.state.selected_program_name;
 
 	if (BeginCombo("Program", selected_name.string.data()))
 	{
@@ -403,6 +531,7 @@ void TextureWindow::update(Context & ctx)
 	using namespace ImGui;
 
 	auto & textures = ctx.game.assets.textures;
+	auto & selected_name = ctx.state.selected_texture_name;
 
 	if (BeginCombo("Texture", selected_name.string.data()))
 	{
@@ -491,6 +620,7 @@ void CubemapWindow::update(Context & ctx)
 	should_render = true;
 
 	auto & cubemaps = ctx.game.assets.texture_cubemaps;
+	auto & selected_name = ctx.state.selected_cubemap_name;
 
 	if (BeginCombo("Cubemap", selected_name.string.data()))
 	{
@@ -606,6 +736,7 @@ void MeshWindow::update(Context & ctx)
 	using namespace ImGui;
 
 	auto & meshes = ctx.game.assets.meshes;
+	auto & selected_name = ctx.state.selected_mesh_name;
 
 	if (BeginCombo("Mesh", selected_name.string.data()))
 	{
@@ -689,36 +820,12 @@ void MeshWindow::update(Context & ctx)
 	LabelText("Material", "%s", drawable.named_material.name.string.data());
 }
 
-void NodeEditor::create(const Context & ctx)
-{
-	framebuffer_resolution = ctx.game.resolution;
-
-	for (auto i = 0; i < 2; ++i)
-	{
-		color_attachments[i].create(
-			GL::Texture2D::AttachmentDescription{
-				.dimensions = framebuffer_resolution,
-				.internal_format = GL::GL_RG16UI,
-			}
-		);
-		framebuffers[i].create(
-			GL::FrameBuffer::Description{
-				.attachments = {
-					{
-						.type = GL::GL_COLOR_ATTACHMENT0,
-						.texture = color_attachments[i],
-					}
-				}
-			}
-		);
-	}
-}
-
 void NodeEditor::update(Context & ctx)
 {
 	using namespace ImGui;
 
 	auto & scene_tree = ctx.game.assets.scene_tree;
+	auto & selected_name = ctx.state.selected_node_name;
 
 	bool node_changed = false;
 	if (BeginCombo("Node", selected_name.string.data()))
@@ -782,91 +889,6 @@ void NodeEditor::update(Context & ctx)
 		);
 		transform.scale = f32x3(scalar_scale);
 	}
-}
-
-void NodeEditor::render(Context const & ctx)
-{
-	auto & scene_tree = ctx.game.assets.scene_tree;
-
-	auto it = scene_tree.named_indices.find(selected_name);
-	if (it == scene_tree.named_indices.end())
-		return;
-
-	auto & [_, node_index] = *it;
-	auto const & node = scene_tree.get(node_index);
-	if (node.mesh == nullptr)
-		return;
-
-
-	using namespace GL;
-
-	glViewport(0, 0, framebuffer_resolution.x, framebuffer_resolution.y);
-
-	glDisable(GL_DEPTH_TEST);
-	glColorMask(true, true, true, true), glDepthMask(false);
-
-	auto const clear_color = i32x2(-1);
-	glClearNamedFramebufferiv(framebuffers[0].id, GL_COLOR, 0, begin(clear_color));
-	glClearNamedFramebufferiv(framebuffers[1].id, GL_COLOR, 0, begin(clear_color));
-
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffers[0].id);
-
-	// initialize
-	auto & jump_flood_init_program = ctx.editor_assets.programs.get("jump_flood_init");
-	glUseProgram(jump_flood_init_program.id);
-	auto view = visit([](Camera auto & c){ return c.get_view(); }, ctx.game.camera);
-	auto proj = visit([](Camera auto & c){ return c.get_projection(); }, ctx.game.camera);
-	auto transform = proj * view * node.matrix;
-	glUniformMatrix4fv(
-		GetLocation(jump_flood_init_program.uniform_mappings, "transform"),
-		1, false, begin(transform)
-	);
-	for (auto & drawable: node.mesh->drawables)
-	{
-		glBindVertexArray(drawable.vertex_array.id);
-		glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
-	}
-
-	// jump flood
-	auto & jump_flood_program = ctx.editor_assets.programs.get("jump_flood");
-	glUseProgram(jump_flood_program.id);
-
-	i32 step = glm::compMax(framebuffer_resolution) / 2;
-	bool pingpong_destination = 1;
-
-	while (step != 0)
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER , framebuffers[pingpong_destination].id);
-		glUniformHandleui64ARB(
-			GetLocation(jump_flood_program.uniform_mappings, "positions"),
-			color_attachments[not pingpong_destination].handle
-		);
-		glUniform1i(
-			GetLocation(jump_flood_program.uniform_mappings, "step"),
-			step
-		);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		step /= 2;
-		pingpong_destination = not pingpong_destination;
-	}
-
-	// !!!
-	//	TODO(bekorn): needs access to the game_window's framebuffer
-	// finalize
-//	glViewport(0, 0, ctx.game.resolution.x, ctx.game.resolution.y);
-//	auto & border_program = ctx.editor_assets.programs.get("border");
-//	glUseProgram(border_program.id);
-//	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
-//	glUniformHandleui64ARB(
-//		GetLocation(border_program.uniform_mappings, "positions"),
-//		color_attachments[not pingpong_destination].handle
-//	);
-//	glUniformHandleui64ARB(
-//		GetLocation(border_program.uniform_mappings, "border_map"),
-//		editor_assets.textures.get("border_map"_name).handle
-//	);
-//	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 void CameraWindow::update(Context & ctx)
