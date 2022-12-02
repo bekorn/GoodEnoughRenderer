@@ -1,6 +1,5 @@
 in Vertex
 {
-    vec3 camera_position;
     vec3 object_position;
     vec3 world_position;
     vec3 normal;
@@ -26,6 +25,7 @@ layout(binding = 3) readonly buffer Material
 } material;
 
 out vec4 out_color;
+
 
 bool is_handle_set(uint64_t handle)
 { return handle != 0; }
@@ -69,8 +69,8 @@ void get_metallic_roughness(out float metallic, out float roughness)
         metalic_rouhgness = material.metallic_roughness_factor;
     }
 
-    metallic = metalic_rouhgness[0];
-    roughness = metalic_rouhgness[1];
+    metallic = clamp(metalic_rouhgness[0], 0, 1);
+    roughness = clamp(metalic_rouhgness[1], 0, 1);
 }
 
 vec3 get_emission()
@@ -110,6 +110,41 @@ vec3 get_normal()
     return normal;
 }
 
+#define PI (3.14159265359)
+#define invPI (1.0 / PI)
+
+float dot_01(vec3 v0, vec3 v1)
+{ return clamp(dot(v0, v1), 0, 1); }
+
+vec3 diffuse_factor__Lambert(vec3 color)
+{
+    return invPI * color;
+}
+
+float distribution__Trowbridge_Reitz_GGX(float dot_HN, float a)
+{
+    float a_sqr = a * a;
+    float dot_HN_sqr = dot_HN * dot_HN;
+    float f = a / (dot_HN_sqr * (a_sqr - 1) + 1);
+    f = f * f;
+    return invPI * f;
+}
+
+float geometry__Schlick_GGX(float dot_NV, float a)
+{
+    return dot_NV / (dot_NV * (1-a) + a);
+}
+
+float geometry__Smith(float dot_NV, float dot_NL, float a)
+{
+    return geometry__Schlick_GGX(dot_NV, a) * geometry__Schlick_GGX(dot_NL, a);
+}
+
+vec3 fresnel__Schlick(float dot_HV, vec3 f0)
+{
+    return f0 + (1 - f0) * pow(1 - dot_HV, 5);
+}
+
 void main()
 {
     vec3 normal = get_normal();
@@ -120,29 +155,55 @@ void main()
     float metallic, roughness;
     get_metallic_roughness(metallic, roughness);
 
-    vec3 diffuse_color = vec3(0);
+    // BRDF Cook-Torrance
+    vec3 L_out = vec3(0);
+
+    vec3 N = normal;
+    vec3 V = normalize(CameraWorldPosition - vertex.world_position);
+    float dot_NV = dot(N, V);
+
     for (int i = 0; i < Lights.length(); ++i)
     {
         Light light = Lights[i];
         if (! light.is_active)
             continue;
 
-        vec3 to_light = light.position - vertex.world_position;
-        float dist_sqr = dot(to_light, to_light);
+        vec3 L = normalize(light.position - vertex.world_position);
+        vec3 H = normalize(V + L);
+        float dot_NL = dot(N, L);
+        float dot_HL = dot(H, L);
+        float dot_HV = dot(H, V);
+        float dot_HN = dot(H, N);
 
-        float intensity = dot(normal, normalize(to_light));
-        intensity *= occlusion;
-        intensity *= light.intensity / dist_sqr;
+        if (dot_NL > 0.0)
+        {
+            float attenuation = light.range / length(light.position - vertex.world_position);
+            vec3 L_in = light.color * attenuation;
 
-        diffuse_color += light.color * max(0, intensity);
+            float a = roughness * roughness;
+
+//            float ior = 1.5;
+//            vec3 f0 = vec3(pow((1 - ior) / (1 + ior), 2));
+            vec3 f0 = mix(vec3(0.04), base_color, metallic);
+            vec3 specular_intensity = fresnel__Schlick(dot_HV, f0);
+
+            float fD = distribution__Trowbridge_Reitz_GGX(dot_HN, a);
+            float fG = geometry__Smith(dot_NV, dot_NL, (a+1) * (a+1) / 8);// for direct illumination
+//            float fG = geometry__Smith(dot_NV, dot_NL,  a    *  a    / 2); // for image-based illumination
+
+            vec3 specular_color = vec3(fD * fG / (4 * dot_NV * dot_NL));
+
+            vec3 diffuse_intensity = mix(1 - specular_intensity, vec3(0), metallic);
+
+            vec3 diffuse_color = diffuse_factor__Lambert(base_color);
+
+            vec3 f_r = diffuse_intensity * diffuse_color + specular_intensity * specular_color;
+
+            L_out += f_r * L_in * dot_NL;
+        }
     }
-    diffuse_color *= base_color;
-
-    float level = roughness * textureQueryLevels(environment_map);
-    vec3 to_environment = reflect(vertex.world_position - CameraWorldPosition, normal);
-    vec3 ambient_color = base_color * textureLod(environment_map, to_environment, level).rgb;
 
     vec3 emission_color = get_emission();
 
-    out_color = vec4(ambient_color + diffuse_color + emission_color, 1);
+    out_color = vec4(emission_color + L_out, 1);
 }

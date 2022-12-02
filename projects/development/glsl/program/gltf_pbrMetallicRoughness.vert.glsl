@@ -8,7 +8,6 @@ in vec2 texcoord;
 
 out Vertex
 {
-    vec3 camera_position;
     vec3 object_position;
     vec3 world_position;
     vec3 normal;
@@ -20,9 +19,8 @@ void main()
 {
     vertex.object_position = position;
     vertex.world_position = vec3(TransformM * vec4(position, 1));
-    vertex.camera_position = vec3(TransformV * vec4(position, 1));
 
-    vertex.normal = vec3(TransformM * vec4(normal, 0));
+    vertex.normal = mat3(TransformM) * normal;
     vertex.color = color;
     vertex.texcoord = texcoord;
 

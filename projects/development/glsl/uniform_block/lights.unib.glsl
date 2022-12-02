@@ -1,7 +1,7 @@
 struct Light
 {
     vec3 position;
-    float intensity;
+    float range;
     vec3 color;
     bool is_active;
 };

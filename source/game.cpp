@@ -58,22 +58,22 @@ void Game::create_uniform_buffers()
 	auto * map = (byte *) glMapNamedBuffer(lights_uniform_buffer.id, GL_WRITE_ONLY);
 	lights_uniform_block.set(map, "Lights[0].position", f32x3{0, 1, 3});
 	lights_uniform_block.set(map, "Lights[0].color", f32x3{1, 0, 0});
-	lights_uniform_block.set(map, "Lights[0].intensity", f32{2});
+	lights_uniform_block.set(map, "Lights[0].range", f32{2 * 2});
 	lights_uniform_block.set(map, "Lights[0].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[1].position", f32x3{0, 1, -3});
 	lights_uniform_block.set(map, "Lights[1].color", f32x3{0, 1, 0});
-	lights_uniform_block.set(map, "Lights[1].intensity", f32{1.6});
+	lights_uniform_block.set(map, "Lights[1].range", f32{1.6 * 2});
 	lights_uniform_block.set(map, "Lights[1].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[2].position", f32x3{-2, 3, 0});
 	lights_uniform_block.set(map, "Lights[2].color", f32x3{1, 1, 1});
-	lights_uniform_block.set(map, "Lights[2].intensity", f32{3.5});
+	lights_uniform_block.set(map, "Lights[2].range", f32{3.5 * 2});
 	lights_uniform_block.set(map, "Lights[2].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[3].position", f32x3{-10, 1, 0});
 	lights_uniform_block.set(map, "Lights[3].color", f32x3{0, 0, 1});
-	lights_uniform_block.set(map, "Lights[3].intensity", f32{2.5});
+	lights_uniform_block.set(map, "Lights[3].range", f32{2.5 * 2});
 	lights_uniform_block.set(map, "Lights[3].is_active", true);
 	glUnmapNamedBuffer(lights_uniform_buffer.id);
 
@@ -207,7 +207,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		block.set(map, "DepthAttachmentHandle", framebuffer.depth.handle);
 		block.set(map, "ColorAttachmentHandle", framebuffer.color0.handle);
 		block.set(map, "FrameIdx", frame_info.idx);
-		block.set(map, "SecondsSinceStart", frame_info.seconds_since_start);
+		block.set(map, "SecondsSinceStart", f32(frame_info.seconds_since_start));
 		block.set(map, "SecondsSinceLastFrame", frame_info.seconds_since_last_frame);
 		glFlushMappedNamedBufferRange(frame_info_uniform_buffer.id, 0, block.aligned_size);
 	}
