@@ -6,6 +6,8 @@ namespace GL
 {
 	struct Timer
 	{
+		constexpr static bool should_query = false;
+
 		u32 query_id[2];
 		u64 time_elapsed_in_nanoseconds[2];
 
@@ -23,6 +25,9 @@ namespace GL
 
 		void create()
 		{
+			if constexpr (not should_query)
+				return;
+
 			glGenQueries(2, query_id);
 			glBeginQuery(GL_TIME_ELAPSED, query_id[0]);
 			glEndQuery(GL_TIME_ELAPSED);
@@ -32,6 +37,9 @@ namespace GL
 
 		void begin(u32 frame_idx, f64 seconds_since_start)
 		{
+			if constexpr (not should_query)
+				return;
+
 			bool idx = frame_idx % 2 == 0;
 			glGetQueryObjectui64v(query_id[idx], GL_QUERY_RESULT_NO_WAIT, time_elapsed_in_nanoseconds + idx);
 
@@ -50,6 +58,9 @@ namespace GL
 
 		void end()
 		{
+			if constexpr (not should_query)
+				return;
+
 			glEndQuery(GL_TIME_ELAPSED);
 		}
 	};

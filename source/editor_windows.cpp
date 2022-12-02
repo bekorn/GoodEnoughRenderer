@@ -26,6 +26,24 @@ void GameSettingsWindow::update(Editor::Context & ctx)
 		glfwSwapInterval(is_vsync_on ? 1 : 0);
 }
 
+void MetricsWindow::update(Editor::Context & ctx)
+{
+	if constexpr (not GL::Timer::should_query)
+		return;
+
+	auto & game = static_cast<Game &>(ctx.game);
+
+	{
+		auto time = game.environment_mapping_timer.average_in_nanoseconds;
+		Editor::TextFMT("{:30} {:6} us | {:6} ns", "Enrironment Mapping", time / 1'000, time);
+	}
+	{
+		auto time = game.gamma_correction_timer.average_in_nanoseconds;
+		Editor::TextFMT("{:30} {:6} us | {:6} ns", "Gamma Correction", time / 1'000, time);
+	}
+}
+
+
 void MaterialWindow::update(Editor::Context & ctx)
 {
 	auto & game = static_cast<Game&>(ctx.game);

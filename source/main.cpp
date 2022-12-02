@@ -83,6 +83,7 @@ i32 main(i32 argc, char** argv)
 	Editor::Context editor_ctx(game, editor_assets, window);
 	Editor::add_all_core_windows(editor_ctx);
 	editor_ctx.add_window(make_unique_one<GameSettingsWindow>());
+	editor_ctx.add_window(make_unique_one<MetricsWindow>());
 	editor_ctx.add_window(make_unique_one<MaterialWindow>());
 	editor_ctx.create();
 
