@@ -11,7 +11,7 @@ void Game::create_framebuffer()
 			{
 				.type = &GL::FrameBuffer::color0,
 				.description = GL::Texture2D::AttachmentDescription{
-					.internal_format = GL::GL_RGBA8, // GL_RGB8 does not work with compute shaders
+					.internal_format = GL::GL_RGBA16F, // formats wihtout alpha does not work with compute shaders
 					.mag_filter = GL::GL_NEAREST,
 				},
 			},
@@ -125,6 +125,7 @@ void Game::create()
 	create_uniform_buffers();
 
 	environment_mapping_timer.create();
+	tone_mapping_timer.create();
 	gamma_correction_timer.create();
 
 	camera = PerspectiveCamera{
@@ -372,6 +373,23 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
 		environment_mapping_timer.end();
+	}
+
+	// tone mapping (hdr -> ldr)
+	{
+		tone_mapping_timer.begin(frame_info.idx, frame_info.seconds_since_start);
+
+		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+		glDepthMask(false), glDepthFunc(GL_ALWAYS);
+		auto & tone_mapping_program = assets.programs.get("tone_mapping"_name);
+		glUseProgram(tone_mapping_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(tone_mapping_program.uniform_mappings, "color_attachment"),
+			framebuffer.color0.handle
+		);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		tone_mapping_timer.end();
 	}
 
 	// gamma correction

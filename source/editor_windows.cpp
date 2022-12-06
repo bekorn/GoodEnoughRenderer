@@ -38,6 +38,10 @@ void MetricsWindow::update(Editor::Context & ctx)
 		Editor::TextFMT("{:30} {:6} us | {:6} ns", "Enrironment Mapping", time / 1'000, time);
 	}
 	{
+		auto time = game.tone_mapping_timer.average_in_nanoseconds;
+		Editor::TextFMT("{:30} {:6} us | {:6} ns", "Tone Mapping", time / 1'000, time);
+	}
+	{
 		auto time = game.gamma_correction_timer.average_in_nanoseconds;
 		Editor::TextFMT("{:30} {:6} us | {:6} ns", "Gamma Correction", time / 1'000, time);
 	}

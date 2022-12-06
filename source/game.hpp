@@ -37,6 +37,7 @@ struct Game : Render::GameBase
 	std::queue<Name> gltf_material_is_dirty;							// !!! Temporary
 
 	GL::Timer environment_mapping_timer;
+	GL::Timer tone_mapping_timer;
 	GL::Timer gamma_correction_timer;
 
 	void create_framebuffer();
