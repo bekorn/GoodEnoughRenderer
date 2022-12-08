@@ -340,7 +340,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 				framebuffer.color0.id, 0,
 				false, 0,
 				GL_READ_WRITE,
-				GL_RGBA8
+				GL_RGBA16F
 			);
 			auto framebuffer_size = f32x2(framebuffer.resolution);
 			glUniform2fv(
@@ -405,7 +405,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 				framebuffer.color0.id, 0,
 				false, 0,
 				GL_READ_WRITE,
-				GL_RGBA8
+				GL_RGBA16F
 			);
 			glDispatchCompute(framebuffer.resolution.x / 8, framebuffer.resolution.y / 8, 1);
 		}

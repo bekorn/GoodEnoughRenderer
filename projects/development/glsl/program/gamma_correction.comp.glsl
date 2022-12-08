@@ -1,6 +1,6 @@
 layout(local_size_x = 8, local_size_y = 8) in;
 
-layout(rgba8) uniform image2D img;
+layout(rgba16f) uniform image2D img;
 
 void main()
 {

@@ -1,7 +1,7 @@
 layout(local_size_x = 8, local_size_y = 8) in;
 
 uniform sampler2D depth_attachment;
-layout(rgba8) uniform writeonly image2D color_attachment;
+layout(rgba16f) uniform writeonly image2D color_attachment;
 uniform vec2 framebuffer_size;
 
 uniform mat4x3 view_directions;
