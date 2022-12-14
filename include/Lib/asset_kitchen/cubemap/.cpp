@@ -80,8 +80,10 @@ namespace Cubemap
 			loaded_data.face_dimensions = face_dimensions;
 			loaded_data.data = move(buffer);
 		}
-		else if (image_file.dimensions.x == image_file.dimensions.y)
-			assert(false); // equirectangular environment maps are not supported yet
+
+		// TODO(bekorn): Transform Right Handed texture orientation into Left Handed. So that, if the cubemap is
+		//  intended to be seen from inside, what is seen on the file will be seen as the environment. Otherwise
+		//  it should be left as is.
 
 		return loaded_data;
 	}
