@@ -33,6 +33,13 @@
         "vert": "glsl/program/screen_pass.vert.glsl",
         "frag": "glsl/program/border.frag.glsl"
       }
-    }
+    },
+    {
+      "name": "equirectangular_to_cubemap",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/equirectangular_to_cubemap.frag.glsl"
+      }
+    },
   ]
 }

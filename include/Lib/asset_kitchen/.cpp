@@ -8,14 +8,16 @@
 
 void Descriptions::create(std::filesystem::path const & project_root)
 {
-	auto asset_decription_path = project_root / "assets.json";
-	if (std::filesystem::exists(asset_decription_path))
+	root = project_root;
+
+	auto asset_descriptions_path = project_root / "assets.json";
+	if (std::filesystem::exists(asset_descriptions_path))
 	{
 		using namespace rapidjson;
 		using namespace File::JSON;
 
 		Document document;
-		document.Parse(File::LoadAsString(asset_decription_path).c_str());
+		document.Parse(File::LoadAsString(asset_descriptions_path).c_str());
 		assert(("assets.json is invalid", document.IsObject()));
 
 		if (auto const member = document.FindMember("glsl_uniform_block"); member != document.MemberEnd())

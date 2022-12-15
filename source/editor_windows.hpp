@@ -23,3 +23,18 @@ struct MaterialWindow : Editor::WindowBase
 
 	void update(Editor::Context & ctx) override;
 };
+
+struct IblBakerWindow : Editor::WindowBase
+{
+	const char * get_name() override
+	{ return "IBL Baker"; }
+
+	Name selected_name;
+	bool is_texture_changed = false;
+	f32x2 texture_size;
+	bool should_map_equirectangular_to_cubemap = false;
+	Name cubemap_name;
+
+	void update(Editor::Context & ctx) override;
+	void render(Editor::Context const & ctx) override;
+};

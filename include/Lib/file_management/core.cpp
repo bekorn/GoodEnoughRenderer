@@ -3,7 +3,13 @@
 #include <fstream>
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#define STBI_ONLY_JPEG
+#define STBI_ONLY_HDR
 #include <stb_image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include "core.hpp"
 
@@ -52,13 +58,16 @@ namespace File
 	{
 		auto const file_data = LoadAsBytes(path);
 
-		i32x2 dimensions;
+		i32x2 dimensions{0, 0};
 		i32 channels;
 		void * raw_pixel_data = stbi_load_from_memory(
 			file_data.data_as<const unsigned char>(), file_data.size,
 			&dimensions.x, &dimensions.y,
 			&channels, 0
 		);
+
+		if (raw_pixel_data == nullptr)
+			fmt::print(stderr, "File::LoadImage failed. path: {}, error: {}\n", path, stbi_failure_reason());
 
 		return {
 			.buffer = {
@@ -68,5 +77,19 @@ namespace File
 			.dimensions = dimensions,
 			.channels = channels,
 		};
+	}
+
+	void WriteImage(std::filesystem::path const & path, Image const & image)
+	{
+		auto p = path.string();
+		auto success = stbi_write_png(
+			p.c_str(),
+			image.dimensions.x, image.dimensions.y,
+			image.channels, image.buffer.data_as<void>(),
+			image.dimensions.x * image.channels
+		);
+
+		if (not success)
+			fmt::print(stderr, "File::WriteImage failed. path {}, error: {}\n", path, stbi_failure_reason());
 	}
 }

@@ -52,17 +52,17 @@ namespace Cubemap
 
 		if (6 * image_file.dimensions.x == image_file.dimensions.y)
 		{
-			// faces are stacked vertically (face pixels are seperate)
+			// faces are stacked vertically (face pixels are separate)
 			loaded_data.face_dimensions = image_file.dimensions / i32x2{1, 6};
 			loaded_data.data = move(image_file.buffer);
 		}
 		else if (image_file.dimensions.x == 6 * image_file.dimensions.y)
 		{
-			// faces are stacked horizontally (face pixels are interleved)
+			// faces are stacked horizontally (face pixels are interleaved)
 			auto face_dimensions = image_file.dimensions / i32x2{6, 1};
 			auto buffer = ByteBuffer(image_file.buffer.size);
 
-			// un-interleve the buffer (basically turns it into above case)
+			// un-interleave the buffer (basically turns it into above case)
 			auto dst_data = buffer.data_as<u8>();
 			auto dst_idx = 0;
 			auto src_data = image_file.buffer.data_as<u8>();

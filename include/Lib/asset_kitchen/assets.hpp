@@ -30,8 +30,8 @@ struct Assets
 	Managed<GL::ShaderProgram> initial_program_interfaces;
 	Managed<std::string> program_errors;
 
-	explicit Assets(Descriptions const & desriptions) :
-		descriptions(desriptions)
+	explicit Assets(Descriptions const & descriptions) :
+		descriptions(descriptions)
 	{}
 
 	COPY(Assets, delete)

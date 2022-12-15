@@ -320,12 +320,13 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		environment_mapping_timer.begin(frame_info.idx, frame_info.seconds_since_start);
 		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
 
-		auto invVP = glm::inverse(f32x3x3(view_projection));
-		f32x4x3 view_dirs;
-		view_dirs[0] = invVP * f32x3(-1, -1, 1); // left   bottom
-		view_dirs[1] = invVP * f32x3(+1, -1, 1); // right  bottom
-		view_dirs[2] = invVP * f32x3(-1, +1, 1); // left   up
-		view_dirs[3] = invVP * f32x3(+1, +1, 1); // right  up
+		auto invVP = inverse(f32x3x3(view_projection));
+		auto view_dirs = invVP * f32x4x3{
+			{-1, -1, +1}, // uv 0,0
+			{+1, -1, +1}, // uv 1,0
+			{-1, +1, +1}, // uv 0,1
+			{+1, +1, +1}, // uv 1,1
+		};
 
 		if (settings.is_environment_mapping_comp)
 		{

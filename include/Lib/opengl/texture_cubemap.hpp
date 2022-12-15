@@ -23,7 +23,7 @@ namespace GL
 			bool has_alpha = false;
 			bool is_sRGB = false;
 
-			// levels = 0 to generate mips all the wasy to 1x1
+			// levels = 0 to generate mips all the way to 1x1
 			i32 levels = 1;
 
 			GLenum min_filter = GL_LINEAR;
@@ -54,13 +54,14 @@ namespace GL
 				description.is_sRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8,
 				description.face_dimensions.x, description.face_dimensions.y
 			);
-			glTextureSubImage3D(
-				id,
-				0,
-				0, 0, 0,
-				description.face_dimensions.x, description.face_dimensions.y, 6,
-				description.has_alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, description.data.data()
-			);
+			if (not description.data.empty())
+				glTextureSubImage3D(
+					id,
+					0,
+					0, 0, 0,
+					description.face_dimensions.x, description.face_dimensions.y, 6,
+					description.has_alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, description.data.data()
+				);
 
 			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, description.min_filter);
 			glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, description.mag_filter);

@@ -18,4 +18,6 @@ namespace File
 		i32 channels;
 	};
 	Image LoadImage(std::filesystem::path const & path);
+
+	void WriteImage(std::filesystem::path const & path, Image const & image);
 }
