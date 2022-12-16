@@ -10,7 +10,7 @@ void GameWindow::create(Context const & ctx)
 			{
 				.type = &GL::FrameBuffer::color0,
 				.description= GL::Texture2D::AttachmentDescription{
-					.internal_format = GL::GL_RGBA8,
+					.internal_format = GL::GL_RGBA16F,
 					.mag_filter = GL::GL_NEAREST,
 				},
 			},
@@ -572,7 +572,7 @@ void CubemapWindow::create(const Context & ctx)
 				{
 					.type = &GL::FrameBuffer::color0,
 					.description = GL::Texture2D::AttachmentDescription{
-						.internal_format = GL::GL_RGBA8,
+						.internal_format = GL::GL_RGBA16F,
 					},
 				}
 			}
