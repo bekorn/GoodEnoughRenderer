@@ -18,6 +18,14 @@ void GameSettingsWindow::update(Editor::Context & ctx)
 
 		EndCombo();
 	}
+	if (BeginCombo("Diffuse Irradiance Map", game.settings.diffuse_irradiance_map_name.string.data()))
+	{
+		for (auto & [name, _]: game.assets.texture_cubemaps)
+			if (Selectable(name.string.data()))
+				game.settings.diffuse_irradiance_map_name = name;
+
+		EndCombo();
+	}
 
 	Checkbox("Zpass", &game.settings.is_zpass_on);
 	SameLine(), Checkbox("is env map comp", &game.settings.is_environment_mapping_comp);

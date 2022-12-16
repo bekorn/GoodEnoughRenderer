@@ -7,7 +7,7 @@ in Vertex
     vec2 texcoord;
 } vertex;
 
-uniform samplerCube environment_map;
+uniform samplerCube diffuse_irradiance_map;
 
 layout(binding = 3) readonly buffer Material
 {
@@ -158,6 +158,11 @@ void main()
     // BRDF Cook-Torrance
     vec3 L_out = vec3(0);
 
+    float a = roughness * roughness;
+//    float ior = 1.5;
+//    vec3 f0 = vec3(pow((1 - ior) / (1 + ior), 2));
+    vec3 f0 = mix(vec3(0.04), base_color, metallic);
+
     vec3 N = normal;
     vec3 V = normalize(CameraWorldPosition - vertex.world_position);
     float dot_NV = dot(N, V);
@@ -180,11 +185,6 @@ void main()
             float attenuation = light.range / length(light.position - vertex.world_position);
             vec3 L_in = light.color * attenuation;
 
-            float a = roughness * roughness;
-
-//            float ior = 1.5;
-//            vec3 f0 = vec3(pow((1 - ior) / (1 + ior), 2));
-            vec3 f0 = mix(vec3(0.04), base_color, metallic);
             vec3 specular_intensity = fresnel__Schlick(dot_HV, f0);
 
             float fD = distribution__Trowbridge_Reitz_GGX(dot_HN, a);
@@ -201,6 +201,15 @@ void main()
 
             L_out += f_r * L_in * dot_NL;
         }
+    }
+
+    // environmental light
+    {
+        vec3 specular_intensity = fresnel__Schlick(dot_NV, f0);
+        vec3 diffuse_intensity = 1 - specular_intensity;
+        vec3 diffuse_color = base_color * texture(diffuse_irradiance_map, normal).rgb;
+
+        L_out += diffuse_intensity * diffuse_color;
     }
 
     vec3 emission_color = get_emission();

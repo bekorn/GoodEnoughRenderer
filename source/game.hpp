@@ -25,6 +25,7 @@ struct Game : Render::GameBase
 
 		bool is_environment_mapping_comp = false;
 		Name environment_map_name = "environment_map";
+		Name diffuse_irradiance_map_name = "diffuse_irradiance_map";
 
 		bool is_gamma_correction_comp = false;
 	} settings;
