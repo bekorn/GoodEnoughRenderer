@@ -67,7 +67,8 @@ namespace GLTF
 					if (uri[5] == ':') // check for "data:" (base64 encoded data as a json string)
 						throw std::runtime_error("images without a uri file path are not supported yet");
 
-					auto image_file = File::LoadImage(file_dir / uri);
+					// gltf textures (first-pixel == uv(0,0)) do not require a vertical flip
+					auto image_file = File::LoadImage(file_dir / uri, false);
 
 					return {
 						.data = move(image_file.buffer),

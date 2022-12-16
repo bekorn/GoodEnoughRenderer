@@ -17,7 +17,7 @@ namespace File
 		i32x2 dimensions;
 		i32 channels;
 	};
-	Image LoadImage(std::filesystem::path const & path);
+	Image LoadImage(std::filesystem::path const & path, bool should_flip_vertically);
 
 	void WriteImage(std::filesystem::path const & path, Image const & image);
 }

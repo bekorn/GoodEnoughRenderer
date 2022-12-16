@@ -40,7 +40,9 @@ namespace Cubemap
 
 	LoadedData Load(Description const & description)
 	{
-		auto image_file = File::LoadImage(description.path);
+		// regular textures (first-pixel == uv(0,1)) require a vertical flip,
+		// but cubemaps are expecting first-pixel == uv(0,1) already
+		auto image_file = File::LoadImage(description.path, false);
 
 		auto loaded_data = LoadedData{
 			.channels = image_file.channels,
@@ -80,10 +82,6 @@ namespace Cubemap
 			loaded_data.face_dimensions = face_dimensions;
 			loaded_data.data = move(buffer);
 		}
-
-		// TODO(bekorn): Transform Right Handed texture orientation into Left Handed. So that, if the cubemap is
-		//  intended to be seen from inside, what is seen on the file will be seen as the environment. Otherwise
-		//  it should be left as is.
 
 		return loaded_data;
 	}

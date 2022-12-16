@@ -15,4 +15,11 @@ void TextFMT(fmt::format_string<Args...> fmt, Args && ... args)
 	ImGui::TextUnformatted(_buffer.begin(), _buffer.end());
 };
 
+// only difference is the default uv values, OpenGL assumes uv(0,0) is on bottom-left
+inline void ImageGL(
+	ImTextureID user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 1), const ImVec2& uv1 = ImVec2(1, 0),
+	const ImVec4& tint_col = ImVec4(1,1,1,1), const ImVec4& border_col = ImVec4(0,0,0,0)
+)
+{ ImGui::Image(user_texture_id ,size ,uv0 ,uv1 ,tint_col ,border_col); }
+
 }

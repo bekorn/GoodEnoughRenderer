@@ -52,28 +52,25 @@ void GameWindow::update(Context & ctx)
 		SameLine(), SliderFloat("Scale", &scale, 0.1, 10.0, "%.1f");
 
 		auto resolution = ImVec2(f32(ctx.game.framebuffer.resolution.x) * scale, f32(ctx.game.framebuffer.resolution.y) * scale);
-		// custom uvs because defaults are flipped on y-axis
-		auto uv0 = ImVec2(0, 1);
-		auto uv1 = ImVec2(1, 0);
 
 		auto border_color = ImVec4{0, 0, 0, 1};
 		if (ctx.state.has_program_errors)
 			border_color.x = 1;
 
 		auto game_pos = GetCursorPos();
-		Image(
+		ImageGL(
 			reinterpret_cast<void *>(i64(ctx.game.framebuffer.color0.id)),
-			resolution, uv0, uv1
+			resolution
 		);
 		auto editor_pos = ImVec2(game_pos.x - 1, game_pos.y - 1); // because of image borders
-		SetCursorPos(editor_pos), Image(
+		SetCursorPos(editor_pos), ImageGL(
 			reinterpret_cast<void *>(i64(framebuffer.color0.id)),
-			resolution, uv0, uv1, {1, 1, 1, 1}, border_color
+			resolution, {0, 1}, {1, 0}, {1, 1, 1, 1}, border_color
 		);
 
-		SameLine(), Image(
+		SameLine(), ImageGL(
 			reinterpret_cast<void *>(i64(ctx.game.framebuffer.depth.id)),
-			resolution, uv0, uv1
+			resolution
 		);
 	}
 }
@@ -553,7 +550,7 @@ void TextureWindow::update(Context & ctx)
 			is_level_changed = false;
 		}
 		LabelText("Resolution", "%d x %d", i32(texture_size.x), i32(texture_size.y));
-		Image(
+		ImageGL(
 			reinterpret_cast<void *>(i64(view.id)),
 			{view_size.x, view_size.y}
 		);

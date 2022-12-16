@@ -148,7 +148,7 @@ void IblBakerWindow::update(Editor::Context & ctx)
 		}
 
 		LabelText("Resolution", "%d x %d", i32(texture_size.x), i32(texture_size.y));
-		Image(
+		Editor::ImageGL(
 			reinterpret_cast<void *>(i64(texture.id)),
 			{240, 120}
 		);
@@ -174,13 +174,13 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 		auto & [_, texture] = *it;
 
 		// cubemap face rendering configuration
-		f32x4x3 const base_view_dirs = {
-			{-1, -1, +1}, // uv 0,0
-			{+1, -1, +1}, // uv 1,0
-			{-1, +1, +1}, // uv 0,1
-			{+1, +1, +1}, // uv 1,1
+		f32x4x3 const base_view_dirs{
+			{-1, -1, -1}, // uv 0,0
+			{+1, -1, -1}, // uv 1,0
+			{-1, +1, -1}, // uv 0,1
+			{+1, +1, -1}, // uv 1,1
 		};
-		f32x3 const dirs[6] = {
+		f32x3 const dirs[6]{
 			{+1, 0, 0},
 			{-1, 0, 0},
 			{0, +1, 0},
@@ -188,13 +188,13 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 			{0, 0, +1},
 			{0, 0, -1},
 		};
-		f32x3 const ups[6] = {
-			{0, +1,  0},
-			{0, +1,  0},
-			{0,  0, -1},
+		f32x3 const ups[6]{
+			{0, -1,  0},
+			{0, -1,  0},
 			{0,  0, +1},
-			{0, +1,  0},
-			{0, +1,  0},
+			{0,  0, -1},
+			{0, -1,  0},
+			{0, -1,  0},
 		};
 
 		// settings

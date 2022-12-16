@@ -54,9 +54,11 @@ namespace File
 		return buffer;
 	}
 
-	Image LoadImage(std::filesystem::path const & path)
+	Image LoadImage(std::filesystem::path const & path, bool should_flip_vertically)
 	{
 		auto const file_data = LoadAsBytes(path);
+
+		stbi_set_flip_vertically_on_load_thread(should_flip_vertically);
 
 		i32x2 dimensions{0, 0};
 		i32 channels;

@@ -40,7 +40,8 @@ namespace Texture
 
 	LoadedData Load(Description const & description)
 	{
-		auto image_file = File::LoadImage(description.path);
+		// regular textures (first-pixel == uv(0,1)) require a vertical flip
+		auto image_file = File::LoadImage(description.path, true);
 		auto dimensions = image_file.dimensions;
 
 		return LoadedData{
