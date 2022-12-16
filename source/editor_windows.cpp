@@ -197,33 +197,29 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 			{0, -1,  0},
 		};
 
-		// settings
-		auto const face_dimensions = i32x2(256);
-		auto const texture_size_in_bytes = compMul(face_dimensions)*6 * 1*3; // pixel format = RGB8
-
-		auto const cubemap_description = TextureCubemap::ImageDescription{
-			.face_dimensions = face_dimensions,
-			.has_alpha = false,
-			.is_sRGB = false,
-			.levels = 1,
-		};
-
 		// temporary framebuffer
 		OpenGLObject fb;
 		glCreateFramebuffers(1, &fb.id);
 		glBindFramebuffer(GL_FRAMEBUFFER, fb.id);
-		glViewport(i32x2(0), face_dimensions);
 		glDepthMask(false), glDepthFunc(GL_ALWAYS);
 
 
 		/// Map equirectangular into cubemap
+		auto const cubemap_face_dimensions = i32x2(256);
 		auto cubemap_name = Name(selected_name.string + "_cubemap");
 		auto & cubemap = cubemaps.get_or_generate(cubemap_name);
 		if (cubemap.id == 0)
-			cubemap.create(cubemap_description);
+			cubemap.create(TextureCubemap::ImageDescription{
+				.face_dimensions = cubemap_face_dimensions,
+				.has_alpha = false,
+				.is_sRGB = false,
+				.levels = 1,
+			});
 
 		auto & equirect_to_cubemap_program = ctx.editor_assets.programs.get("equirectangular_to_cubemap"_name);
 		glUseProgram(equirect_to_cubemap_program.id);
+
+		glViewport(i32x2(0), cubemap_face_dimensions);
 
 		glUniformHandleui64ARB(
 			GetLocation(equirect_to_cubemap_program.uniform_mappings, "equirect"),
@@ -244,7 +240,7 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 		}
 
 		{
-			ByteBuffer pixels(texture_size_in_bytes);
+			ByteBuffer pixels(compMul(cubemap_face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
 			glGetTextureImage(
 				cubemap.id, 0,
 				GL_RGB, GL_UNSIGNED_BYTE,
@@ -254,12 +250,62 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 				ctx.game.assets.descriptions.root / "cubemap" / (cubemap_name.string + ".png"),
 				File::Image{
 					.buffer = move(pixels),
-					.dimensions = face_dimensions * i32x2(1, 6),
+					.dimensions = cubemap_face_dimensions * i32x2(1, 6),
 					.channels = 3,
 				}
 			);
 		}
 
+
+		/// Generate diffuse irradiance
+		auto const di_face_dimensions = i32x2(32);
+		auto di_name = Name(selected_name.string + "_diffuse_irradiance");
+		auto & di = cubemaps.get_or_generate(di_name);
+		if (di.id == 0)
+			di.create(TextureCubemap::ImageDescription{
+				.face_dimensions = di_face_dimensions,
+				.has_alpha = false,
+				.is_sRGB = false,
+				.levels = 1,
+			});
+
+		auto & di_program = ctx.editor_assets.programs.get("diffuse_irradiance"_name);
+		glUseProgram(di_program.id);
+
+		glViewport(i32x2(0), di_face_dimensions);
+
+		glUniformHandleui64ARB(
+			GetLocation(di_program.uniform_mappings, "environment"),
+			cubemap.handle
+		);
+
+		for (auto face = 0; face < 6; ++face)
+		{
+			glNamedFramebufferTextureLayer(fb.id, GL_COLOR_ATTACHMENT0, di.id, 0, face);
+
+			auto view_dirs = inverse(f32x3x3(lookAt(f32x3(0), dirs[face], ups[face]))) * base_view_dirs;
+			glUniformMatrix4x3fv(
+				GetLocation(di_program.uniform_mappings, "view_dirs"),
+				1, false, begin(view_dirs)
+			);
+
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+		}
+
+		{
+			ByteBuffer pixels(compMul(di_face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
+			glGetTextureImage(di.id, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.size, pixels.data_as<void>());
+			File::WriteImage(
+				ctx.game.assets.descriptions.root / "cubemap" / (di_name.string + ".png"),
+				File::Image{
+					.buffer = move(pixels),
+					.dimensions = di_face_dimensions * i32x2(1, 6),
+					.channels = 3,
+				}
+			);
+		}
+
+		/// Clean up
 		glDeleteFramebuffers(1, &fb.id);
 	}
 }

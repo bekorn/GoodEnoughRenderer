@@ -41,5 +41,12 @@
         "frag": "glsl/program/equirectangular_to_cubemap.frag.glsl"
       }
     },
+    {
+      "name": "diffuse_irradiance",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/diffuse_irradiance.frag.glsl"
+      }
+    },
   ]
 }

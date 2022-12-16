@@ -1,33 +1,22 @@
 {
   "gltf": [
-    {"name": "Sponza", "path": "model/sponza/Sponza.gltf"},
-    {"name": "ElectricGuitar", "path": "model/electric_guitar_fender_strat_plus/model.gltf"},
-    {"name": "DamagedHelmet", "path": "model/damaged_helmet/DamagedHelmet.gltf"}
-  ],
-  "unused_gltf": [
-    {"name": "Avocado", "path": "model/avocado/Avocado.gltf"},
-    {"name": "FlightHelmet", "path": "model/flight_helmet/FlightHelmet.gltf"},
-    {"name": "OrientationTest", "path": "model/orientation test/OrientationTest.gltf"},
-    {"name": "ThreeOfSwords", "path": "model/Three of Swords/scene.gltf"}
+//    {"name": "Sponza", "path": "model/sponza/Sponza.gltf"},
+//    {"name": "ElectricGuitar", "path": "model/electric_guitar_fender_strat_plus/model.gltf"},
+    {"name": "Sphere", "path": "model/sphere/sphere.gltf"},
+//    {"name": "cube", "path": "model/cube/cube.gltf"},
+    {"name": "DamagedHelmet", "path": "model/damaged_helmet/DamagedHelmet.gltf"},
+//    {"name": "Avocado", "path": "model/avocado/Avocado.gltf"},
+//    {"name": "FlightHelmet", "path": "model/flight_helmet/FlightHelmet.gltf"},
+//    {"name": "OrientationTest", "path": "model/orientation test/OrientationTest.gltf"},
+//    {"name": "ThreeOfSwords", "path": "model/Three of Swords/scene.gltf"}
   ],
   "cubemap": [
-    {
-      "name":  "environment_map", "path": "cubemap/environment_map.png",
-      "levels":  0
-    },
-    {
-      "name":  "environment_map_test", "path": "cubemap/test.png",
-      "min_filter": "NEAREST", "mag_filter": "NEAREST"
-    },
-    {
-      "name": "CONFIG", "path": "cubemap/CONFIG.png"
-    }
+    {"name": "CONFIG", "path": "cubemap/CONFIG.png"},
+    {"name": "environment_map",    "path": "cubemap/simons_town_rocks_cubemap.png", "levels":  1},
+    {"name": "diffuse_irradiance", "path": "cubemap/simons_town_rocks_diffuse_irradiance.png", "levels":  1},
   ],
   "texture": [
-    {
-      "name": "simons_town_rocks", "path": "cubemap/simons_town_rocks_4k.hdr",
-      "levels": 1,
-    },
+    {"name": "simons_town_rocks", "path": "cubemap/simons_town_rocks_4k.hdr", "levels": 1},
   ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},
