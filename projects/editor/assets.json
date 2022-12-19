@@ -48,5 +48,12 @@
         "frag": "glsl/program/diffuse_irradiance.frag.glsl"
       }
     },
+    {
+      "name": "specular_irradiance",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/specular_irradiance.frag.glsl"
+      }
+    },
   ]
 }

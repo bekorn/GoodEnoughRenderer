@@ -313,6 +313,71 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 			);
 		}
 
+
+		/// Generate specular irradiance
+		auto const si_face_dimensions = i32x2(256);
+		auto si_name = Name(selected_name.string + "_specular_irradiance");
+		auto & si = cubemaps.get_or_generate(si_name);
+		if (si.id == 0)
+			si.create(TextureCubemap::ImageDescription{
+				.face_dimensions = si_face_dimensions,
+				.has_alpha = false,
+				.is_sRGB = false,
+				.levels = 0,
+				.min_filter = GL_LINEAR_MIPMAP_LINEAR,
+			});
+
+		auto & si_program = ctx.editor_assets.programs.get("specular_irradiance"_name);
+		glUseProgram(si_program.id);
+
+		glUniformHandleui64ARB(
+			GetLocation(si_program.uniform_mappings, "environment"),
+			cubemap.handle
+		);
+
+		i32 levels;
+		glGetTextureParameteriv(si.id, GL_TEXTURE_IMMUTABLE_LEVELS, &levels);
+
+		for (auto level = 0; level < levels; ++level)
+		{
+			i32x2 level_dimensions;
+			glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_WIDTH, &level_dimensions.x);
+			glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_HEIGHT, &level_dimensions.y);
+
+			glViewport(i32x2(0), level_dimensions);
+
+			glUniform1f(
+				GetLocation(si_program.uniform_mappings, "roughness"),
+				f32(level) / f32(levels - 1)
+			);
+
+			for (auto face = 0; face < 6; ++face)
+			{
+				glNamedFramebufferTextureLayer(fb.id, GL_COLOR_ATTACHMENT0, si.id, level, face);
+
+				auto view_dirs = inverse(f32x3x3(lookAt(f32x3(0), dirs[face], ups[face]))) * base_view_dirs;
+				glUniformMatrix4x3fv(
+					GetLocation(si_program.uniform_mappings, "view_dirs"),
+					1, false, begin(view_dirs)
+				);
+
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+			}
+		}
+
+		{
+			ByteBuffer pixels(compMul(si_face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
+			glGetTextureImage(si.id, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.size, pixels.data_as<void>());
+			File::WriteImage(
+				ctx.game.assets.descriptions.root / "cubemap" / (si_name.string + ".png"),
+				File::Image{
+					.buffer = move(pixels),
+					.dimensions = si_face_dimensions * i32x2(1, 6),
+					.channels = 3,
+				}
+			);
+		}
+
 		/// Clean up
 		glDeleteFramebuffers(1, &fb.id);
 	}
