@@ -282,8 +282,16 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		glUseProgram(gltf_pbr_program.id);
 
 		glUniformHandleui64ARB(
-			GetLocation(gltf_pbr_program.uniform_mappings, "diffuse_irradiance_map"),
+			GetLocation(gltf_pbr_program.uniform_mappings, "envmap_diffuse"),
 			assets.texture_cubemaps.get(settings.envmap_diffuse).handle
+		);
+		glUniformHandleui64ARB(
+			GetLocation(gltf_pbr_program.uniform_mappings, "envmap_specular"),
+			assets.texture_cubemaps.get(settings.envmap_specular).handle
+		);
+		glUniformHandleui64ARB(
+			GetLocation(gltf_pbr_program.uniform_mappings, "envmap_brdf_lut"),
+			assets.textures.get("envmap_brdf_lut"_name).handle
 		);
 
 		auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");

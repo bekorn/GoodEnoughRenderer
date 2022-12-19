@@ -7,7 +7,9 @@ in Vertex
     vec2 texcoord;
 } vertex;
 
-uniform samplerCube diffuse_irradiance_map;
+uniform samplerCube envmap_diffuse;
+uniform samplerCube envmap_specular;
+uniform sampler2D envmap_brdf_lut;
 
 layout(binding = 3) readonly buffer Material
 {
@@ -206,10 +208,13 @@ void main()
     // environmental light
     {
         vec3 specular_intensity = fresnel__Schlick(dot_NV, f0);
-        vec3 diffuse_intensity = 1 - specular_intensity;
-        vec3 diffuse_color = base_color * texture(diffuse_irradiance_map, normal).rgb;
+        vec2 env_brdf = texture(envmap_brdf_lut, vec2(dot_NV, roughness)).rg;
+        vec3 specular_color = textureLod(envmap_specular, reflect(-V, N), roughness * textureQueryLevels(envmap_specular)).rgb;
 
-        L_out += diffuse_intensity * diffuse_color;
+        vec3 diffuse_intensity = mix(1 - specular_intensity, vec3(0), metallic);
+        vec3 diffuse_color = base_color * texture(envmap_diffuse, N).rgb;
+
+        L_out += diffuse_intensity * diffuse_color + specular_color * (specular_intensity * env_brdf.x + env_brdf.y);
     }
 
     vec3 emission_color = get_emission();

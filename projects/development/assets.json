@@ -18,7 +18,8 @@
     {"name": "CONFIG", "path": "cubemap/CONFIG.png"},
   ],
   "texture": [
-    {"name": "simons_town_rocks", "path": "cubemap/simons_town_rocks_4k.hdr", "levels": 1},
+    {"name": "envmap_brdf_lut", "path": "texture/envmap_brdf_lut.png"},
+    {"name": "simons_town_rocks", "path": "cubemap/simons_town_rocks_4k.hdr"},
   ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},
