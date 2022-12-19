@@ -69,7 +69,7 @@ namespace GL
 			// https://registry.khronos.org/OpenGL/extensions/AMD/AMD_seamless_cubemap_per_texture.txt
 			glTextureParameteri(id, GL_TEXTURE_CUBE_MAP_SEAMLESS, true);
 
-			if (not(description.min_filter == GL_NEAREST or description.min_filter == GL_LINEAR))
+			if (not description.data.empty() and not(description.min_filter == GL_NEAREST or description.min_filter == GL_LINEAR))
 				glGenerateTextureMipmap(id);
 
 			if (not aligns_to_4)

@@ -10,19 +10,19 @@ void GameSettingsWindow::update(Editor::Context & ctx)
 
 	using namespace ImGui;
 
-	if (BeginCombo("Environment Map", game.settings.environment_map_name.string.data()))
+	if (BeginCombo("Envmap Specular", game.settings.envmap_specular.string.data()))
 	{
 		for (auto & [name, _]: game.assets.texture_cubemaps)
 			if (Selectable(name.string.data()))
-				game.settings.environment_map_name = name;
+				game.settings.envmap_specular = name;
 
 		EndCombo();
 	}
-	if (BeginCombo("Diffuse Irradiance Map", game.settings.diffuse_irradiance_map_name.string.data()))
+	if (BeginCombo("Envmap Diffuse", game.settings.envmap_diffuse.string.data()))
 	{
 		for (auto & [name, _]: game.assets.texture_cubemaps)
 			if (Selectable(name.string.data()))
-				game.settings.diffuse_irradiance_map_name = name;
+				game.settings.envmap_diffuse = name;
 
 		EndCombo();
 	}
@@ -300,19 +300,6 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
 
-		{
-			ByteBuffer pixels(compMul(di_face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
-			glGetTextureImage(di.id, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.size, pixels.data_as<void>());
-			File::WriteImage(
-				ctx.game.assets.descriptions.root / "cubemap" / (di_name.string + ".png"),
-				File::Image{
-					.buffer = move(pixels),
-					.dimensions = di_face_dimensions * i32x2(1, 6),
-					.channels = 3,
-				}
-			);
-		}
-
 
 		/// Generate specular irradiance
 		auto const si_face_dimensions = i32x2(256);
@@ -365,17 +352,51 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 			}
 		}
 
+
+		/// Save textures as an Envmap asset
 		{
-			ByteBuffer pixels(compMul(si_face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
-			glGetTextureImage(si.id, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.size, pixels.data_as<void>());
-			File::WriteImage(
-				ctx.game.assets.descriptions.root / "cubemap" / (si_name.string + ".png"),
-				File::Image{
-					.buffer = move(pixels),
-					.dimensions = si_face_dimensions * i32x2(1, 6),
-					.channels = 3,
+			auto asset_dir = ctx.game.assets.descriptions.root / "envmap" / selected_name.string;
+			std::filesystem::create_directories(asset_dir);
+
+			{
+				ByteBuffer pixels(compMul(di_face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
+				glGetTextureImage(di.id, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.size, pixels.data_as<void>());
+				File::WriteImage(
+					asset_dir / "diffuse.png",
+					File::Image{
+						.buffer = move(pixels),
+						.dimensions = di_face_dimensions * i32x2(1, 6),
+						.channels = 3,
+					}
+				);
+			}
+			{
+				i32 previous_pack_alignment;
+				glGetIntegerv(GL_PACK_ALIGNMENT, &previous_pack_alignment);
+
+				for (auto level = 0; level < levels; ++level)
+				{
+					i32x2 face_dimensions;
+					glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_WIDTH, &face_dimensions.x);
+					glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_HEIGHT, &face_dimensions.y);
+
+					auto aligns_to_4 = (face_dimensions.x * 3) % 4 == 0;
+					glPixelStorei(GL_PACK_ALIGNMENT, aligns_to_4 ? 4 : 1);
+
+					ByteBuffer pixels(compMul(face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
+					glGetTextureImage(si.id, level, GL_RGB, GL_UNSIGNED_BYTE, pixels.size, pixels.data_as<void>());
+					File::WriteImage(
+						asset_dir / fmt::format("specular_mipmap{}.png", level),
+						File::Image{
+							.buffer = move(pixels),
+							.dimensions = face_dimensions * i32x2(1, 6),
+							.channels = 3,
+						}
+					);
 				}
-			);
+
+				glPixelStorei(GL_PACK_ALIGNMENT, previous_pack_alignment);
+			}
 		}
 
 		/// Clean up

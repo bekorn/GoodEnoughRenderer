@@ -283,7 +283,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 		glUniformHandleui64ARB(
 			GetLocation(gltf_pbr_program.uniform_mappings, "diffuse_irradiance_map"),
-			assets.texture_cubemaps.get(settings.diffuse_irradiance_map_name).handle
+			assets.texture_cubemaps.get(settings.envmap_diffuse).handle
 		);
 
 		auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");
@@ -350,7 +350,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 			);
 			glUniformHandleui64ARB(
 				GetLocation(environment_map_program.uniform_mappings, "environment_map"),
-				assets.texture_cubemaps.get(settings.environment_map_name).handle
+				assets.texture_cubemaps.get(settings.envmap_specular).handle
 			);
 			glUniformMatrix4x3fv(
 				GetLocation(environment_map_program.uniform_mappings, "view_directions"),
@@ -365,7 +365,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 			glUseProgram(environment_map_program.id);
 			glUniformHandleui64ARB(
 				GetLocation(environment_map_program.uniform_mappings, "environment_map"),
-				assets.texture_cubemaps.get(settings.environment_map_name).handle
+				assets.texture_cubemaps.get(settings.envmap_specular).handle
 			);
 			glUniformMatrix4x3fv(
 				GetLocation(environment_map_program.uniform_mappings, "view_directions"),

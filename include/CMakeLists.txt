@@ -55,6 +55,7 @@ target_sources(asset_kitchen PRIVATE
     Lib/asset_kitchen/gltf/.cpp
     Lib/asset_kitchen/texture/.cpp
     Lib/asset_kitchen/cubemap/.cpp
+    Lib/asset_kitchen/envmap/.cpp
     Lib/asset_kitchen/.cpp
 )
 target_link_libraries(asset_kitchen PRIVATE

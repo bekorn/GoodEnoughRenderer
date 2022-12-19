@@ -24,8 +24,8 @@ struct Game : Render::GameBase
 		bool is_zpass_on = false;
 
 		bool is_environment_mapping_comp = false;
-		Name environment_map_name = "environment_map";
-		Name diffuse_irradiance_map_name = "diffuse_irradiance_map";
+		Name envmap_diffuse = "envmap_diffuse";
+		Name envmap_specular = "envmap_specular";
 
 		bool is_gamma_correction_comp = false;
 	} settings;
