@@ -13,8 +13,8 @@ std::pair<Name, Description> Parse(File::JSON::JSONObj o, std::filesystem::path 
 
 LoadedData Load(Description const & description)
 {
-	auto specular_mip0 = File::LoadImage(description.path / "specular_mipmap0.png", false);
-	auto diffuse = File::LoadImage(description.path / "diffuse.png", false);
+	auto specular_mip0 = File::LoadImage(description.path / "specular_mipmap0.hdr", false);
+	auto diffuse = File::LoadImage(description.path / "diffuse.hdr", false);
 
 	LoadedData loaded{
 		.diffuse = move(diffuse.buffer),
@@ -26,7 +26,7 @@ LoadedData Load(Description const & description)
 
 	i32 level = 1;
 	std::filesystem::path mip_path;
-	while (mip_path = description.path / fmt::format("specular_mipmap{}.png", level), exists(mip_path))
+	while (mip_path = description.path / fmt::format("specular_mipmap{}.hdr", level), exists(mip_path))
 	{
 		loaded.specular_mipmaps.emplace_back(File::LoadImage(mip_path, false).buffer);
 		++level;
@@ -41,7 +41,7 @@ void Convert(LoadedData const & loaded, Name const & name, Managed<GL::TextureCu
 	diffuse.create(GL::TextureCubemap::ImageDescription{
 		.face_dimensions = loaded.diffuse_face_dimensions,
 		.has_alpha = false,
-		.is_sRGB = false,
+		.color_space = GL::COLOR_SPACE::LINEAR_FLOAT,
 		.levels = 1,
 		.data = loaded.diffuse.span_as<byte>(),
 	});
@@ -50,7 +50,7 @@ void Convert(LoadedData const & loaded, Name const & name, Managed<GL::TextureCu
 	specular.create(GL::TextureCubemap::ImageDescription{
 		.face_dimensions = loaded.specular_face_dimensions,
 		.has_alpha = false,
-		.is_sRGB = false,
+		.color_space = GL::COLOR_SPACE::LINEAR_FLOAT,
 		.levels = static_cast<i32>(loaded.specular_mipmaps.size()),
 		.min_filter = GL::GL_LINEAR_MIPMAP_LINEAR,
 	});
@@ -68,7 +68,7 @@ void Convert(LoadedData const & loaded, Name const & name, Managed<GL::TextureCu
 			specular.id, level,
 			0, 0, 0,
 			face_dimensions.x, face_dimensions.y, 6,
-			GL::GL_RGB, GL::GL_UNSIGNED_BYTE, loaded.specular_mipmaps[level].data_as<u8>()
+			GL::GL_RGB, GL::GL_FLOAT, loaded.specular_mipmaps[level].data_as<f32>()
 		);
 	}
 	GL::glPixelStorei(GL::GL_UNPACK_ALIGNMENT, 4);

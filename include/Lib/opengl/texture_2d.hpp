@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.hpp"
+#include "pixel_format.hpp"
 
 namespace GL
 {
@@ -49,7 +50,7 @@ namespace GL
 		{
 			i32x2 dimensions;
 			bool has_alpha = false;
-			bool is_sRGB = false;
+			COLOR_SPACE color_space = COLOR_SPACE::LINEAR_BYTE;
 
 			// levels = 0 to generate mips all the wasy to 1x1
 			i32 levels = 1;
@@ -69,28 +70,24 @@ namespace GL
 
 			auto channel_count = description.has_alpha ? 4 : 3;
 
-			// Pick correct storage alignment
-			auto aligns_to_4 = (description.dimensions.x * channel_count) % 4 == 0;
-			if (not aligns_to_4)
-				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
 			// Pick correct levels
 			i32 levels = description.levels != 0
 				? description.levels
 				: 1 + i32(glm::log2(f32(glm::compMax(description.dimensions))));
 
+			// Pick correct internal format
+			// TODO(bekorn): F32 takes too much space, it is here temporarily to handle some hdri cases, prefer F16
+			GLenum format;
+			switch (description.color_space)
+			{
+			case COLOR_SPACE::LINEAR_BYTE:  format = description.has_alpha ? GL_RGBA8        : GL_RGB8;   break;
+			case COLOR_SPACE::LINEAR_FLOAT: format = description.has_alpha ? GL_RGBA32F      : GL_RGB32F; break;
+			case COLOR_SPACE::SRGB:         format = description.has_alpha ? GL_SRGB8_ALPHA8 : GL_SRGB8;  break;
+			}
+
 			glTextureStorage2D(
-				id,
-				levels,
-				description.is_sRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8,
+				id, levels, format,
 				description.dimensions.x, description.dimensions.y
-			);
-			glTextureSubImage2D(
-				id,
-				0,
-				0, 0,
-				description.dimensions.x, description.dimensions.y,
-				description.has_alpha ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, description.data.data()
 			);
 
 			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, description.min_filter);
@@ -99,11 +96,28 @@ namespace GL
 			glTextureParameteri(id, GL_TEXTURE_WRAP_S, description.wrap_s);
 			glTextureParameteri(id, GL_TEXTURE_WRAP_T, description.wrap_t);
 
-			if (not (description.min_filter == GL_NEAREST or description.min_filter == GL_LINEAR))
-				glGenerateTextureMipmap(id);
+			if (not description.data.empty())
+			{
+				auto aligns_to_4 = (description.dimensions.x * channel_count) % 4 == 0;
+				if (not aligns_to_4)
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-			if (not aligns_to_4)
-				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+				glTextureSubImage2D(
+					id,
+					0,
+					0, 0,
+					description.dimensions.x, description.dimensions.y,
+					description.has_alpha ? GL_RGBA : GL_RGB,
+					description.color_space == COLOR_SPACE::LINEAR_FLOAT ? GL_FLOAT : GL_UNSIGNED_BYTE,
+					description.data.data()
+				);
+
+				if (not aligns_to_4)
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // set back to default
+
+				if (not (description.min_filter == GL_NEAREST or description.min_filter == GL_LINEAR))
+					glGenerateTextureMipmap(id);
+			}
 
 			handle = glGetTextureHandleARB(id);
 			// Since all the textures will always be needed, their residency doesn't need management
@@ -124,45 +138,47 @@ namespace GL
 			optional<GLenum> wrap_t = nullopt;
 		};
 
-		void create(ViewDescription const & description)
+		void create(ViewDescription const & desc)
 		{
 			i32 level_count;
 
-			if (description.level_count != 0)
-				level_count = description.level_count;
+			if (desc.level_count != 0)
+				level_count = desc.level_count;
 			else
-				glGetTextureParameteriv(description.source.id, GL_TEXTURE_IMMUTABLE_LEVELS, &level_count);
+				glGetTextureParameteriv(desc.source.id, GL_TEXTURE_IMMUTABLE_LEVELS, &level_count);
 
 			GLenum min_filter, mag_filter;
 
-			if (description.min_filter.has_value())
-				min_filter = description.min_filter.value();
+			if (desc.min_filter)
+				min_filter = desc.min_filter.value();
 			else
-				glGetTextureParameteriv(description.source.id, GL_TEXTURE_MIN_FILTER, &min_filter);
+				glGetTextureParameteriv(desc.source.id, GL_TEXTURE_MIN_FILTER, &min_filter);
 
-			if (description.mag_filter.has_value())
-				mag_filter = description.mag_filter.value();
+			if (desc.mag_filter)
+				mag_filter = desc.mag_filter.value();
 			else
-				glGetTextureParameteriv(description.source.id, GL_TEXTURE_MAG_FILTER, &mag_filter);
+				glGetTextureParameteriv(desc.source.id, GL_TEXTURE_MAG_FILTER, &mag_filter);
 
 			GLenum wrap_s, wrap_t;
 
-			if (description.wrap_s.has_value())
-				wrap_s = description.wrap_s.value();
+			if (desc.wrap_s)
+				wrap_s = desc.wrap_s.value();
 			else
-				glGetTextureParameteriv(description.source.id, GL_TEXTURE_WRAP_S, &wrap_s);
+				glGetTextureParameteriv(desc.source.id, GL_TEXTURE_WRAP_S, &wrap_s);
 
-			if (description.wrap_t.has_value())
-				wrap_t = description.wrap_t.value();
+			if (desc.wrap_t)
+				wrap_t = desc.wrap_t.value();
 			else
-				glGetTextureParameteriv(description.source.id, GL_TEXTURE_WRAP_T, &wrap_t);
+				glGetTextureParameteriv(desc.source.id, GL_TEXTURE_WRAP_T, &wrap_t);
 
+			GLenum internal_format;
+			glGetTextureLevelParameteriv(desc.source.id, desc.base_level, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
 
 			glGenTextures(1, &id);
 			glTextureView(
-				id, GL_TEXTURE_2D, description.source.id,
-				GL_RGBA8,
-				description.base_level, level_count,
+				id, GL_TEXTURE_2D,
+				desc.source.id, internal_format,
+				desc.base_level, level_count,
 				0, 1
 			);
 

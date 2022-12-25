@@ -93,7 +93,7 @@ namespace Cubemap
 			GL::TextureCubemap::ImageDescription{
 				.face_dimensions = loaded.face_dimensions,
 				.has_alpha = loaded.channels == 4,
-				.is_sRGB = loaded.is_sRGB,
+				.color_space = loaded.is_sRGB ? GL::COLOR_SPACE::SRGB : GL::COLOR_SPACE::LINEAR_BYTE,
 				.levels = loaded.levels,
 				.min_filter = loaded.min_filter,
 				.mag_filter = loaded.mag_filter,

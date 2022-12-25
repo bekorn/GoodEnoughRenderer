@@ -213,15 +213,16 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 
 
 		/// Map equirectangular into cubemap
-		auto const cubemap_face_dimensions = i32x2(256);
+		auto const cubemap_face_dimensions = i32x2(1024);
 		auto cubemap_name = Name(selected_name.string + "_cubemap");
 		auto & cubemap = cubemaps.get_or_generate(cubemap_name);
 		if (cubemap.id == 0)
 			cubemap.create(TextureCubemap::ImageDescription{
 				.face_dimensions = cubemap_face_dimensions,
 				.has_alpha = false,
-				.is_sRGB = false,
-				.levels = 1,
+				.color_space = GL::COLOR_SPACE::LINEAR_FLOAT,
+				.levels = 0,
+				.min_filter = GL_LINEAR_MIPMAP_LINEAR,
 			});
 
 		auto & equirect_to_cubemap_program = ctx.editor_assets.programs.get("equirectangular_to_cubemap"_name);
@@ -247,22 +248,7 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
 
-		{
-			ByteBuffer pixels(compMul(cubemap_face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
-			glGetTextureImage(
-				cubemap.id, 0,
-				GL_RGB, GL_UNSIGNED_BYTE,
-				pixels.size, pixels.data_as<void>()
-			);
-			File::WriteImage(
-				ctx.game.assets.descriptions.root / "cubemap" / (cubemap_name.string + ".png"),
-				File::Image{
-					.buffer = move(pixels),
-					.dimensions = cubemap_face_dimensions * i32x2(1, 6),
-					.channels = 3,
-				}
-			);
-		}
+		glGenerateTextureMipmap(cubemap.id);
 
 
 		/// Generate diffuse irradiance
@@ -273,7 +259,7 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 			di.create(TextureCubemap::ImageDescription{
 				.face_dimensions = di_face_dimensions,
 				.has_alpha = false,
-				.is_sRGB = false,
+				.color_space = GL::COLOR_SPACE::LINEAR_FLOAT,
 				.levels = 1,
 			});
 
@@ -302,14 +288,16 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 
 
 		/// Generate specular irradiance
-		auto const si_face_dimensions = i32x2(256);
+		// TODO(bekorn): fix aliasing issues with very high values coming from hdri such as sun, bright lamps, etc.
+		// TODO(bekorn): check if making the last mipmap 1x1 has any drawbacks, test with 8x8 as the last mip
+		auto const si_face_dimensions = i32x2(1024);
 		auto si_name = Name(selected_name.string + "_specular_irradiance");
 		auto & si = cubemaps.get_or_generate(si_name);
 		if (si.id == 0)
 			si.create(TextureCubemap::ImageDescription{
 				.face_dimensions = si_face_dimensions,
 				.has_alpha = false,
-				.is_sRGB = false,
+				.color_space = GL::COLOR_SPACE::LINEAR_FLOAT,
 				.levels = 0,
 				.min_filter = GL_LINEAR_MIPMAP_LINEAR,
 			});
@@ -359,14 +347,15 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 			std::filesystem::create_directories(asset_dir);
 
 			{
-				ByteBuffer pixels(compMul(di_face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
-				glGetTextureImage(di.id, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.size, pixels.data_as<void>());
+				ByteBuffer pixels(compMul(di_face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
+				glGetTextureImage(di.id, 0, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
 				File::WriteImage(
-					asset_dir / "diffuse.png",
+					asset_dir / "diffuse.hdr",
 					File::Image{
 						.buffer = move(pixels),
 						.dimensions = di_face_dimensions * i32x2(1, 6),
 						.channels = 3,
+						.is_format_f32 = true,
 					}
 				);
 			}
@@ -383,14 +372,15 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 					auto aligns_to_4 = (face_dimensions.x * 3) % 4 == 0;
 					glPixelStorei(GL_PACK_ALIGNMENT, aligns_to_4 ? 4 : 1);
 
-					ByteBuffer pixels(compMul(face_dimensions) * 6 * 1 * 3); // pixel format = RGB8
-					glGetTextureImage(si.id, level, GL_RGB, GL_UNSIGNED_BYTE, pixels.size, pixels.data_as<void>());
+					ByteBuffer pixels(compMul(face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
+					glGetTextureImage(si.id, level, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
 					File::WriteImage(
-						asset_dir / fmt::format("specular_mipmap{}.png", level),
+						asset_dir / fmt::format("specular_mipmap{}.hdr", level),
 						File::Image{
 							.buffer = move(pixels),
 							.dimensions = face_dimensions * i32x2(1, 6),
 							.channels = 3,
+							.is_format_f32 = true,
 						}
 					);
 				}

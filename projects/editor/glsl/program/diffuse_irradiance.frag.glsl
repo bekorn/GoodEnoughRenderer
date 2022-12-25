@@ -26,7 +26,7 @@ void main()
 
     vec3 irradiance = vec3(0);
 
-    float lat_sample = 64, lon_sample = 128;
+    float lat_sample = 128, lon_sample = 256;
     for (float lat = 0; lat < 0.5*PI; lat += 0.5*PI / lat_sample)
     for (float lon = 0; lon < 2.0*PI; lon += 2.0*PI / lon_sample)
     {
@@ -34,7 +34,8 @@ void main()
         vec3 tangentSample = vec3(sin(lat) * cos(lon), sin(lat) * sin(lon), cos(lat));
 
         vec3 sample_dir = right * tangentSample.x + up * tangentSample.y + forward * tangentSample.z;
-        irradiance += cos(lat) * sin(lat) * textureLod(environment, sample_dir, 0).rgb;
+        // TODO(bekorn): fix lod=3, it shouldn't be necessary
+        irradiance += cos(lat) * sin(lat) * textureLod(environment, sample_dir, 3).rgb;
     }
 
     irradiance *= PI / (lat_sample * lon_sample);

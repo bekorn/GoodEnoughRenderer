@@ -60,36 +60,48 @@ namespace File
 
 		stbi_set_flip_vertically_on_load_thread(should_flip_vertically);
 
-		i32x2 dimensions{0, 0};
-		i32 channels;
-		void * raw_pixel_data = stbi_load_from_memory(
-			file_data.data_as<const unsigned char>(), file_data.size,
-			&dimensions.x, &dimensions.y,
-			&channels, 0
-		);
+		Image image;
+		image.is_format_f32 = stbi_is_hdr_from_memory(file_data.data_as<const unsigned char>(), file_data.size);
+
+		void * raw_pixel_data;
+		if (image.is_format_f32)
+			raw_pixel_data = stbi_loadf_from_memory(
+				file_data.data_as<const unsigned char>(), file_data.size,
+				&image.dimensions.x, &image.dimensions.y,
+				&image.channels, 0
+			);
+		else
+			raw_pixel_data = stbi_load_from_memory(
+				file_data.data_as<const unsigned char>(), file_data.size,
+				&image.dimensions.x, &image.dimensions.y,
+				&image.channels, 0
+			);
 
 		if (raw_pixel_data == nullptr)
 			fmt::print(stderr, "File::LoadImage failed. path: {}, error: {}\n", path, stbi_failure_reason());
 
-		return {
-			.buffer = {
-				move(raw_pixel_data),
-				usize(dimensions.x * dimensions.y * channels)
-			},
-			.dimensions = dimensions,
-			.channels = channels,
-		};
+		image.buffer = ByteBuffer(move(raw_pixel_data), image.dimensions.x * image.dimensions.y * image.channels);
+
+		return image;
 	}
 
 	void WriteImage(std::filesystem::path const & path, Image const & image)
 	{
 		auto p = path.string();
-		auto success = stbi_write_png(
-			p.c_str(),
-			image.dimensions.x, image.dimensions.y,
-			image.channels, image.buffer.data_as<void>(),
-			image.dimensions.x * image.channels
-		);
+		bool success;
+		if (image.is_format_f32)
+			success = stbi_write_hdr(
+				p.c_str(),
+				image.dimensions.x, image.dimensions.y,
+				image.channels, image.buffer.data_as<float>()
+			);
+		else
+			success = stbi_write_png(
+				p.c_str(),
+				image.dimensions.x, image.dimensions.y,
+				image.channels, image.buffer.data_as<void>(),
+				image.dimensions.x * image.channels
+			);
 
 		if (not success)
 			fmt::print(stderr, "File::WriteImage failed. path {}, error: {}\n", path, stbi_failure_reason());

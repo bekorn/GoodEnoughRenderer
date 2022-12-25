@@ -2,6 +2,7 @@
 
 #include "Lib/core/core.hpp"
 #include "Lib/opengl/core.hpp"
+#include "Lib/opengl/pixel_format.hpp"
 
 namespace Texture
 {
@@ -18,7 +19,7 @@ namespace Texture
 		ByteBuffer data;
 		i32x2 dimensions;
 		i32 channels;
-		bool is_sRGB;
+		GL::COLOR_SPACE color_space;
 		i32 levels;
 		GL::GLenum min_filter;
 		GL::GLenum mag_filter;

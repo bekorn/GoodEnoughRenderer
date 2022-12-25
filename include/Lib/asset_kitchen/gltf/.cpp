@@ -423,7 +423,7 @@ namespace GLTF
 				GL::Texture2D::ImageDescription{
 					.dimensions = loaded_image.dimensions,
 					.has_alpha = loaded_image.channels == 4,
-					.is_sRGB = loaded_image.is_sRGB,
+					.color_space = loaded_image.is_sRGB ? GL::COLOR_SPACE::SRGB : GL::COLOR_SPACE::LINEAR_BYTE,
 
 					.levels = should_have_mipmaps ? 0 : 1,
 
