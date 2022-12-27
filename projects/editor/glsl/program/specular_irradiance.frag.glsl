@@ -33,10 +33,25 @@ float distribution__Trowbridge_Reitz_GGX(float dot_HN)
     return f*f * invPI;
 }
 
-vec3 ImportanceSampleGGX(vec2 Xi, vec3 N)
+float RAND12(vec2 p)
+{ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+
+mat3x3 tangent_to_world;
+float phi_offset;
+void compute_importance_sampling_constants(vec3 N)
+{
+    vec3 up = abs(N.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
+    vec3 tangent   = normalize(cross(N, up));
+    vec3 bitangent = cross(tangent, N);
+    tangent_to_world = mat3x3(tangent, bitangent, N);
+
+    phi_offset = RAND12(uv);
+}
+
+vec3 ImportanceSampleGGX(vec2 Xi)
 {
     // sample in spherical coordinates
-    float phi = 2 * PI * Xi.x;
+    float phi = 2 * PI * (Xi.x + phi_offset);
     float cosTheta = sqrt((1 - Xi.y) / (1 + (a*a - 1) * Xi.y));
     float sinTheta = sqrt(1 - cosTheta*cosTheta);
 
@@ -48,12 +63,7 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N)
     );
 
     // to world-space
-    vec3 up        = abs(N.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
-    vec3 tangent   = normalize(cross(N, up));
-    vec3 bitangent = cross(tangent, N);
-
-    vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
-    return normalize(sampleVec);
+    return normalize(tangent_to_world * H);
 }
 
 void main()
@@ -75,8 +85,9 @@ void main()
     }
 
     const vec3 N = normalize(view_dir);
-    const vec3 R = N;
     const vec3 V = N;
+
+    compute_importance_sampling_constants(N);
 
     const ivec2 environment_size = textureSize(environment, 0);
     const float environment_area = 6 * environment_size.x * environment_size.y;
@@ -89,19 +100,18 @@ void main()
     for (uint s = 0; s < sample_count; ++s)
     {
         vec2 Xi = Hammersley(s, sample_count);
-        vec3 H = ImportanceSampleGGX(Xi, N);
+        vec3 H = ImportanceSampleGGX(Xi);
         float dot_VH = dot(V, H);
         vec3 L = reflect(-V, H);
         float dot_NL = dot(N, L);
 
         if (dot_NL > 0)
         {
-            float dot_NH = dot(N, H);
-
             // pick correct mipmap level
+            float dot_NH = dot_VH; // N == V
             float D = distribution__Trowbridge_Reitz_GGX(dot_NH);
             float pdf = D / 4;
-            float sample_solidangle = 1 / (float(sample_count) * pdf + 0.001);
+            float sample_solidangle = 1 / (float(sample_count) * pdf);
             float level = 0.5 * log2(sample_solidangle / texel_solidangle);
 
             irradiance += textureLod(environment, L, level).rgb * dot_NL;
