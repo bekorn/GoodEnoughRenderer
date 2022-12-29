@@ -6,13 +6,7 @@ uniform float roughness;
 
 out vec4 out_color;
 
-const float PI = 3.14159265359;
-const float invPI = 1.0 / PI;
-
 const float a = roughness * roughness;
-
-float dot_01(vec3 a, vec3 b)
-{ return clamp(dot(a, b), 0, 1); }
 
 vec2 Hammersley(uint i, uint N)
 {
@@ -33,21 +27,13 @@ float distribution__Trowbridge_Reitz_GGX(float dot_HN)
     return f*f * invPI;
 }
 
-float RAND12(vec2 p)
-{ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-
 mat3x3 tangent_to_world;
 float phi_offset;
 void compute_importance_sampling_constants(vec3 N)
 {
-    vec3 up = abs(N.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
-    vec3 tangent   = normalize(cross(N, up));
-    vec3 bitangent = cross(tangent, N);
-    tangent_to_world = mat3x3(tangent, bitangent, N);
-
+    tangent_to_world = get_tangent_to_world(N);
     phi_offset = RAND12(uv);
 }
-
 vec3 ImportanceSampleGGX(vec2 Xi)
 {
     // sample in spherical coordinates

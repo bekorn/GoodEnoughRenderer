@@ -251,9 +251,9 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 		glGenerateTextureMipmap(cubemap.id);
 
 
-		/// Generate diffuse irradiance
+		/// Generate envmap diffuse
 		auto const di_face_dimensions = i32x2(32);
-		auto di_name = Name(selected_name.string + "_diffuse_irradiance");
+		auto di_name = Name(selected_name.string + "_diffuse");
 		auto & di = cubemaps.get_or_generate(di_name);
 		if (di.id == 0)
 			di.create(TextureCubemap::ImageDescription{
@@ -263,7 +263,7 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 				.levels = 1,
 			});
 
-		auto & di_program = ctx.editor_assets.programs.get("diffuse_irradiance"_name);
+		auto & di_program = ctx.editor_assets.programs.get("envmap_diffuse"_name);
 		glUseProgram(di_program.id);
 
 		glViewport(i32x2(0), di_face_dimensions);
@@ -287,11 +287,11 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 		}
 
 
-		/// Generate specular irradiance
+		/// Generate envmap specular
 		// TODO(bekorn): fix aliasing issues with very high values coming from hdri such as sun, bright lamps, etc.
 		// TODO(bekorn): check if making the last mipmap 1x1 has any drawbacks, test with 8x8 as the last mip
 		auto const si_face_dimensions = i32x2(1024);
-		auto si_name = Name(selected_name.string + "_specular_irradiance");
+		auto si_name = Name(selected_name.string + "_specular");
 		auto & si = cubemaps.get_or_generate(si_name);
 		if (si.id == 0)
 			si.create(TextureCubemap::ImageDescription{
@@ -302,7 +302,7 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 				.min_filter = GL_LINEAR_MIPMAP_LINEAR,
 			});
 
-		auto & si_program = ctx.editor_assets.programs.get("specular_irradiance"_name);
+		auto & si_program = ctx.editor_assets.programs.get("envmap_specular"_name);
 		glUseProgram(si_program.id);
 
 		glUniformHandleui64ARB(

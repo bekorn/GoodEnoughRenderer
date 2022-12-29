@@ -1,9 +1,9 @@
 {
   "gltf": [
-    {"name": "AxisGizmo", "path": "model/axis gizmo/axis gizmo.gltf"}
+    {"name": "AxisGizmo", "path": "model/axis gizmo/axis gizmo.gltf"},
   ],
   "texture": [
-    {"name": "border_map", "path": "textures/border_contrast.png"}
+    {"name": "border_map", "path": "textures/border_contrast.png"},
   ],
   "glsl_program": [
     {
@@ -42,18 +42,24 @@
       }
     },
     {
-      "name": "diffuse_irradiance",
+      "name": "envmap_diffuse",
       "stages": {
         "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/diffuse_irradiance.frag.glsl"
-      }
+        "frag": "glsl/program/envmap_diffuse.frag.glsl"
+      },
+      "include_paths": [
+        "glsl/program/common.glsl",
+      ]
     },
     {
-      "name": "specular_irradiance",
+      "name": "envmap_specular",
       "stages": {
         "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/specular_irradiance.frag.glsl"
-      }
+        "frag": "glsl/program/envmap_specular.frag.glsl"
+      },
+      "include_paths":  [
+        "glsl/program/common.glsl",
+      ]
     },
   ]
 }
