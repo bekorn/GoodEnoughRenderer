@@ -134,6 +134,11 @@ void IblBakerWindow::update(Editor::Context & ctx)
 
 	auto & textures = ctx.game.assets.textures;
 
+	if (Button("Generate BRDF LUT"))
+		should_generate_brdf_lut = true;
+
+	Separator();
+
 	if (BeginCombo("Texture", selected_name.string.data()))
 	{
 		for (auto & [name, _]: textures)
@@ -161,18 +166,87 @@ void IblBakerWindow::update(Editor::Context & ctx)
 			{240, 120}
 		);
 
-		if (Button("Map Equirectangular Projection to Cubemap"))
-			should_map_equirectangular_to_cubemap = true;
+		if (Button("Generate IBL Environment"))
+			should_generate_environment = true;
+	}
+	else
+	{
+		TextUnformatted("Select a Texture");
 	}
 }
 
 void IblBakerWindow::render(Editor::Context const & ctx)
 {
-	if (not should_map_equirectangular_to_cubemap)
-		return;
+	if (should_generate_brdf_lut)
+	{
+		_generate_brdf_lut(ctx);
+		should_generate_brdf_lut = false;
+	}
 
-	should_map_equirectangular_to_cubemap = false;
+	if (should_generate_environment)
+	{
+		_generate_environment(ctx);
+		should_generate_environment = false;
+	}
+}
 
+void IblBakerWindow::_generate_brdf_lut(Editor::Context const & ctx) const
+{
+	using namespace GL;
+
+	auto & textures = ctx.game.assets.textures;
+
+	// temporary framebuffer
+	OpenGLObject fb;
+	glCreateFramebuffers(1, &fb.id);
+	glBindFramebuffer(GL_FRAMEBUFFER, fb.id);
+	glDepthMask(false), glDepthFunc(GL_ALWAYS);
+
+	// brdf lut texture
+	auto const texture_dimensions = i32x2(256);
+	auto texture_name = Name("IBL_BRDF_LUT");
+	auto & texture = textures.get_or_generate(texture_name);
+	if (texture.id == 0)
+		texture.create(Texture2D::ImageDescription{
+			.dimensions = texture_dimensions,
+			.has_alpha = false,
+			.color_space = GL::COLOR_SPACE::LINEAR_FLOAT,
+		});
+
+	auto & program = ctx.editor_assets.programs.get("envmap_brdf_lut"_name);
+	glUseProgram(program.id);
+
+
+	/// Generate texture
+	glNamedFramebufferTexture(fb.id, GL_COLOR_ATTACHMENT0, texture.id, 0);
+	glViewport({0, 0}, texture_dimensions);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
+	/// Save texture
+	auto asset_dir = ctx.game.assets.descriptions.root / "envmap";
+	std::filesystem::create_directories(asset_dir);
+
+	ByteBuffer pixels(compMul(texture_dimensions) * 4 * 3); // pixel format = RGB16F (but uses f32)
+	glGetTextureImage(texture.id, 0, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
+	File::WriteImage(
+		asset_dir / "envmap_brdf_lut.hdr",
+		File::Image{
+			.buffer = move(pixels),
+			.dimensions = texture_dimensions,
+			.channels = 3,
+			.is_format_f32 = true,
+		}
+	);
+
+
+	/// Clean up
+	glDeleteFramebuffers(1, &fb.id);
+}
+
+void IblBakerWindow::_generate_environment(Editor::Context const & ctx) const
+{
 	using namespace GL;
 
 	auto & textures = ctx.game.assets.textures;
@@ -189,12 +263,12 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 			{+1, +1, -1}, // uv 1,1
 		};
 		f32x3 const dirs[6]{
-			{+1, 0, 0},
-			{-1, 0, 0},
-			{0, +1, 0},
-			{0, -1, 0},
-			{0, 0, +1},
-			{0, 0, -1},
+			{+1,  0,  0},
+			{-1,  0,  0},
+			{ 0, +1,  0},
+			{ 0, -1,  0},
+			{ 0,  0, +1},
+			{ 0,  0, -1},
 		};
 		f32x3 const ups[6]{
 			{0, -1,  0},
@@ -288,8 +362,6 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 
 
 		/// Generate envmap specular
-		// TODO(bekorn): fix aliasing issues with very high values coming from hdri such as sun, bright lamps, etc.
-		// TODO(bekorn): check if making the last mipmap 1x1 has any drawbacks, test with 8x8 as the last mip
 		auto const si_face_dimensions = i32x2(1024);
 		auto si_name = Name(selected_name.string + "_specular");
 		auto & si = cubemaps.get_or_generate(si_name);
@@ -298,7 +370,7 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 				.face_dimensions = si_face_dimensions,
 				.has_alpha = false,
 				.color_space = GL::COLOR_SPACE::LINEAR_FLOAT,
-				.levels = 0,
+				.levels = 7, // smallest mip is 16x16
 				.min_filter = GL_LINEAR_MIPMAP_LINEAR,
 			});
 
@@ -342,51 +414,51 @@ void IblBakerWindow::render(Editor::Context const & ctx)
 
 
 		/// Save textures as an Envmap asset
-		{
-			auto asset_dir = ctx.game.assets.descriptions.root / "envmap" / selected_name.string;
-			std::filesystem::create_directories(asset_dir);
+		auto asset_dir = ctx.game.assets.descriptions.root / "envmap" / selected_name.string;
+		std::filesystem::create_directories(asset_dir);
 
+		{
+			ByteBuffer pixels(compMul(di_face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
+			glGetTextureImage(di.id, 0, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
+			File::WriteImage(
+				asset_dir / "diffuse.hdr",
+				File::Image{
+					.buffer = move(pixels),
+					.dimensions = di_face_dimensions * i32x2(1, 6),
+					.channels = 3,
+					.is_format_f32 = true,
+				},
+				false
+			);
+		}
+		{
+			i32 previous_pack_alignment;
+			glGetIntegerv(GL_PACK_ALIGNMENT, &previous_pack_alignment);
+
+			for (auto level = 0; level < levels; ++level)
 			{
-				ByteBuffer pixels(compMul(di_face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
-				glGetTextureImage(di.id, 0, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
+				i32x2 face_dimensions;
+				glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_WIDTH, &face_dimensions.x);
+				glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_HEIGHT, &face_dimensions.y);
+
+				auto aligns_to_4 = (face_dimensions.x * 3) % 4 == 0;
+				glPixelStorei(GL_PACK_ALIGNMENT, aligns_to_4 ? 4 : 1);
+
+				ByteBuffer pixels(compMul(face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
+				glGetTextureImage(si.id, level, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
 				File::WriteImage(
-					asset_dir / "diffuse.hdr",
+					asset_dir / fmt::format("specular_mipmap{}.hdr", level),
 					File::Image{
 						.buffer = move(pixels),
-						.dimensions = di_face_dimensions * i32x2(1, 6),
+						.dimensions = face_dimensions * i32x2(1, 6),
 						.channels = 3,
 						.is_format_f32 = true,
-					}
+					},
+					false
 				);
 			}
-			{
-				i32 previous_pack_alignment;
-				glGetIntegerv(GL_PACK_ALIGNMENT, &previous_pack_alignment);
 
-				for (auto level = 0; level < levels; ++level)
-				{
-					i32x2 face_dimensions;
-					glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_WIDTH, &face_dimensions.x);
-					glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_HEIGHT, &face_dimensions.y);
-
-					auto aligns_to_4 = (face_dimensions.x * 3) % 4 == 0;
-					glPixelStorei(GL_PACK_ALIGNMENT, aligns_to_4 ? 4 : 1);
-
-					ByteBuffer pixels(compMul(face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
-					glGetTextureImage(si.id, level, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
-					File::WriteImage(
-						asset_dir / fmt::format("specular_mipmap{}.hdr", level),
-						File::Image{
-							.buffer = move(pixels),
-							.dimensions = face_dimensions * i32x2(1, 6),
-							.channels = 3,
-							.is_format_f32 = true,
-						}
-					);
-				}
-
-				glPixelStorei(GL_PACK_ALIGNMENT, previous_pack_alignment);
-			}
+			glPixelStorei(GL_PACK_ALIGNMENT, previous_pack_alignment);
 		}
 
 		/// Clean up

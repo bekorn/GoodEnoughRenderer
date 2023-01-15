@@ -85,9 +85,12 @@ namespace File
 		return image;
 	}
 
-	void WriteImage(std::filesystem::path const & path, Image const & image)
+	void WriteImage(std::filesystem::path const & path, Image const & image, bool should_flip_vertically)
 	{
 		auto p = path.string();
+
+		stbi_flip_vertically_on_write(should_flip_vertically);
+
 		bool success;
 		if (image.is_format_f32)
 			success = stbi_write_hdr(

@@ -8,19 +8,6 @@ out vec4 out_color;
 
 const float a = roughness * roughness;
 
-vec2 Hammersley(uint i, uint N)
-{
-    // Radical inverse based on http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
-    uint bits = (i << 16u) | (i >> 16u);
-    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-    float rdi = float(bits) * 2.3283064365386963e-10;
-
-    return vec2(float(i) /float(N), rdi);
-}
-
 float distribution__Trowbridge_Reitz_GGX(float dot_HN)
 {
     float f = a / (dot_HN*dot_HN * (a*a - 1) + 1);
@@ -82,7 +69,7 @@ void main()
     vec3 irradiance = vec3(0);
     float total_weight = 0;
 
-    uint sample_count = 1024;
+    const uint sample_count = 1024;
     for (uint s = 0; s < sample_count; ++s)
     {
         vec2 Xi = Hammersley(s, sample_count);

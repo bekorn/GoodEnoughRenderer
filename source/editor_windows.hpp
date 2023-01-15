@@ -24,6 +24,7 @@ struct MaterialWindow : Editor::WindowBase
 	void update(Editor::Context & ctx) override;
 };
 
+// TODO(bekorn): there should be a mechanism to encapsulate this window into a package/plugin to load dynamically
 struct IblBakerWindow : Editor::WindowBase
 {
 	const char * get_name() override
@@ -32,9 +33,12 @@ struct IblBakerWindow : Editor::WindowBase
 	Name selected_name;
 	bool is_texture_changed = false;
 	f32x2 texture_size;
-	bool should_map_equirectangular_to_cubemap = false;
-	Name cubemap_name;
+	bool should_generate_environment = false;
+	bool should_generate_brdf_lut = false;
 
+	Name cubemap_name;
 	void update(Editor::Context & ctx) override;
 	void render(Editor::Context const & ctx) override;
+	void _generate_brdf_lut(const Editor::Context & ctx) const;
+	void _generate_environment(Editor::Context const & ctx) const;
 };
