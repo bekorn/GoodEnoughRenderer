@@ -112,24 +112,21 @@ vec3 get_normal()
     return normal;
 }
 
-#define PI (3.14159265359)
-#define invPI (1.0 / PI)
+const float PI = 3.14159265359;
+const float invPI = 1 / PI;
 
 float dot_01(vec3 v0, vec3 v1)
 { return clamp(dot(v0, v1), 0, 1); }
 
 vec3 diffuse_factor__Lambert(vec3 color)
 {
-    return invPI * color;
+    return color * invPI;
 }
 
 float distribution__Trowbridge_Reitz_GGX(float dot_HN, float a)
 {
-    float a_sqr = a * a;
-    float dot_HN_sqr = dot_HN * dot_HN;
-    float f = a / (dot_HN_sqr * (a_sqr - 1) + 1);
-    f = f * f;
-    return invPI * f;
+    float f = a / (dot_HN*dot_HN * (a*a - 1) + 1);
+    return f*f * invPI;
 }
 
 float geometry__Schlick_GGX(float dot_NV, float a)
@@ -147,6 +144,11 @@ vec3 fresnel__Schlick(float dot_HV, vec3 f0)
     return f0 + (1 - f0) * pow(1 - dot_HV, 5);
 }
 
+vec3 fresnel__Schlick_Roughness(float dot_NV, vec3 f0, float roughness)
+{
+    return f0 + (max(vec3(1 - roughness), f0) - f0) * pow(clamp(1 - dot_NV, 0, 1), 5);
+}
+
 void main()
 {
     vec3 normal = get_normal();
@@ -162,7 +164,7 @@ void main()
 
     float a = roughness * roughness;
 //    float ior = 1.5;
-//    vec3 f0 = vec3(pow((1 - ior) / (1 + ior), 2));
+//    vec3 f0 = vec3(pow((1 - ior) / (1 + ior), 2)); // = 0.04
     vec3 f0 = mix(vec3(0.04), base_color, metallic);
 
     vec3 N = normal;
@@ -207,13 +209,15 @@ void main()
 
     // environmental light
     {
-        vec3 specular_intensity = fresnel__Schlick(dot_NV, f0);
-        vec2 env_brdf = texture(envmap_brdf_lut, vec2(dot_NV, roughness)).rg;
-        vec3 specular_color = textureLod(envmap_specular, reflect(-V, N), roughness * textureQueryLevels(envmap_specular)).rgb;
+        vec3 specular_intensity = fresnel__Schlick_Roughness(dot_NV, f0, roughness);
+        vec3 L = reflect(-V, N);
+        float level = roughness * textureQueryLevels(envmap_specular);
+        vec3 specular_color = textureLod(envmap_specular, L, level).rgb;
 
         vec3 diffuse_intensity = mix(1 - specular_intensity, vec3(0), metallic);
         vec3 diffuse_color = base_color * texture(envmap_diffuse, N).rgb;
 
+        vec2 env_brdf = texture(envmap_brdf_lut, vec2(dot_NV, roughness)).rg;
         L_out += diffuse_intensity * diffuse_color + specular_color * (specular_intensity * env_brdf.x + env_brdf.y);
     }
 

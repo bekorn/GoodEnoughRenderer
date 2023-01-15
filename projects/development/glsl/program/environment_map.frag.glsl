@@ -18,5 +18,5 @@ void main()
         uv.y
     );
 
-    out_color = texture(environment_map, view_dir);
+    out_color = textureLod(environment_map, view_dir, 0);
 }

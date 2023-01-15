@@ -415,7 +415,19 @@ void IblBakerWindow::_generate_environment(Editor::Context const & ctx) const
 
 		/// Save textures as an Envmap asset
 		auto asset_dir = ctx.game.assets.descriptions.root / "envmap" / selected_name.string;
-		std::filesystem::create_directories(asset_dir);
+
+		if (std::filesystem::exists(asset_dir))
+		{
+			if (auto ec = File::ClearFolder(asset_dir))
+			{
+				fmt::print(stderr, "Failed to clear directory {}. Error: {}", asset_dir, ec.value().message());
+				return;
+			}
+		}
+		else
+		{
+			std::filesystem::create_directories(asset_dir);
+		}
 
 		{
 			ByteBuffer pixels(compMul(di_face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)

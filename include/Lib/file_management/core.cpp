@@ -109,4 +109,15 @@ namespace File
 		if (not success)
 			fmt::print(stderr, "File::WriteImage failed. path {}, error: {}\n", path, stbi_failure_reason());
 	}
+
+	optional<std::error_code> ClearFolder(std::filesystem::path const & path)
+	{
+		std::error_code ec;
+		for (auto & item : std::filesystem::directory_iterator(path))
+		{
+			std::filesystem::remove_all(item.path(), ec);
+			if (ec) return ec;
+		}
+		return nullopt;
+	}
 }

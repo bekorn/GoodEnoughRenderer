@@ -21,4 +21,6 @@ namespace File
 	Image LoadImage(std::filesystem::path const & path, bool should_flip_vertically);
 
 	void WriteImage(std::filesystem::path const & path, Image const & image, bool should_flip_vertically = true);
+
+	optional<std::error_code> ClearFolder(std::filesystem::path const & path);
 }
