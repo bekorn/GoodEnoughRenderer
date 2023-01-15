@@ -128,7 +128,7 @@ void MaterialWindow::update(Editor::Context & ctx)
 }
 
 
-void IblBakerWindow::update(Editor::Context & ctx)
+void EnvmapBakerWindow::update(Editor::Context & ctx)
 {
 	using namespace ImGui;
 
@@ -166,8 +166,8 @@ void IblBakerWindow::update(Editor::Context & ctx)
 			{240, 120}
 		);
 
-		if (Button("Generate IBL Environment"))
-			should_generate_environment = true;
+		if (Button("Generate Envmap"))
+			should_generate_envmap = true;
 	}
 	else
 	{
@@ -175,22 +175,22 @@ void IblBakerWindow::update(Editor::Context & ctx)
 	}
 }
 
-void IblBakerWindow::render(Editor::Context const & ctx)
+void EnvmapBakerWindow::render(Editor::Context const & ctx)
 {
 	if (should_generate_brdf_lut)
 	{
-		_generate_brdf_lut(ctx);
+		generate_brdf_lut(ctx);
 		should_generate_brdf_lut = false;
 	}
 
-	if (should_generate_environment)
+	if (should_generate_envmap)
 	{
-		_generate_environment(ctx);
-		should_generate_environment = false;
+		generate_envmap(ctx);
+		should_generate_envmap = false;
 	}
 }
 
-void IblBakerWindow::_generate_brdf_lut(Editor::Context const & ctx) const
+void EnvmapBakerWindow::generate_brdf_lut(Editor::Context const & ctx) const
 {
 	using namespace GL;
 
@@ -204,7 +204,7 @@ void IblBakerWindow::_generate_brdf_lut(Editor::Context const & ctx) const
 
 	// brdf lut texture
 	auto const texture_dimensions = i32x2(256);
-	auto texture_name = Name("IBL_BRDF_LUT");
+	auto texture_name = "envmap_brdf_lut"_name;
 	auto & texture = textures.get_or_generate(texture_name);
 	if (texture.id == 0)
 		texture.create(Texture2D::ImageDescription{
@@ -217,7 +217,7 @@ void IblBakerWindow::_generate_brdf_lut(Editor::Context const & ctx) const
 	glUseProgram(program.id);
 
 
-	/// Generate texture
+	/// Generate brdf lut
 	glNamedFramebufferTexture(fb.id, GL_COLOR_ATTACHMENT0, texture.id, 0);
 	glViewport({0, 0}, texture_dimensions);
 
@@ -231,7 +231,7 @@ void IblBakerWindow::_generate_brdf_lut(Editor::Context const & ctx) const
 	ByteBuffer pixels(compMul(texture_dimensions) * 4 * 3); // pixel format = RGB16F (but uses f32)
 	glGetTextureImage(texture.id, 0, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
 	File::WriteImage(
-		asset_dir / "envmap_brdf_lut.hdr",
+		asset_dir / "brdf_lut.hdr",
 		File::Image{
 			.buffer = move(pixels),
 			.dimensions = texture_dimensions,
@@ -245,7 +245,7 @@ void IblBakerWindow::_generate_brdf_lut(Editor::Context const & ctx) const
 	glDeleteFramebuffers(1, &fb.id);
 }
 
-void IblBakerWindow::_generate_environment(Editor::Context const & ctx) const
+void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 {
 	using namespace GL;
 
@@ -325,35 +325,35 @@ void IblBakerWindow::_generate_environment(Editor::Context const & ctx) const
 		glGenerateTextureMipmap(cubemap.id);
 
 
-		/// Generate envmap diffuse
-		auto const di_face_dimensions = i32x2(32);
-		auto di_name = Name(selected_name.string + "_diffuse");
-		auto & di = cubemaps.get_or_generate(di_name);
-		if (di.id == 0)
-			di.create(TextureCubemap::ImageDescription{
-				.face_dimensions = di_face_dimensions,
+		/// Generate diffuse envmap
+		auto const d_face_dimensions = i32x2(32);
+		auto d_name = Name(selected_name.string + "_diffuse");
+		auto & d_envmap = cubemaps.get_or_generate(d_name);
+		if (d_envmap.id == 0)
+			d_envmap.create(TextureCubemap::ImageDescription{
+				.face_dimensions = d_face_dimensions,
 				.has_alpha = false,
 				.color_space = GL::COLOR_SPACE::LINEAR_FLOAT,
 				.levels = 1,
 			});
 
-		auto & di_program = ctx.editor_assets.programs.get("envmap_diffuse"_name);
-		glUseProgram(di_program.id);
+		auto & d_program = ctx.editor_assets.programs.get("envmap_diffuse"_name);
+		glUseProgram(d_program.id);
 
-		glViewport(i32x2(0), di_face_dimensions);
+		glViewport(i32x2(0), d_face_dimensions);
 
 		glUniformHandleui64ARB(
-			GetLocation(di_program.uniform_mappings, "environment"),
+			GetLocation(d_program.uniform_mappings, "environment"),
 			cubemap.handle
 		);
 
 		for (auto face = 0; face < 6; ++face)
 		{
-			glNamedFramebufferTextureLayer(fb.id, GL_COLOR_ATTACHMENT0, di.id, 0, face);
+			glNamedFramebufferTextureLayer(fb.id, GL_COLOR_ATTACHMENT0, d_envmap.id, 0, face);
 
 			auto view_dirs = inverse(f32x3x3(lookAt(f32x3(0), dirs[face], ups[face]))) * base_view_dirs;
 			glUniformMatrix4x3fv(
-				GetLocation(di_program.uniform_mappings, "view_dirs"),
+				GetLocation(d_program.uniform_mappings, "view_dirs"),
 				1, false, begin(view_dirs)
 			);
 
@@ -361,50 +361,50 @@ void IblBakerWindow::_generate_environment(Editor::Context const & ctx) const
 		}
 
 
-		/// Generate envmap specular
-		auto const si_face_dimensions = i32x2(1024);
-		auto si_name = Name(selected_name.string + "_specular");
-		auto & si = cubemaps.get_or_generate(si_name);
-		if (si.id == 0)
-			si.create(TextureCubemap::ImageDescription{
-				.face_dimensions = si_face_dimensions,
+		/// Generate specular envmap
+		auto const s_face_dimensions = i32x2(1024);
+		auto s_name = Name(selected_name.string + "_specular");
+		auto & s_envmap = cubemaps.get_or_generate(s_name);
+		if (s_envmap.id == 0)
+			s_envmap.create(TextureCubemap::ImageDescription{
+				.face_dimensions = s_face_dimensions,
 				.has_alpha = false,
 				.color_space = GL::COLOR_SPACE::LINEAR_FLOAT,
-				.levels = 7, // smallest mip is 16x16
+				.levels = 7, // smallest mip is 16x16 to keep cubemap meaningful
 				.min_filter = GL_LINEAR_MIPMAP_LINEAR,
 			});
 
-		auto & si_program = ctx.editor_assets.programs.get("envmap_specular"_name);
-		glUseProgram(si_program.id);
+		auto & s_program = ctx.editor_assets.programs.get("envmap_specular"_name);
+		glUseProgram(s_program.id);
 
 		glUniformHandleui64ARB(
-			GetLocation(si_program.uniform_mappings, "environment"),
+			GetLocation(s_program.uniform_mappings, "environment"),
 			cubemap.handle
 		);
 
 		i32 levels;
-		glGetTextureParameteriv(si.id, GL_TEXTURE_IMMUTABLE_LEVELS, &levels);
+		glGetTextureParameteriv(s_envmap.id, GL_TEXTURE_IMMUTABLE_LEVELS, &levels);
 
 		for (auto level = 0; level < levels; ++level)
 		{
 			i32x2 level_dimensions;
-			glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_WIDTH, &level_dimensions.x);
-			glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_HEIGHT, &level_dimensions.y);
+			glGetTextureLevelParameteriv(s_envmap.id, level, GL_TEXTURE_WIDTH, &level_dimensions.x);
+			glGetTextureLevelParameteriv(s_envmap.id, level, GL_TEXTURE_HEIGHT, &level_dimensions.y);
 
 			glViewport(i32x2(0), level_dimensions);
 
 			glUniform1f(
-				GetLocation(si_program.uniform_mappings, "roughness"),
+				GetLocation(s_program.uniform_mappings, "roughness"),
 				f32(level) / f32(levels - 1)
 			);
 
 			for (auto face = 0; face < 6; ++face)
 			{
-				glNamedFramebufferTextureLayer(fb.id, GL_COLOR_ATTACHMENT0, si.id, level, face);
+				glNamedFramebufferTextureLayer(fb.id, GL_COLOR_ATTACHMENT0, s_envmap.id, level, face);
 
 				auto view_dirs = inverse(f32x3x3(lookAt(f32x3(0), dirs[face], ups[face]))) * base_view_dirs;
 				glUniformMatrix4x3fv(
-					GetLocation(si_program.uniform_mappings, "view_dirs"),
+					GetLocation(s_program.uniform_mappings, "view_dirs"),
 					1, false, begin(view_dirs)
 				);
 
@@ -413,7 +413,7 @@ void IblBakerWindow::_generate_environment(Editor::Context const & ctx) const
 		}
 
 
-		/// Save textures as an Envmap asset
+		/// Save textures
 		auto asset_dir = ctx.game.assets.descriptions.root / "envmap" / selected_name.string;
 
 		if (std::filesystem::exists(asset_dir))
@@ -430,13 +430,13 @@ void IblBakerWindow::_generate_environment(Editor::Context const & ctx) const
 		}
 
 		{
-			ByteBuffer pixels(compMul(di_face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
-			glGetTextureImage(di.id, 0, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
+			ByteBuffer pixels(compMul(d_face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
+			glGetTextureImage(d_envmap.id, 0, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
 			File::WriteImage(
 				asset_dir / "diffuse.hdr",
 				File::Image{
 					.buffer = move(pixels),
-					.dimensions = di_face_dimensions * i32x2(1, 6),
+					.dimensions = d_face_dimensions * i32x2(1, 6),
 					.channels = 3,
 					.is_format_f32 = true,
 				},
@@ -450,14 +450,14 @@ void IblBakerWindow::_generate_environment(Editor::Context const & ctx) const
 			for (auto level = 0; level < levels; ++level)
 			{
 				i32x2 face_dimensions;
-				glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_WIDTH, &face_dimensions.x);
-				glGetTextureLevelParameteriv(si.id, level, GL_TEXTURE_HEIGHT, &face_dimensions.y);
+				glGetTextureLevelParameteriv(s_envmap.id, level, GL_TEXTURE_WIDTH, &face_dimensions.x);
+				glGetTextureLevelParameteriv(s_envmap.id, level, GL_TEXTURE_HEIGHT, &face_dimensions.y);
 
 				auto aligns_to_4 = (face_dimensions.x * 3) % 4 == 0;
 				glPixelStorei(GL_PACK_ALIGNMENT, aligns_to_4 ? 4 : 1);
 
 				ByteBuffer pixels(compMul(face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
-				glGetTextureImage(si.id, level, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
+				glGetTextureImage(s_envmap.id, level, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
 				File::WriteImage(
 					asset_dir / fmt::format("specular_mipmap{}.hdr", level),
 					File::Image{
@@ -472,6 +472,7 @@ void IblBakerWindow::_generate_environment(Editor::Context const & ctx) const
 
 			glPixelStorei(GL_PACK_ALIGNMENT, previous_pack_alignment);
 		}
+
 
 		/// Clean up
 		glDeleteFramebuffers(1, &fb.id);

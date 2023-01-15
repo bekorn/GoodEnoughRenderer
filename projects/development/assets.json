@@ -22,7 +22,7 @@
     {"name": "CONFIG", "path": "cubemap/CONFIG.png"},
   ],
   "texture": [
-    {"name": "envmap_brdf_lut", "path": "envmap/envmap_brdf_lut.hdr"},
+    {"name": "envmap_brdf_lut", "path": "envmap/brdf_lut.hdr"},
 //    HDRIs
 //    {"name": "unity_panorama", "path": "envmap/unity_panorama.png"},
 //    {"name": "leadenhall_market", "path": "envmap/leadenhall_market.hdr"},

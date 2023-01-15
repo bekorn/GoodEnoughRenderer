@@ -34,41 +34,42 @@
         "frag": "glsl/program/border.frag.glsl"
       }
     },
+    // EnvMap Baker
     {
       "name": "equirectangular_to_cubemap",
       "stages": {
         "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/equirectangular_to_cubemap.frag.glsl"
+        "frag": "glsl/program/envmap/equirectangular_to_cubemap.frag.glsl"
       }
     },
     {
       "name": "envmap_brdf_lut",
       "stages": {
         "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/envmap_brdf_lut.frag.glsl"
+        "frag": "glsl/program/envmap/brdf_lut.frag.glsl"
       },
       "include_paths": [
-        "glsl/program/common.glsl",
+        "glsl/program/envmap/common.glsl",
       ]
     },
     {
       "name": "envmap_diffuse",
       "stages": {
         "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/envmap_diffuse.frag.glsl"
+        "frag": "glsl/program/envmap/diffuse.frag.glsl"
       },
       "include_paths": [
-        "glsl/program/common.glsl",
+        "glsl/program/envmap/common.glsl",
       ]
     },
     {
       "name": "envmap_specular",
       "stages": {
         "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/envmap_specular.frag.glsl"
+        "frag": "glsl/program/envmap/specular.frag.glsl"
       },
       "include_paths":  [
-        "glsl/program/common.glsl",
+        "glsl/program/envmap/common.glsl",
       ]
     },
   ]

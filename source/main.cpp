@@ -85,7 +85,7 @@ i32 main(i32 argc, char** argv)
 	editor_ctx.add_window(make_unique_one<GameSettingsWindow>());
 	editor_ctx.add_window(make_unique_one<MetricsWindow>());
 	editor_ctx.add_window(make_unique_one<MaterialWindow>());
-	editor_ctx.add_window(make_unique_one<IblBakerWindow>());
+	editor_ctx.add_window(make_unique_one<EnvmapBakerWindow>());
 	editor_ctx.create();
 
 	FrameInfo frame_info;
