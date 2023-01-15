@@ -71,6 +71,7 @@ add_library(editor STATIC)
 target_sources(editor PRIVATE
     Lib/editor/utils.cpp
     Lib/editor/core_windows.cpp
+    Lib/editor/envmap_baker.cpp
 )
 target_link_libraries(editor PRIVATE
     core
