@@ -106,7 +106,7 @@ void EnvmapBakerWindow::generate_brdf_lut(Editor::Context const & ctx) const
 	auto asset_dir = ctx.game.assets.descriptions.root / "envmap";
 	std::filesystem::create_directories(asset_dir);
 
-	ByteBuffer pixels(compMul(texture_dimensions) * 4 * 3); // pixel format = RGB16F (but uses f32)
+	ByteBuffer pixels(compMul(texture_dimensions) * 3*4); // pixel format = RGB16F (but uses f32)
 	glGetTextureImage(texture.id, 0, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
 	File::WriteImage(
 		asset_dir / "brdf_lut.hdr",
@@ -308,8 +308,12 @@ void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 		}
 
 		{
-			ByteBuffer pixels(compMul(d_face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
+			ByteBuffer pixels(compMul(d_face_dimensions)*6 * 3*4); // pixel format = RGB16F (but uses f32)
+
+			auto aligns_to_4 = (d_face_dimensions.x * 3) % 4 == 0;
+			glPixelStorei(GL_PACK_ALIGNMENT, aligns_to_4 ? 4 : 1);
 			glGetTextureImage(d_envmap.id, 0, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
+
 			File::WriteImage(
 				asset_dir / "diffuse.hdr",
 				File::Image{
@@ -322,20 +326,18 @@ void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 			);
 		}
 		{
-			i32 previous_pack_alignment;
-			glGetIntegerv(GL_PACK_ALIGNMENT, &previous_pack_alignment);
-
 			for (auto level = 0; level < levels; ++level)
 			{
 				i32x2 face_dimensions;
 				glGetTextureLevelParameteriv(s_envmap.id, level, GL_TEXTURE_WIDTH, &face_dimensions.x);
 				glGetTextureLevelParameteriv(s_envmap.id, level, GL_TEXTURE_HEIGHT, &face_dimensions.y);
 
+				ByteBuffer pixels(compMul(face_dimensions)*6 * 3*4); // pixel format = RGB16F (but uses f32)
+
 				auto aligns_to_4 = (face_dimensions.x * 3) % 4 == 0;
 				glPixelStorei(GL_PACK_ALIGNMENT, aligns_to_4 ? 4 : 1);
-
-				ByteBuffer pixels(compMul(face_dimensions) * 6 * 4 * 3); // pixel format = RGB16F (but uses f32)
 				glGetTextureImage(s_envmap.id, level, GL_RGB, GL_FLOAT, pixels.size, pixels.data_as<void>());
+
 				File::WriteImage(
 					asset_dir / fmt::format("specular_mipmap{}.hdr", level),
 					File::Image{
@@ -347,8 +349,6 @@ void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 					false
 				);
 			}
-
-			glPixelStorei(GL_PACK_ALIGNMENT, previous_pack_alignment);
 		}
 
 

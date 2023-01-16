@@ -1,5 +1,7 @@
 #include "core_windows.hpp"
 
+#include "Lib/file_management/core.hpp"
+
 namespace Editor
 {
 void GameWindow::create(Context const & ctx)
@@ -47,6 +49,9 @@ void GameWindow::update(Context & ctx)
 
 	EndDisabled();
 
+	if (SameLine(), Button("Save Frame"))
+		should_save_frame = true;
+
 	{
 		Text("Resolution: %dx%d", ctx.game.framebuffer.resolution.x, ctx.game.framebuffer.resolution.y);
 		SameLine(), SliderFloat("Scale", &scale, 0.1, 10.0, "%.1f");
@@ -78,6 +83,52 @@ void GameWindow::update(Context & ctx)
 void GameWindow::render(Context const & ctx)
 {
 	using namespace GL;
+
+	if (should_save_frame)
+	{
+		should_save_frame = false;
+
+		auto const & game_fb = ctx.game.framebuffer;
+
+		auto border_width = 3;
+		auto capture_resolution = game_fb.resolution + 2*border_width;
+
+		Texture2D frame;
+		frame.create(Texture2D::AttachmentDescription{
+			.dimensions = capture_resolution,
+			.internal_format = GL_RGB8,
+		});
+		auto clear_color = u8x3(0); // alternative orange+red = u8x3(242, 48, 27);
+		glClearTexImage(frame.id, 0, GL_RGB, GL_BYTE, begin(clear_color));
+
+		glNamedFramebufferReadBuffer(game_fb.id, GL_COLOR_ATTACHMENT0);
+		glCopyTextureSubImage2D(
+			frame.id, 0,
+			border_width, border_width,
+			0, 0, game_fb.resolution.x, game_fb.resolution.y
+		);
+
+		ByteBuffer pixels(compMul(capture_resolution) * 3*1); // pixel format = RGB8
+
+		auto aligns_to_4 = (capture_resolution.x * 3) % 4 == 0;
+		glPixelStorei(GL_PACK_ALIGNMENT, aligns_to_4 ? 4 : 1);
+		glGetTextureImage(frame.id, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels.size, pixels.data_as<void>());
+
+		auto asset_dir = ctx.game.assets.descriptions.root / "capture";
+		if (not std::filesystem::exists(asset_dir))
+			std::filesystem::create_directories(asset_dir);
+
+		auto now = std::time(nullptr);
+		File::WriteImage(
+			asset_dir / fmt::format("{:%Y_%m_%d %H_%M_%S}.png", *std::localtime(&now)),
+			File::Image{
+				.buffer = move(pixels),
+				.dimensions = capture_resolution,
+				.channels = 3,
+				.is_format_f32 = false,
+			}
+		);
+	}
 
 	// if game is not rendering, editor should not as well
 	if (not ctx.state.should_game_render)
