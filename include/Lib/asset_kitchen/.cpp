@@ -5,6 +5,7 @@
 #include "gltf/convert.hpp"
 #include "texture/convert.hpp"
 #include "cubemap/convert.hpp"
+#include "envmap/convert.hpp"
 
 void Descriptions::create(std::filesystem::path const & project_root)
 {
@@ -51,6 +52,13 @@ void Descriptions::create(std::filesystem::path const & project_root)
 			{
 				auto [name, description] = Cubemap::Parse(item.GetObject(), project_root);
 				cubemap.generate(name, description);
+			}
+
+		if (auto const member = document.FindMember("envmap"); member != document.MemberEnd())
+			for (auto const & item: member->value.GetArray())
+			{
+				auto [name, description] = Envmap::Parse(item.GetObject(), project_root);
+				envmap.generate(name, description);
 			}
 	}
 }
@@ -105,6 +113,12 @@ void Assets::load_cubemap(Name const & name)
 {
 	auto cubemap_data = Cubemap::Load(descriptions.cubemap.get(name));
 	texture_cubemaps.generate(name, move(Cubemap::Convert(cubemap_data)));
+}
+
+void Assets::load_envmap(Name const & name)
+{
+	auto envmap_data = Envmap::Load(descriptions.envmap.get(name));
+	Envmap::Convert(envmap_data, name, texture_cubemaps);
 }
 
 template<std::ranges::range Range>

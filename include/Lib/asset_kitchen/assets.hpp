@@ -57,6 +57,9 @@ struct Assets
 
 		for (auto const & [name, _] : descriptions.cubemap)
 			load_cubemap(name);
+
+		for (auto const & [name, _] : descriptions.envmap)
+			load_envmap(name);
 	}
 
 	void load_glsl_program(Name const & name);
@@ -64,6 +67,7 @@ struct Assets
 	void load_gltf(Name const & name);
 	void load_texture(Name const & name);
 	void load_cubemap(Name const & name);
+	void load_envmap(Name const & name);
 	// For editing purposes
 	bool reload_glsl_program(Name const & name);
 };

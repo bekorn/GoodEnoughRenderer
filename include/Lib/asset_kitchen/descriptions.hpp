@@ -8,6 +8,7 @@
 #include "gltf/load.hpp"
 #include "texture/load.hpp"
 #include "cubemap/load.hpp"
+#include "envmap/load.hpp"
 
 struct Descriptions
 {
@@ -16,6 +17,7 @@ struct Descriptions
 	Managed<GLTF::Description> gltf;
 	Managed<Texture::Description> texture;
 	Managed<Cubemap::Description> cubemap;
+	Managed<Envmap::Description> envmap;
 
 	void create(std::filesystem::path const & project_root);
 };
