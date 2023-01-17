@@ -1,8 +1,7 @@
 {
   "gltf": [
-    {"name": "AxisGizmo", "path": "model/axis gizmo/axis gizmo.gltf"}
+    {"name": "AxisGizmo", "path": "model/axis gizmo/axis gizmo.gltf"},
   ],
-  "glsl_uniform_block": [],
   "texture": [
     {"name": "border_map", "path": "textures/border_contrast.png"},
   ],
@@ -14,7 +13,7 @@
         "frag": "glsl/program/gizmo.frag.glsl"
       }
     },
-    // border
+    // Border
     {
       "name": "jump_flood_init",
       "stages": {
@@ -35,6 +34,44 @@
         "vert": "glsl/program/screen_pass.vert.glsl",
         "frag": "glsl/program/border/finalize_border.frag.glsl"
       }
+    },
+    // EnvMap Baker
+    {
+      "name": "equirectangular_to_cubemap",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/envmap/equirectangular_to_cubemap.frag.glsl"
+      }
+    },
+    {
+      "name": "envmap_brdf_lut",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/envmap/brdf_lut.frag.glsl"
+      },
+      "include_paths": [
+        "glsl/program/envmap/common.glsl",
+      ]
+    },
+    {
+      "name": "envmap_diffuse",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/envmap/diffuse.frag.glsl"
+      },
+      "include_paths": [
+        "glsl/program/envmap/common.glsl",
+      ]
+    },
+    {
+      "name": "envmap_specular",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/envmap/specular.frag.glsl"
+      },
+      "include_paths":  [
+        "glsl/program/envmap/common.glsl",
+      ]
     },
   ]
 }

@@ -8,15 +8,17 @@
 //    {"name": "OrientationTest", "path": "model/orientation test/OrientationTest.gltf"},
 //    {"name": "ThreeOfSwords", "path": "model/Three of Swords/scene.gltf"},
   ],
+  "texture": [
+//    {"name":  "leadenhall_market", "path": "envmap/leadenhall_market.hdr"},
+  ],
+  "envmap": [
+    {"name": "leadenhall_market", "path": "envmap/leadenhall_market"},
+  ],
   "cubemap": [
-    {
-      "name":  "environment_map", "path": "cubemap/environment_map.png",
-      "levels":  0,
-    },
-    {
-      "name":  "environment_map_test", "path": "cubemap/test.png",
-      "min_filter": "NEAREST", "mag_filter": "NEAREST",
-    },
+//    {
+//      "name":  "environment_map_test", "path": "cubemap/test.png",
+//      "min_filter": "NEAREST", "mag_filter": "NEAREST",
+//    },
   ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},

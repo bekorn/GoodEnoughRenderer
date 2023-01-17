@@ -7,6 +7,7 @@
 #include "Lib/render/frame_info.hpp"
 #include "Lib/editor/core.hpp"
 #include "Lib/editor/core_windows.hpp"
+#include "Lib/editor/envmap_baker.hpp"
 
 #include "game.hpp"
 #include "editor_windows.hpp"
@@ -82,6 +83,7 @@ i32 main(i32 argc, char** argv)
 
 	Editor::Context editor_ctx(game, editor_assets, window);
 	Editor::add_all_core_windows(editor_ctx);
+	editor_ctx.add_window(make_unique_one<Editor::EnvmapBakerWindow>());
 	editor_ctx.add_window(make_unique_one<GameSettingsWindow>());
 	editor_ctx.add_window(make_unique_one<MaterialWindow>());
 	editor_ctx.create();

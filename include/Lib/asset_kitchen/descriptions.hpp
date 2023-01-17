@@ -12,6 +12,8 @@
 
 struct Descriptions
 {
+	std::filesystem::path root;
+
 	Managed<GLSL::Program::Description> glsl;
 	Managed<GLSL::UniformBlock::Description> uniform_block;
 	Managed<GLTF::Description> gltf;
