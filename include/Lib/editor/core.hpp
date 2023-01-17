@@ -48,6 +48,14 @@ struct State
 
 	bool should_game_render = true;
 	bool has_program_errors;
+
+	// selections
+	Name selected_uniform_buffer_name;
+	Name selected_program_name;
+	Name selected_texture_name;
+	Name selected_cubemap_name;
+	Name selected_mesh_name;
+	Name selected_node_name;
 };
 
 struct Context

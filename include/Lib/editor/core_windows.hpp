@@ -15,6 +15,16 @@ struct GameWindow : WindowBase
 	bool render_single_frame = false;
 	f32 scale = 0.5;
 
+	struct Border
+	{
+		// TODO(bekorn): a specialization for double buffered framebuffers might be handy
+		GL::FrameBuffer framebuffers[2];
+		float border_width = 10;
+
+		void create(Context const & ctx, GameWindow const & game_window);
+		void render(Context const & ctx, GameWindow const & game_window);
+	} border;
+
 	void create(Context const & ctx) override;
 	void update(Context & ctx) override;
 	void render(Context const & ctx) override;
@@ -53,8 +63,6 @@ struct UniformBufferWindow : WindowBase
 	const char * get_name() override
 	{ return "UniformBuffer"; }
 
-	Name selected_name;
-
 	void update(Context & ctx) override;
 };
 
@@ -63,7 +71,6 @@ struct ProgramWindow : WindowBase
 	const char * get_name() override
 	{ return "Program"; }
 
-	Name selected_name;
 	Assets * assets;
 
 	void create(const Context & ctx) override;
@@ -74,8 +81,6 @@ struct TextureWindow : WindowBase
 {
 	const char * get_name() override
 	{ return "Texture"; }
-
-	Name selected_name;
 
 	GL::Texture2D view;
 	bool is_texture_changed = false;
@@ -94,8 +99,6 @@ struct CubemapWindow : WindowBase
 	GL::TextureCubemap view;
 	GL::FrameBuffer framebuffer;
 
-	Name selected_name;
-
 	bool should_render;
 	bool is_changed = false;
 	bool is_level_changed = false;
@@ -112,7 +115,6 @@ struct MeshWindow : WindowBase
 	const char * get_name() override
 	{ return "Mesh"; }
 
-	Name selected_name;
 	u64 drawable_index;
 	u64 min_index = 0, max_index;
 
@@ -124,7 +126,6 @@ struct NodeEditor : WindowBase
 	const char * get_name() override
 	{ return "Node Editor"; }
 
-	Name node_name;
 	f32x3 mesh_orientation;
 
 	void update(Context & ctx) override;

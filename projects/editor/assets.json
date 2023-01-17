@@ -3,6 +3,9 @@
     {"name": "AxisGizmo", "path": "model/axis gizmo/axis gizmo.gltf"}
   ],
   "glsl_uniform_block": [],
+  "texture": [
+    {"name": "border_map", "path": "textures/border_contrast.png"},
+  ],
   "glsl_program": [
     {
       "name": "gizmo",
@@ -10,6 +13,28 @@
         "vert": "glsl/program/gizmo.vert.glsl",
         "frag": "glsl/program/gizmo.frag.glsl"
       }
-    }
+    },
+    // border
+    {
+      "name": "jump_flood_init",
+      "stages": {
+        "vert": "glsl/program/border/jump_flood_init.vert.glsl",
+        "frag": "glsl/program/border/jump_flood_init.frag.glsl"
+      }
+    },
+    {
+      "name": "jump_flood",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/border/jump_flood.frag.glsl"
+      }
+    },
+    {
+      "name": "finalize_border",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/border/finalize_border.frag.glsl"
+      }
+    },
   ]
 }
