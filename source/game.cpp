@@ -11,7 +11,7 @@ void Game::create_framebuffer()
 			{
 				.type = &GL::FrameBuffer::color0,
 				.description = GL::Texture2D::AttachmentDescription{
-					.internal_format = GL::GL_RGBA8, // GL_RGB8 does not work with compute shaders
+					.internal_format = GL::GL_RGBA16F, // formats wihtout alpha does not work with compute shaders
 					.mag_filter = GL::GL_NEAREST,
 				},
 			},
@@ -271,6 +271,19 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
 				}
 			}
+	}
+
+	// tone mapping (hdr -> ldr)
+	{
+		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+		glDepthMask(false), glDepthFunc(GL_ALWAYS);
+		auto & tone_mapping_program = assets.programs.get("tone_mapping"_name);
+		glUseProgram(tone_mapping_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(tone_mapping_program.uniform_mappings, "color_attachment"),
+			framebuffer.color0.handle
+		);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
 	// gamma correction

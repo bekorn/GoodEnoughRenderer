@@ -49,5 +49,12 @@
         "frag": "glsl/program/environment_mapping.frag.glsl"
       }
     },
+    {
+      "name": "tone_mapping",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/tone_mapping.frag.glsl"
+      }
+    },
   ],
 }
