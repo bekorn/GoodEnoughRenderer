@@ -28,49 +28,52 @@ namespace GL
 		const void * userParam
 	)
 	{// @formatter:off
-		// ignore non-significant error/warning codes
-		if (id == 131169 || id == 131185 || id == 131218 || id == 131204)
+		// not all debug callbacks need attention
+		if (false
+			|| id == 131185 // notification, logs where the buffer is stored (e.g. VIDEO MEMORY, SYSTEM MEMORY)
+			|| id == 131220 // warning, logged "sometimes" when clearing an integer (e.g. RG16UI) framebuffer attachment
+		)
 			return;
 
 		std::ostringstream out;
 
-		out << "OpenGL Debug [";
+		out << "OpenGL[";
 		switch (source)
 		{
-		case GL_DEBUG_SOURCE_API:				out << "Source: API"; break;
-		case GL_DEBUG_SOURCE_WINDOW_SYSTEM:		out << "Source: Window System"; break;
-		case GL_DEBUG_SOURCE_SHADER_COMPILER:	out << "Source: Shader Compiler"; break;
-		case GL_DEBUG_SOURCE_THIRD_PARTY:		out << "Source: Third Party"; break;
-		case GL_DEBUG_SOURCE_APPLICATION:		out << "Source: Application"; break;
-		case GL_DEBUG_SOURCE_OTHER:				out << "Source: Other"; break;
+		case GL_DEBUG_SOURCE_API:				out << "S:API";break;
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM:		out << "S:Window System";break;
+		case GL_DEBUG_SOURCE_SHADER_COMPILER:	out << "S:Shader Compiler";break;
+		case GL_DEBUG_SOURCE_THIRD_PARTY:		out << "S:Third Party";break;
+		case GL_DEBUG_SOURCE_APPLICATION:		out << "S:Application";break;
+		case GL_DEBUG_SOURCE_OTHER:				out << "S:Other";break;
 		default: break;
 		}
 		out << ", ";
 		switch (type)
 		{
-		case GL_DEBUG_TYPE_ERROR:				out << "Type: Error"; break;
-		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:	out << "Type: Deprecated Behaviour";break;
-		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:	out << "Type: Undefined Behaviour";	break;
-		case GL_DEBUG_TYPE_PORTABILITY:			out << "Type: Portability";	break;
-		case GL_DEBUG_TYPE_PERFORMANCE:			out << "Type: Performance";	break;
-		case GL_DEBUG_TYPE_MARKER:				out << "Type: Marker";	break;
-		case GL_DEBUG_TYPE_PUSH_GROUP:			out << "Type: Push Group";break;
-		case GL_DEBUG_TYPE_POP_GROUP:			out << "Type: Pop Group";break;
-		case GL_DEBUG_TYPE_OTHER:				out << "Type: Other";break;
+		case GL_DEBUG_TYPE_ERROR:				out << "T:Error";break;
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:	out << "T:Deprecated Behaviour";break;
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:	out << "T:Undefined Behaviour";break;
+		case GL_DEBUG_TYPE_PORTABILITY:			out << "T:Portability";break;
+		case GL_DEBUG_TYPE_PERFORMANCE:			out << "T:Performance";break;
+		case GL_DEBUG_TYPE_MARKER:				out << "T:Marker";break;
+		case GL_DEBUG_TYPE_PUSH_GROUP:			out << "T:Push Group";break;
+		case GL_DEBUG_TYPE_POP_GROUP:			out << "T:Pop Group";break;
+		case GL_DEBUG_TYPE_OTHER:				out << "T:Other";break;
 		default: break;
 		}
-		out << ", ";
+		out << "] ";
+
 		switch (severity)
 		{
-		case GL_DEBUG_SEVERITY_HIGH: 			out << "Severity: high"; break;
-		case GL_DEBUG_SEVERITY_MEDIUM: 			out << "Severity: medium"; break;
-		case GL_DEBUG_SEVERITY_LOW: 			out << "Severity: low"; break;
-		case GL_DEBUG_SEVERITY_NOTIFICATION:	out << "Severity: notification"; break;
+		case GL_DEBUG_SEVERITY_HIGH: 			out << "!!! "; break;
+		case GL_DEBUG_SEVERITY_MEDIUM: 			out << "!! "; break;
+		case GL_DEBUG_SEVERITY_LOW: 			out << "! "; break;
+//		case GL_DEBUG_SEVERITY_NOTIFICATION:	out << ""; break;
 		default: break;
 		}
-		out << "]\n";
 
-		out << "Error " << id << ": " << message;
+		out << "ID " << id << ": " << message;
 		if (message[length - 2] != '\n')
 			out << '\n';
 
