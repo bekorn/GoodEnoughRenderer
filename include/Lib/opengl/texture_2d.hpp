@@ -19,7 +19,7 @@ namespace GL
 
 		struct AttachmentDescription
 		{
-			i32x2 dimensions;
+			i32x2 dimensions; // TODO(bekorn): rename to resolution
 			GLenum internal_format;
 
 			GLenum min_filter = GL_LINEAR;

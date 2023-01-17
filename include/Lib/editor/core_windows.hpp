@@ -10,10 +10,7 @@ struct GameWindow : WindowBase
 	const char * get_name() override
 	{ return "Game"; }
 
-	i32x2 resolution;
 	GL::FrameBuffer framebuffer;
-	GL::Texture2D depth_attachment;
-	GL::Texture2D color_attachment;
 
 	bool render_single_frame = false;
 	f32 scale = 0.5;
@@ -96,7 +93,6 @@ struct CubemapWindow : WindowBase
 
 	GL::TextureCubemap view;
 	GL::FrameBuffer framebuffer;
-	GL::Texture2D framebuffer_color_attachment;
 
 	Name selected_name;
 

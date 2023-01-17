@@ -5,35 +5,24 @@
 
 void Game::create_framebuffer()
 {
-	framebuffer_color_attachment.create(
-		GL::Texture2D::AttachmentDescription{
-			.dimensions = resolution,
-			.internal_format = GL::GL_RGBA8, // GL_RGB8 does not work with compute shaders
-			.mag_filter = GL::GL_NEAREST,
-		}
-	);
-
-	framebuffer_depth_attachment.create(
-		GL::Texture2D::AttachmentDescription{
-			.dimensions = resolution,
-			.internal_format = GL::GL_DEPTH_COMPONENT32F,
-		}
-	);
-
-	framebuffer.create(
-		GL::FrameBuffer::Description{
-			.attachments = {
-				{
-					.type = GL::GL_COLOR_ATTACHMENT0,
-					.texture = framebuffer_color_attachment,
+	framebuffer.create(GL::FrameBuffer::Description{
+		.resolution = {720, 720},
+		.attachments = {
+			{
+				.type = &GL::FrameBuffer::color0,
+				.description = GL::Texture2D::AttachmentDescription{
+					.internal_format = GL::GL_RGBA8, // GL_RGB8 does not work with compute shaders
+					.mag_filter = GL::GL_NEAREST,
 				},
-				{
-					.type = GL::GL_DEPTH_ATTACHMENT,
-					.texture = framebuffer_depth_attachment,
+			},
+			{
+				.type = &GL::FrameBuffer::depth,
+				.description = GL::Texture2D::AttachmentDescription{
+					.internal_format = GL::GL_DEPTH_COMPONENT32F,
 				},
-			}
+			},
 		}
-	);
+	});
 }
 
 void Game::create_uniform_buffers()
@@ -51,6 +40,7 @@ void Game::create_uniform_buffers()
 	);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, frame_info_uniform_block.binding, frame_info_uniform_buffer.id);
+
 
 	// Setup Lights Uniform Buffer
 	auto & lights_uniform_block = assets.uniform_blocks.get("Lights"_name);
@@ -141,7 +131,7 @@ void Game::create()
 		.fov = 60,
 		.near = 0.1,
 		.far = 30,
-		.aspect_ratio = f32(resolution.x) / f32(resolution.y),
+		.aspect_ratio = f32(framebuffer.resolution.x) / f32(framebuffer.resolution.y),
 	};
 
 	// load all the meshes to the gpu
@@ -210,8 +200,8 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	{
 		auto & map = frame_info_uniform_buffer.map;
 		auto & block = assets.uniform_blocks.get("FrameInfo"_name);
-		block.set(map, "DepthAttachmentHandle", framebuffer_depth_attachment.handle);
-		block.set(map, "ColorAttachmentHandle", framebuffer_color_attachment.handle);
+		block.set(map, "DepthAttachmentHandle", framebuffer.depth.handle);
+		block.set(map, "ColorAttachmentHandle", framebuffer.color0.handle);
 		block.set(map, "FrameIdx", frame_info.idx);
 		block.set(map, "SecondsSinceStart", frame_info.seconds_since_start);
 		block.set(map, "SecondsSinceLastFrame", frame_info.seconds_since_last_frame);
@@ -240,7 +230,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	// Clear framebuffer
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
-		glViewport(0, 0, resolution.x, resolution.y);
+		glViewport(i32x2(0), framebuffer.resolution);
 		glColorMask(true, true, true, true), glDepthMask(true);
 		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
 		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
@@ -287,7 +277,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 	{
 		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
 
-		glViewport(0, 0, resolution.x, resolution.y);
+		glViewport(0, 0, framebuffer.resolution.x, framebuffer.resolution.y);
 		glDepthMask(false), glDepthFunc(GL_ALWAYS);
 
 		// TODO(bekorn): move this into the core project (a new project besides game and editor)
@@ -295,7 +285,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		glUseProgram(gamma_correction_program.id);
 		glUniformHandleui64ARB(
 			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
-			framebuffer_color_attachment.handle
+			framebuffer.color0.handle
 		);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
