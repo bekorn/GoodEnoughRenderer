@@ -18,6 +18,17 @@ struct Game : Render::GameBase
 	COPY(Game, delete)
 
 	// Settings
+	struct Settings
+	{
+		bool is_zpass_on = false;
+
+		bool is_environment_mapping_comp = false;
+		Name envmap_diffuse = "envmap_diffuse";
+		Name envmap_specular = "envmap_specular";
+
+		bool is_gamma_correction_comp = false;
+	} settings;
+
 	GL::MappedBuffer frame_info_uniform_buffer;
 	GL::Buffer lights_uniform_buffer;
 	GL::MappedBuffer camera_uniform_buffer;

@@ -58,22 +58,22 @@ void Game::create_uniform_buffers()
 	auto * map = (byte *) glMapNamedBuffer(lights_uniform_buffer.id, GL_WRITE_ONLY);
 	lights_uniform_block.set(map, "Lights[0].position", f32x3{0, 1, 3});
 	lights_uniform_block.set(map, "Lights[0].color", f32x3{1, 0, 0});
-	lights_uniform_block.set(map, "Lights[0].intensity", f32{2});
+	lights_uniform_block.set(map, "Lights[0].range", f32{2 * 2});
 	lights_uniform_block.set(map, "Lights[0].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[1].position", f32x3{0, 1, -3});
 	lights_uniform_block.set(map, "Lights[1].color", f32x3{0, 1, 0});
-	lights_uniform_block.set(map, "Lights[1].intensity", f32{1.6});
+	lights_uniform_block.set(map, "Lights[1].range", f32{1.6 * 2});
 	lights_uniform_block.set(map, "Lights[1].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[2].position", f32x3{-2, 3, 0});
 	lights_uniform_block.set(map, "Lights[2].color", f32x3{1, 1, 1});
-	lights_uniform_block.set(map, "Lights[2].intensity", f32{3.5});
+	lights_uniform_block.set(map, "Lights[2].range", f32{3.5 * 2});
 	lights_uniform_block.set(map, "Lights[2].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[3].position", f32x3{-10, 1, 0});
 	lights_uniform_block.set(map, "Lights[3].color", f32x3{0, 0, 1});
-	lights_uniform_block.set(map, "Lights[3].intensity", f32{2.5});
+	lights_uniform_block.set(map, "Lights[3].range", f32{2.5 * 2});
 	lights_uniform_block.set(map, "Lights[3].is_active", true);
 	glUnmapNamedBuffer(lights_uniform_buffer.id);
 
@@ -232,7 +232,7 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
 		glViewport(i32x2(0), framebuffer.resolution);
 		glColorMask(true, true, true, true), glDepthMask(true);
-		glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
+		// clearing color is unnecessary, envmap fills the background
 		glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
 	}
 
@@ -243,6 +243,19 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 
 		auto const & gltf_pbr_program = assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
 		glUseProgram(gltf_pbr_program.id);
+
+		glUniformHandleui64ARB(
+			GetLocation(gltf_pbr_program.uniform_mappings, "envmap_diffuse"),
+			assets.texture_cubemaps.get(settings.envmap_diffuse).handle
+		);
+		glUniformHandleui64ARB(
+			GetLocation(gltf_pbr_program.uniform_mappings, "envmap_specular"),
+			assets.texture_cubemaps.get(settings.envmap_specular).handle
+		);
+		glUniformHandleui64ARB(
+			GetLocation(gltf_pbr_program.uniform_mappings, "envmap_brdf_lut"),
+			assets.textures.get("envmap_brdf_lut"_name).handle
+		);
 
 		auto location_TransformM = GetLocation(gltf_pbr_program.uniform_mappings, "TransformM");
 		auto location_TransformMVP = GetLocation(gltf_pbr_program.uniform_mappings, "TransformMVP");
@@ -271,6 +284,30 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
 				}
 			}
+	}
+
+	// environment mapping
+	{
+		auto invVP = inverse(f32x3x3(view_projection));
+		auto view_dirs = invVP * f32x4x3{
+			{-1, -1, +1}, // uv 0,0
+			{+1, -1, +1}, // uv 1,0
+			{-1, +1, +1}, // uv 0,1
+			{+1, +1, +1}, // uv 1,1
+		};
+
+		glDepthMask(false), glDepthFunc(GL_LEQUAL);
+		auto & environment_map_program = assets.programs.get("environment_mapping");
+		glUseProgram(environment_map_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(environment_map_program.uniform_mappings, "environment_map"),
+			assets.texture_cubemaps.get(settings.envmap_specular).handle
+		);
+		glUniformMatrix4x3fv(
+			GetLocation(environment_map_program.uniform_mappings, "view_directions"),
+			1, false, begin(view_dirs)
+		);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
 	// tone mapping (hdr -> ldr)
