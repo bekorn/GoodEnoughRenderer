@@ -29,10 +29,6 @@ namespace GL
 			GLenum min_filter = GL_LINEAR;
 			GLenum mag_filter = GL_LINEAR;
 
-			GLenum wrap_s = GL_CLAMP_TO_EDGE;
-			GLenum wrap_t = GL_CLAMP_TO_EDGE;
-			GLenum wrap_r = GL_CLAMP_TO_EDGE;
-
 			span<byte> data = {};
 		};
 
@@ -69,9 +65,8 @@ namespace GL
 			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, description.min_filter);
 			glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, description.mag_filter);
 
-			glTextureParameteri(id, GL_TEXTURE_WRAP_S, description.wrap_s);
-			glTextureParameteri(id, GL_TEXTURE_WRAP_T, description.wrap_t);
-			glTextureParameteri(id, GL_TEXTURE_WRAP_R, description.wrap_r);
+			// https://registry.khronos.org/OpenGL/extensions/AMD/AMD_seamless_cubemap_per_texture.txt
+			glTextureParameteri(id, GL_TEXTURE_CUBE_MAP_SEAMLESS, true);
 
 			if (not(description.min_filter == GL_NEAREST or description.min_filter == GL_LINEAR))
 				glGenerateTextureMipmap(id);
@@ -93,10 +88,6 @@ namespace GL
 
 			optional<GLenum> min_filter = nullopt;
 			optional<GLenum> mag_filter = nullopt;
-
-			optional<GLenum> wrap_s = nullopt;
-			optional<GLenum> wrap_t = nullopt;
-			optional<GLenum> wrap_r = nullopt;
 		};
 
 		void create(ViewDescription const & description)
@@ -120,23 +111,6 @@ namespace GL
 			else
 				glGetTextureParameteriv(description.source.id, GL_TEXTURE_MAG_FILTER, &mag_filter);
 
-			GLenum wrap_s, wrap_t, wrap_r;
-
-			if (description.wrap_s.has_value())
-				wrap_s = description.wrap_s.value();
-			else
-				glGetTextureParameteriv(description.source.id, GL_TEXTURE_WRAP_S, &wrap_s);
-
-			if (description.wrap_t.has_value())
-				wrap_t = description.wrap_t.value();
-			else
-				glGetTextureParameteriv(description.source.id, GL_TEXTURE_WRAP_T, &wrap_t);
-
-			if (description.wrap_r.has_value())
-				wrap_r = description.wrap_r.value();
-			else
-				glGetTextureParameteriv(description.source.id, GL_TEXTURE_WRAP_R, &wrap_r);
-
 
 			glGenTextures(1, &id);
 			glTextureView(
@@ -149,9 +123,8 @@ namespace GL
 			glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, min_filter);
 			glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, mag_filter);
 
-			glTextureParameteri(id, GL_TEXTURE_WRAP_S, wrap_s);
-			glTextureParameteri(id, GL_TEXTURE_WRAP_T, wrap_t);
-			glTextureParameteri(id, GL_TEXTURE_WRAP_R, wrap_r);
+			// https://registry.khronos.org/OpenGL/extensions/AMD/AMD_seamless_cubemap_per_texture.txt
+			glTextureParameteri(id, GL_TEXTURE_CUBE_MAP_SEAMLESS, true);
 
 			handle = glGetTextureHandleARB(id);
 			// Since all the textures will always be needed, their residency doesn't need management
