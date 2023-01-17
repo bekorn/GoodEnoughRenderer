@@ -10,7 +10,7 @@ void GameWindow::create(Context const & ctx)
 			{
 				.type = &GL::FrameBuffer::color0,
 				.description= GL::Texture2D::AttachmentDescription{
-					.internal_format = GL::GL_RGBA8,
+					.internal_format = GL::GL_RGBA16F,
 					.mag_filter = GL::GL_NEAREST,
 				},
 			},
@@ -52,28 +52,25 @@ void GameWindow::update(Context & ctx)
 		SameLine(), SliderFloat("Scale", &scale, 0.1, 10.0, "%.1f");
 
 		auto resolution = ImVec2(f32(ctx.game.framebuffer.resolution.x) * scale, f32(ctx.game.framebuffer.resolution.y) * scale);
-		// custom uvs because defaults are flipped on y-axis
-		auto uv0 = ImVec2(0, 1);
-		auto uv1 = ImVec2(1, 0);
 
 		auto border_color = ImVec4{0, 0, 0, 1};
 		if (ctx.state.has_program_errors)
 			border_color.x = 1;
 
 		auto game_pos = GetCursorPos();
-		Image(
+		ImageGL(
 			reinterpret_cast<void *>(i64(ctx.game.framebuffer.color0.id)),
-			resolution, uv0, uv1
+			resolution
 		);
 		auto editor_pos = ImVec2(game_pos.x - 1, game_pos.y - 1); // because of image borders
-		SetCursorPos(editor_pos), Image(
+		SetCursorPos(editor_pos), ImageGL(
 			reinterpret_cast<void *>(i64(framebuffer.color0.id)),
-			resolution, uv0, uv1, {1, 1, 1, 1}, border_color
+			resolution, {0, 1}, {1, 0}, {1, 1, 1, 1}, border_color
 		);
 
-		SameLine(), Image(
+		SameLine(), ImageGL(
 			reinterpret_cast<void *>(i64(ctx.game.framebuffer.depth.id)),
-			resolution, uv0, uv1
+			resolution
 		);
 	}
 }
@@ -179,7 +176,6 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 
 	using namespace GL;
 
-	glViewport(0, 0, framebuffers[0].resolution.x, framebuffers[0].resolution.y);
 	glViewport(i32x2(0), framebuffers[0].resolution);
 
 	glDisable(GL_DEPTH_TEST);
@@ -192,11 +188,6 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffers[0].id);
 
 	// initialize
-	glEnable(GL_SCISSOR_TEST);
-	glScissor(
-		border_width, border_width,
-		framebuffers[0].resolution.x - 2 * border_width, framebuffers[0].resolution.y - 2 * border_width
-	);
 	glEnable(GL_SCISSOR_TEST), glScissor(i32x2(border_width), framebuffers[0].resolution - i32(2 * border_width));
 
 	auto & jump_flood_init_program = ctx.editor_assets.programs.get("jump_flood_init");
@@ -241,7 +232,6 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 	}
 
 	// finalize border
-	glViewport(0, 0, game_window.framebuffer.resolution.x, game_window.framebuffer.resolution.y);
 	glViewport(i32x2(0), game_window.framebuffer.resolution);
 	auto & border_program = ctx.editor_assets.programs.get("finalize_border");
 	glUseProgram(border_program.id);
@@ -560,7 +550,7 @@ void TextureWindow::update(Context & ctx)
 			is_level_changed = false;
 		}
 		LabelText("Resolution", "%d x %d", i32(texture_size.x), i32(texture_size.y));
-		Image(
+		ImageGL(
 			reinterpret_cast<void *>(i64(view.id)),
 			{view_size.x, view_size.y}
 		);
@@ -582,7 +572,7 @@ void CubemapWindow::create(const Context & ctx)
 				{
 					.type = &GL::FrameBuffer::color0,
 					.description = GL::Texture2D::AttachmentDescription{
-						.internal_format = GL::GL_RGBA8,
+						.internal_format = GL::GL_RGBA16F,
 					},
 				}
 			}
@@ -596,6 +586,7 @@ void CubemapWindow::update(Context & ctx)
 
 	should_render = true;
 
+	// TODO(bekorn): maybe rename Assets::texture_cubemaps -> Assets::cubemaps
 	auto & cubemaps = ctx.game.assets.texture_cubemaps;
 	auto & selected_name = ctx.state.selected_cubemap_name;
 
@@ -607,7 +598,6 @@ void CubemapWindow::update(Context & ctx)
 
 		EndCombo();
 	}
-	// TODO(bekorn): maybe rename Assets::texture_cubemaps -> Assets::cubemaps
 	if (auto it = cubemaps.find(selected_name); it != cubemaps.end())
 	{
 		auto & [_, cubemap] = *it;
@@ -690,6 +680,9 @@ void CubemapWindow::render(const Context & ctx)
 		1, false, begin(view_dirs)
 	);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	// TODO(bekorn): HDR -> LDR tone mapping? Maybe it can be optional via a checkbox.
+	//  also,what does TextureWindow show? does it even have/need gamma correction & tone mapping?
 
 	// gamma correction
 	{

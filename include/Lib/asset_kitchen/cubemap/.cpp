@@ -40,33 +40,50 @@ namespace Cubemap
 
 	LoadedData Load(Description const & description)
 	{
-		auto image_file = File::LoadImage(description.path);
-		auto face_dimensions = image_file.dimensions / i32x2{6, 1};
+		// regular textures (first-pixel == uv(0,1)) require a vertical flip,
+		// but cubemaps are expecting first-pixel == uv(0,1) already
+		auto image_file = File::LoadImage(description.path, false);
 
-		auto buffer = ByteBuffer(image_file.buffer.size);
-		auto dst_data = buffer.data_as<u8>();
-		auto dst_idx = 0;
-		auto src_data = image_file.buffer.data_as<u8>();
-		for (auto face = 0; face < 6; ++face)
-		{
-			auto src_idx = face * face_dimensions.x * image_file.channels;
-			for (auto y = 0; y < face_dimensions.y; ++y)
-			{
-				std::memcpy(dst_data + dst_idx, src_data + src_idx, face_dimensions.x * image_file.channels);
-				dst_idx += face_dimensions.x * image_file.channels;
-				src_idx += image_file.dimensions.x * image_file.channels;
-			}
-		}
-
-		return LoadedData{
-			.data = move(buffer),
-			.face_dimensions = face_dimensions,
+		auto loaded_data = LoadedData{
 			.channels = image_file.channels,
 			.is_sRGB = false,
 			.levels = description.levels,
 			.min_filter = description.min_filter,
 			.mag_filter = description.mag_filter,
 		};
+
+		if (6 * image_file.dimensions.x == image_file.dimensions.y)
+		{
+			// faces are stacked vertically (face pixels are separate)
+			loaded_data.face_dimensions = image_file.dimensions / i32x2{1, 6};
+			loaded_data.data = move(image_file.buffer);
+		}
+		else if (image_file.dimensions.x == 6 * image_file.dimensions.y)
+		{
+			// faces are stacked horizontally (face pixels are interleaved)
+			auto face_dimensions = image_file.dimensions / i32x2{6, 1};
+			auto buffer = ByteBuffer(image_file.buffer.size);
+
+			// un-interleave the buffer (basically turns it into above case)
+			auto dst_data = buffer.data_as<u8>();
+			auto dst_idx = 0;
+			auto src_data = image_file.buffer.data_as<u8>();
+			for (auto face = 0; face < 6; ++face)
+			{
+				auto src_idx = face * face_dimensions.x * image_file.channels;
+				for (auto y = 0; y < face_dimensions.y; ++y)
+				{
+					std::memcpy(dst_data + dst_idx, src_data + src_idx, face_dimensions.x * image_file.channels);
+					dst_idx += face_dimensions.x * image_file.channels;
+					src_idx += image_file.dimensions.x * image_file.channels;
+				}
+			}
+
+			loaded_data.face_dimensions = face_dimensions;
+			loaded_data.data = move(buffer);
+		}
+
+		return loaded_data;
 	}
 
 	GL::TextureCubemap Convert(LoadedData const & loaded)
@@ -76,7 +93,7 @@ namespace Cubemap
 			GL::TextureCubemap::ImageDescription{
 				.face_dimensions = loaded.face_dimensions,
 				.has_alpha = loaded.channels == 4,
-				.is_sRGB = loaded.is_sRGB,
+				.color_space = loaded.is_sRGB ? GL::COLOR_SPACE::SRGB_U8 : GL::COLOR_SPACE::LINEAR_U8,
 				.levels = loaded.levels,
 				.min_filter = loaded.min_filter,
 				.mag_filter = loaded.mag_filter,

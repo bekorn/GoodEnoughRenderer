@@ -3,7 +3,13 @@
 #include <fstream>
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#define STBI_ONLY_JPEG
+#define STBI_ONLY_HDR
 #include <stb_image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include "core.hpp"
 
@@ -48,25 +54,59 @@ namespace File
 		return buffer;
 	}
 
-	Image LoadImage(std::filesystem::path const & path)
+	Image LoadImage(std::filesystem::path const & path, bool should_flip_vertically)
 	{
 		auto const file_data = LoadAsBytes(path);
 
-		i32x2 dimensions;
-		i32 channels;
-		void * raw_pixel_data = stbi_load_from_memory(
-			file_data.data_as<const unsigned char>(), file_data.size,
-			&dimensions.x, &dimensions.y,
-			&channels, 0
-		);
+		stbi_set_flip_vertically_on_load_thread(should_flip_vertically);
 
-		return {
-			.buffer = {
-				move(raw_pixel_data),
-				usize(dimensions.x * dimensions.y * channels)
-			},
-			.dimensions = dimensions,
-			.channels = channels,
-		};
+		Image image;
+		image.is_format_f32 = stbi_is_hdr_from_memory(file_data.data_as<const unsigned char>(), file_data.size);
+
+		void * raw_pixel_data;
+		if (image.is_format_f32)
+			raw_pixel_data = stbi_loadf_from_memory(
+				file_data.data_as<const unsigned char>(), file_data.size,
+				&image.dimensions.x, &image.dimensions.y,
+				&image.channels, 0
+			);
+		else
+			raw_pixel_data = stbi_load_from_memory(
+				file_data.data_as<const unsigned char>(), file_data.size,
+				&image.dimensions.x, &image.dimensions.y,
+				&image.channels, 0
+			);
+
+		if (raw_pixel_data == nullptr)
+			fmt::print(stderr, "File::LoadImage failed. path: {}, error: {}\n", path, stbi_failure_reason());
+
+		image.buffer = ByteBuffer(move(raw_pixel_data), image.dimensions.x * image.dimensions.y * image.channels);
+
+		return image;
+	}
+
+	void WriteImage(std::filesystem::path const & path, Image const & image, bool should_flip_vertically)
+	{
+		auto p = path.string();
+
+		stbi_flip_vertically_on_write(should_flip_vertically);
+
+		bool success;
+		if (image.is_format_f32)
+			success = stbi_write_hdr(
+				p.c_str(),
+				image.dimensions.x, image.dimensions.y,
+				image.channels, image.buffer.data_as<float>()
+			);
+		else
+			success = stbi_write_png(
+				p.c_str(),
+				image.dimensions.x, image.dimensions.y,
+				image.channels, image.buffer.data_as<void>(),
+				image.dimensions.x * image.channels
+			);
+
+		if (not success)
+			fmt::print(stderr, "File::WriteImage failed. path {}, error: {}\n", path, stbi_failure_reason());
 	}
 }

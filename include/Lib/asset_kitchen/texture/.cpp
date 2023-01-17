@@ -40,14 +40,14 @@ namespace Texture
 
 	LoadedData Load(Description const & description)
 	{
-		auto image_file = File::LoadImage(description.path);
-		auto dimensions = image_file.dimensions;
+		// regular textures (first-pixel == uv(0,1)) require a vertical flip
+		auto image_file = File::LoadImage(description.path, true);
 
-		return LoadedData{
+		return {
 			.data = move(image_file.buffer),
-			.dimensions = dimensions,
+			.dimensions = image_file.dimensions,
 			.channels = image_file.channels,
-			.is_sRGB = false,
+			.color_space = image_file.is_format_f32 ? GL::COLOR_SPACE::LINEAR_F32 : GL::COLOR_SPACE::LINEAR_U8,
 			.levels = description.levels,
 			.min_filter = description.min_filter,
 			.mag_filter = description.mag_filter,
@@ -61,7 +61,7 @@ namespace Texture
 			GL::Texture2D::ImageDescription{
 				.dimensions = loaded.dimensions,
 				.has_alpha = loaded.channels == 4,
-				.is_sRGB = loaded.is_sRGB,
+				.color_space = loaded.color_space,
 				.levels = loaded.levels,
 				.min_filter = loaded.min_filter,
 				.mag_filter = loaded.mag_filter,
