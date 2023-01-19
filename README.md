@@ -1,4 +1,7 @@
-### Build
+![ScreenShot](https://drive.google.com/uc?export=view&id=1P4RQFhDjnaFaes-Lgcotvu9DJII12MQI)
+
+
+### How to Build
 
 Setup vcpkg inside the build folder
 ```
@@ -13,8 +16,11 @@ Now you can open the project with CLion and everything should be fine.
 **Or**, you can generate the project with cmake presets `Debug` or `RelWithDebInfo` (_both require Ninja_)
 ```
 cd path/to/clone
-cmake --preset=RelWithDebInfo
+cmake --preset=Debug
 ```
+> I only use the Debug profile and run with the debugger because I disabled many features so that it is _almost_ the same performance.
+Main advantages of Debug profile are: code is not optimized away (line by line debugging), asserts are caught by the debugger (easily investigable).
+
 
 And build with
 ```
@@ -22,38 +28,21 @@ cd path/to/clone
 cmake --build --preset=RelWithDebInfo
 ```
 
-To run the program, provide the paths to `projects/editor` and `projects/development` folders as the command line arguments.
+To run the program, provide paths to the `projects/editor` and `projects/development` folders as the command line arguments.
 (I prefer absolute paths to prevent any _current working directory_ differences between compilers) 
 
-GLTF assets are not added to git (except `projects/editor/models`). I may prepare a GDrive link for the ones I'm using but actually any model is fine,
-just edit the `projects/development/assets.json`.
+GLTF assets are excluded from git because of their size (except `projects/editor/models`). To load your own, edit the `projects/development/assets.json`.
+HDRIs and Envmaps are also excluded (‼[^-1]) for the same reason. You can load an HDRI and use the Envmap Baker in the editor.
 
----
+[^-1]: fix(bekorn): this causes editor to crash if no envmap is loaded
 
-### TODO
 
-Github
-- Screenshots
+### What to read next
 
-Editor
-- Camera
-- Mouse input
-- Visualizing geometry attributes
-- An outline shader to indicate selection
-- Object picking with mouse
-- Transform gizmos
+I did not work in an organized manner before (besides my Notion).
+However, it's getting more difficult with each feature so I made some changes recently:
+- Each feature will have its own issue and branch
+- Each goal/version will have its own project that contains the necessary features to accomplish it
 
-Rendering
-- GLTF materials
-- Deferred rendering
-- Instanced rendering
-    - Particles
-    - Foliage
-- Z-up right-handed coordinate system
-
-Core
-- Entity Component System (or some equilevent)
-- Logging
-- Profiling (flame chart)
-- Compute shaders
-- Project restructure
+Goals are planned as little projects on their own, with challenging requirements that are not possible with the current version.
+Here is the [active goal](https://github.com/bekorn/GoodEnoughRenderer/issues/2).
