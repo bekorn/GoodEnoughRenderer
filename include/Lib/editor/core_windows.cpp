@@ -669,12 +669,13 @@ void CubemapWindow::render(const Context & ctx)
 	auto view = visit([](Camera auto & c) { return c.get_view(); }, ctx.game.camera);
 	auto projection = visit([](Camera auto & c) { return c.get_projection(); }, ctx.game.camera);
 	auto view_projection = projection * view;
-	auto invVP = glm::inverse(f32x3x3(view_projection));
-	f32x4x3 view_dirs;
-	view_dirs[0] = invVP * f32x3(-1, -1, 1); // left   bottom
-	view_dirs[1] = invVP * f32x3(+1, -1, 1); // right  bottom
-	view_dirs[2] = invVP * f32x3(-1, +1, 1); // left   up
-	view_dirs[3] = invVP * f32x3(+1, +1, 1); // right  up
+	auto invVP = inverse(f32x3x3(view_projection));
+	auto view_dirs = invVP * f32x4x3{
+		{-1, -1, +1}, // uv 0,0
+		{+1, -1, +1}, // uv 1,0
+		{-1, +1, +1}, // uv 0,1
+		{+1, +1, +1}, // uv 1,1
+	};
 	glUniformMatrix4x3fv(
 		GetLocation(environment_mapping_program.uniform_mappings, "view_directions"),
 		1, false, begin(view_dirs)
@@ -800,6 +801,10 @@ void NodeEditor::update(Context & ctx)
 	bool node_changed = false;
 	if (BeginCombo("Node", selected_name.string.data()))
 	{
+		// provide empty option to deselect
+		if (Selectable("##"))
+			selected_name = "", node_changed = true;
+
 		auto indent = GetStyle().IndentSpacing;
 		for (auto & node: scene_tree.depth_first())
 		{

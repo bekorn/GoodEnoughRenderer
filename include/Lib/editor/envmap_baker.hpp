@@ -17,7 +17,6 @@ struct EnvmapBakerWindow : Editor::WindowBase
 	bool should_generate_envmap = false;
 	bool should_generate_brdf_lut = false;
 
-	Name cubemap_name;
 	void update(Editor::Context & ctx) override;
 	void render(Editor::Context const & ctx) override;
 	void generate_brdf_lut(const Editor::Context & ctx) const;
