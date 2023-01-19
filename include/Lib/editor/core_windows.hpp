@@ -14,6 +14,7 @@ struct GameWindow : WindowBase
 
 	bool render_single_frame = false;
 	f32 scale = 0.5;
+	bool should_save_frame = false;
 
 	struct Border
 	{
