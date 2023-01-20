@@ -11,11 +11,13 @@ void main()
 
     uvec2 closest = texelFetch(positions, texel_idx, 0).rg;
     vec2 diff = abs(ivec2(position - closest));
-    float dist = length(diff);
+    float dist = length(diff) - 1; // border starts where dist > 1
 
-    if (dist < 1 || dist > border_width)
+    const float fade_out = 1; // anti-aliasing
+
+    if (dist < 0 || dist > border_width + fade_out)
         discard;
 
-    out_color = textureLod(border_map, vec2(dist / border_width, 0.5), 0);
-    out_color.a *= smoothstep(border_width, border_width - 1, dist);
+    out_color = textureLod(border_map, vec2(dist / border_width, 0), 0);
+    out_color.a *= smoothstep(border_width + fade_out, border_width, dist);
 }
