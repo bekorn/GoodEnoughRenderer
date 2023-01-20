@@ -93,8 +93,9 @@ struct Managed
 	T & get_or_generate(Name const & name)
 	{ return resources[name]; }
 
-	auto contains(Name const & name) const
-	{ return resources.contains(name); }
+	template<typename... Names>
+	auto contains(Names... names) const
+	{ return (resources.contains(names) && ...); }
 
 	auto find(Name const & name) const
 	{ return resources.find(name); }

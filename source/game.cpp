@@ -139,6 +139,22 @@ void Game::create()
 	for (auto & [_, mesh]: assets.meshes)
 		for (auto & drawable: mesh.drawables)
 			drawable.load(attribute_mappings);
+
+	// fallback to default envmap
+	if (not assets.texture_cubemaps.contains(settings.envmap_diffuse, settings.envmap_specular))
+	{
+		array<u8x3, 6> pixels;
+		for (auto & pixel: pixels)
+			pixel = u8x3(0.4 * 255);
+
+		auto desc = GL::TextureCubemap::ImageDescription{
+			.face_dimensions = {1, 1},
+			.data = {reinterpret_cast<byte*>(pixels.data()), pixels.size() * 3*1},
+		};
+
+		assets.texture_cubemaps.generate(settings.envmap_diffuse).data.create(desc);
+		assets.texture_cubemaps.generate(settings.envmap_specular).data.create(desc);
+	}
 }
 
 void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)

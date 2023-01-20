@@ -32,9 +32,7 @@ To run the program, provide paths to the `projects/editor` and `projects/develop
 (I prefer absolute paths to prevent any _current working directory_ differences between compilers) 
 
 GLTF assets are excluded from git because of their size (except `projects/editor/models`). To load your own, edit the `projects/development/assets.json`.
-HDRIs and Envmaps are also excluded (‼[^-1]) for the same reason. You can load an HDRI and use the Envmap Baker in the editor.
-
-[^-1]: fix(bekorn): this causes editor to crash if no envmap is loaded
+HDRIs and Envmaps are also excluded for the same reason. You can load an HDRI and use the Envmap Baker in the editor.
 
 
 ### What to read next
