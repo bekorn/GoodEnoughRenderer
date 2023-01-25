@@ -13,6 +13,14 @@
         "frag": "glsl/program/gizmo.frag.glsl"
       }
     },
+    // Volume Window
+    {
+      "name": "volume_slice",
+      "stages": {
+        "vert": "glsl/program/screen_pass.vert.glsl",
+        "frag": "glsl/program/volume_slice.frag.glsl"
+      }
+    },
     // Border
     {
       "name": "jump_flood_init",

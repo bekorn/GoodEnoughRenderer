@@ -52,7 +52,7 @@ namespace GL
 			bool has_alpha = false;
 			COLOR_SPACE color_space = COLOR_SPACE::LINEAR_U8;
 
-			// levels = 0 to generate mips all the wasy to 1x1
+			// levels = 0 to generate mips all the way to 1x1
 			i32 levels = 1;
 
 			GLenum min_filter = GL_LINEAR;
