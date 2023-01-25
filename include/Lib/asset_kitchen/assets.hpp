@@ -6,6 +6,7 @@
 #include "Lib/core/named.hpp"
 #include "Lib/opengl/texture_2d.hpp"
 #include "Lib/opengl/texture_cubemap.hpp"
+#include "Lib/opengl/texture_3d.hpp"
 #include "Lib/render/mesh.hpp"
 #include "Lib/render/material.hpp"
 #include "Lib/scene/core.hpp"
@@ -19,6 +20,7 @@ struct Assets
 	Managed<GL::ShaderProgram> programs;
 	Managed<GL::Texture2D> textures;
 	Managed<GL::TextureCubemap> texture_cubemaps;
+	Managed<GL::Texture3D> volumes;
 	// Render resources
 	Managed<Geometry::Primitive> primitives;
 	Managed<unique_one<Render::IMaterial>> materials;

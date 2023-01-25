@@ -754,6 +754,135 @@ void CubemapWindow::render(const Context & ctx)
 	}
 }
 
+void VolumeWindow::create(const Context & ctx)
+{
+	auto view_resolution = i32x2(240, 240);
+
+	framebuffer.create(
+		GL::FrameBuffer::Description{
+			.resolution = view_resolution,
+			.attachments = {
+				{
+					.type = &GL::FrameBuffer::color0,
+					.description = GL::Texture2D::AttachmentDescription{
+						.internal_format = GL::GL_RGBA16F,
+					},
+				}
+			}
+		}
+	);
+}
+
+void VolumeWindow::update(Context & ctx)
+{
+	using namespace ImGui;
+
+	should_render = true;
+
+	auto & volumes = ctx.game.assets.volumes;
+	auto & selected_name = ctx.state.selected_volume_name;
+
+	if (BeginCombo("Volume", selected_name.string.data()))
+	{
+		for (auto & [name, _]: volumes)
+			if (Selectable(name.string.data()))
+				selected_name = name, is_changed = true;
+
+		EndCombo();
+	}
+	if (auto it = volumes.find(selected_name); it != volumes.end())
+	{
+		auto & [_, volume] = *it;
+		SameLine(), Text("(id %d)", volume.id);
+
+		if (is_changed)
+		{
+			current_level = 0;
+			GL::glGetTextureParameteriv(volume.id, GL::GL_TEXTURE_IMMUTABLE_LEVELS, &levels);
+
+			is_changed = false;
+			is_level_changed = true;
+		}
+
+		if (SliderInt("Level", &current_level, 0, levels - 1))
+			is_level_changed = true;
+
+		if (is_level_changed)
+		{
+			GL::Texture3D new_view;
+			new_view.create(
+				GL::Texture3D::ViewDescription{
+					.source = volume,
+					.base_level = current_level,
+					.level_count = 1
+				}
+			);
+			view = move(new_view);
+
+			GL::glGetTextureLevelParameterfv(view.id, 0, GL::GL_TEXTURE_WIDTH, &size.x);
+			GL::glGetTextureLevelParameterfv(view.id, 0, GL::GL_TEXTURE_HEIGHT, &size.y);
+			GL::glGetTextureLevelParameterfv(view.id, 0, GL::GL_TEXTURE_DEPTH, &size.z);
+
+			f32 const max_resolution = 240;
+			view_size = max_resolution / compMax(f32x2(size)) * f32x2(size);
+
+			is_level_changed = false;
+		}
+		LabelText("Resolution", "%d x %d x %d", i32(size.x), i32(size.y), i32(size.z));
+		SliderFloat("Z", &z, 0, 1, "%.2f");
+		Image(
+			reinterpret_cast<void *>(i64(framebuffer.color0.id)),
+			{view_size.x, view_size.y},
+			{0, 1}, {1, 0}
+		);
+	}
+	else
+	{
+		Text("Pick a volume");
+	}
+}
+
+void VolumeWindow::render(const Context & ctx)
+{
+	using namespace GL;
+
+	if (not should_render)
+		return;
+
+	should_render = false;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
+	glViewport(i32x2(0), framebuffer.resolution);
+
+	auto & volume_slice_program = ctx.editor_assets.programs.get("volume_slice");
+	glUseProgram(volume_slice_program.id);
+	glUniformHandleui64ARB(
+		GetLocation(volume_slice_program.uniform_mappings, "volume"),
+		view.handle
+	);
+	glUniform1f(
+		GetLocation(volume_slice_program.uniform_mappings, "z"),
+		z
+	);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	// gamma correction
+	{
+		glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+
+		glDepthMask(false), glDepthFunc(GL_ALWAYS);
+
+		// TODO(bekorn): move this into the core project (a new project besides game and editor)
+		auto & gamma_correction_program = ctx.game.assets.programs.get("gamma_correction"_name);
+		glUseProgram(gamma_correction_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
+			framebuffer.color0.handle
+		);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
+}
+
 void MeshWindow::update(Context & ctx)
 {
 	using namespace ImGui;

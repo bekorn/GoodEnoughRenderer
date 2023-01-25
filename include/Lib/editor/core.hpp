@@ -54,6 +54,7 @@ struct State
 	Name selected_program_name;
 	Name selected_texture_name;
 	Name selected_cubemap_name;
+	Name selected_volume_name;
 	Name selected_mesh_name;
 	Name selected_node_name;
 };

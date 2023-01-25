@@ -111,6 +111,27 @@ struct CubemapWindow : WindowBase
 	void render(Context const & ctx) override;
 };
 
+struct VolumeWindow : WindowBase
+{
+	const char * get_name() override
+	{ return "Volume"; }
+
+	GL::Texture3D view;
+	GL::FrameBuffer framebuffer;
+
+	bool should_render;
+	bool is_changed = false;
+	bool is_level_changed = false;
+	i32 levels = 0, current_level = 0;
+	f32x3 size;
+	f32x2 view_size;
+	f32 z;
+
+	void create(Context const & ctx) override;
+	void update(Context & ctx) override;
+	void render(Context const & ctx) override;
+};
+
 struct MeshWindow : WindowBase
 {
 	const char * get_name() override
@@ -148,6 +169,7 @@ inline void add_all_core_windows(Context & ctx)
 	ctx.add_window(make_unique_one<ProgramWindow>());
 	ctx.add_window(make_unique_one<TextureWindow>());
 	ctx.add_window(make_unique_one<CubemapWindow>());
+	ctx.add_window(make_unique_one<VolumeWindow>());
 	ctx.add_window(make_unique_one<MeshWindow>());
 	ctx.add_window(make_unique_one<NodeEditor>());
 	ctx.add_window(make_unique_one<CameraWindow>());
