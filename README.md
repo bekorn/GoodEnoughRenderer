@@ -1,5 +1,30 @@
 ![ScreenShot](https://drive.google.com/uc?export=view&id=1P4RQFhDjnaFaes-Lgcotvu9DJII12MQI)
 
+### Features
+
+- GLTF model, material, scene loading
+- JPEG, PNG, HDRI loading
+  - Supports 1:6, 6:1 cubemap layouts
+- GLSL shader loading via json configuration
+  - Interface inspection
+  - Dynamic reloading
+
+- Physically Based Rendering
+  - Single-scattering isotropic BRDF: Cook-Torrance
+    - F: Schlick, D: Trowbridge-Reitz GGX, G: Schlick GGX
+  - Image Based Lighting
+    - Generate an Environment Map out of an HDRI
+  - Point lights
+
+- General metrics and custom GPU time queries
+- Material editor
+- Scene Tree
+
+
+See [vcpkg.json](./vcpkg.json) for the dependencies.
+
+----
+
 
 ### How to Build
 
@@ -33,6 +58,8 @@ To run the program, provide paths to the `projects/editor` and `projects/develop
 
 GLTF assets are excluded from git because of their size (except `projects/editor/models`). To load your own, edit the `projects/development/assets.json`.
 HDRIs and Envmaps are also excluded for the same reason. You can load an HDRI and use the Envmap Baker in the editor.
+
+----
 
 
 ### What to read next
