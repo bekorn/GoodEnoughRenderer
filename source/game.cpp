@@ -5,19 +5,19 @@
 
 void Game::create_framebuffer()
 {
-	framebuffer.create(GL::FrameBuffer::Description{
+	framebuffer.init(GL::FrameBuffer::Desc{
 		.resolution = {720, 720},
 		.attachments = {
 			{
 				.type = &GL::FrameBuffer::color0,
-				.description = GL::Texture2D::AttachmentDescription{
-					.internal_format = GL::GL_RGBA16F, // formats wihtout alpha does not work with compute shaders
+				.desc = GL::Texture2D::AttachmentDesc{
+					.internal_format = GL::GL_RGBA16F, // formats without alpha does not work with compute shaders
 					.mag_filter = GL::GL_NEAREST,
 				},
 			},
 			{
 				.type = &GL::FrameBuffer::depth,
-				.description = GL::Texture2D::AttachmentDescription{
+				.desc = GL::Texture2D::AttachmentDesc{
 					.internal_format = GL::GL_DEPTH_COMPONENT32F,
 				},
 			},
@@ -32,8 +32,8 @@ void Game::create_uniform_buffers()
 	// Setup FrameInfo uniform buffer
 	auto & frame_info_uniform_block = assets.uniform_blocks.get("FrameInfo"_name);
 
-	frame_info_uniform_buffer.create(
-		MappedBuffer::UniformBlockDescription{
+	frame_info_uniform_buffer.init(
+		MappedBuffer::UniformBlockDesc{
 			.uniform_block = frame_info_uniform_block,
 			.array_size = 1,
 		}
@@ -45,8 +45,8 @@ void Game::create_uniform_buffers()
 	// Setup Lights Uniform Buffer
 	auto & lights_uniform_block = assets.uniform_blocks.get("Lights"_name);
 
-	lights_uniform_buffer.create(
-		Buffer::UniformBlockDescription{
+	lights_uniform_buffer.init(
+		Buffer::UniformBlockDesc{
 			.usage = GL::GL_DYNAMIC_DRAW,
 			.uniform_block = lights_uniform_block,
 			.array_size = 1,
@@ -81,8 +81,8 @@ void Game::create_uniform_buffers()
 	// Setup Camera Uniform Buffer
 	auto & camera_uniform_block = assets.uniform_blocks.get("Camera"_name);
 
-	camera_uniform_buffer.create(
-		MappedBuffer::UniformBlockDescription{
+	camera_uniform_buffer.init(
+		MappedBuffer::UniformBlockDesc{
 			.uniform_block = camera_uniform_block,
 			.array_size = 1,
 		}
@@ -93,7 +93,7 @@ void Game::create_uniform_buffers()
 
 	// Setup GLTF Material Block and Buffer
 	auto & material_block = Render::Material_gltf_pbrMetallicRoughness::block;
-	material_block.create(
+	material_block.init(
 		{
 			.layout = GetMapping(
 				assets.programs.get(GLTF::pbrMetallicRoughness_program_name).storage_block_mappings, "Material"
@@ -101,8 +101,8 @@ void Game::create_uniform_buffers()
 		}
 	);
 
-	gltf_material_buffer.create(
-		Buffer::StorageBlockDescription{
+	gltf_material_buffer.init(
+		Buffer::StorageBlockDesc{
 			.usage = GL_DYNAMIC_DRAW,
 			.storage_block = material_block,
 			.array_size = assets.materials.resources.size(),
@@ -119,12 +119,12 @@ void Game::create_uniform_buffers()
 	glUnmapNamedBuffer(gltf_material_buffer.id);
 }
 
-void Game::create()
+void Game::init()
 {
 	create_framebuffer();
 	create_uniform_buffers();
 
-	camera = PerspectiveCamera{
+	camera = Render::PerspectiveCamera{
 		.position = {5, 2, 0},
 		.up = {0, 1, 0},
 		.target = {0, 0, 0},
@@ -147,17 +147,17 @@ void Game::create()
 		for (auto & pixel: pixels)
 			pixel = u8x3(0.4 * 255);
 
-		auto desc = GL::TextureCubemap::ImageDescription{
+		auto desc = GL::TextureCubemap::ImageDesc{
 			.face_dimensions = {1, 1},
 			.data = {reinterpret_cast<byte*>(pixels.data()), pixels.size() * 3*1},
 		};
 
-		assets.texture_cubemaps.generate(settings.envmap_diffuse).data.create(desc);
-		assets.texture_cubemaps.generate(settings.envmap_specular).data.create(desc);
+		assets.texture_cubemaps.generate(settings.envmap_diffuse).data.init(desc);
+		assets.texture_cubemaps.generate(settings.envmap_specular).data.init(desc);
 	}
 }
 
-void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
+void Game::update(GLFW::Window const & window, Render::FrameInfo const & frame_info)
 {
 	//	cmaera movement with WASD+QE+CTRL
 	{
@@ -173,12 +173,12 @@ void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
 		auto movement = speed * frame_info.seconds_since_last_frame * dir;
 		if (any(notEqual(movement, f32x3(0))))
 		{
-			auto view = visit([](Camera auto & c) { return f32x3x3(c.get_view()); }, camera);
+			auto view = visit([](Render::Camera auto & c) { return f32x3x3(c.get_view()); }, camera);
 			movement = inverse(view) * movement;
 			if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-				visit([movement](Camera auto & c) { c.target += movement; }, camera);
+				visit([movement](Render::Camera auto & c) { c.target += movement; }, camera);
 			else
-				visit([movement](Camera auto & c) { c.position += movement; }, camera);
+				visit([movement](Render::Camera auto & c) { c.position += movement; }, camera);
 		}
 	}
 
@@ -186,7 +186,7 @@ void Game::update(GLFW::Window const & window, FrameInfo const & frame_info)
 	assets.scene_tree.update_transforms();
 }
 
-void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
+void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_info)
 {
 	using namespace GL;
 
@@ -224,9 +224,9 @@ void Game::render(GLFW::Window const & window, FrameInfo const & frame_info)
 		glFlushMappedNamedBufferRange(frame_info_uniform_buffer.id, 0, block.aligned_size);
 	}
 
-	auto camera_position = visit([](Camera auto & c) { return c.position; }, camera);
-	auto view = visit([](Camera auto & c) { return c.get_view(); }, camera);
-	auto projection = visit([](Camera auto & c) { return c.get_projection(); }, camera);
+	auto camera_position = visit([](Render::Camera auto & c) { return c.position; }, camera);
+	auto view = visit([](Render::Camera auto & c) { return c.get_view(); }, camera);
+	auto projection = visit([](Render::Camera auto & c) { return c.get_projection(); }, camera);
 	auto view_projection = projection * view;
 
 	// Update Camera Uniform Buffer

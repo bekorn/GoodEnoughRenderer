@@ -3,7 +3,7 @@
 
 namespace Envmap
 {
-std::pair<Name, Description> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
+std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
 {
 	return {
 		o.FindMember("name")->value.GetString(),
@@ -11,10 +11,10 @@ std::pair<Name, Description> Parse(File::JSON::JSONObj o, std::filesystem::path 
 	};
 }
 
-LoadedData Load(Description const & description)
+LoadedData Load(Desc const & desc)
 {
-	auto specular_mip0 = File::LoadImage(description.path / "specular_mipmap0.hdr", false);
-	auto diffuse = File::LoadImage(description.path / "diffuse.hdr", false);
+	auto specular_mip0 = File::LoadImage(desc.path / "specular_mipmap0.hdr", false);
+	auto diffuse = File::LoadImage(desc.path / "diffuse.hdr", false);
 
 	LoadedData loaded{
 		.diffuse = move(diffuse.buffer),
@@ -26,7 +26,7 @@ LoadedData Load(Description const & description)
 
 	i32 level = 1;
 	std::filesystem::path mip_path;
-	while (mip_path = description.path / fmt::format("specular_mipmap{}.hdr", level), exists(mip_path))
+	while (mip_path = desc.path / fmt::format("specular_mipmap{}.hdr", level), exists(mip_path))
 	{
 		loaded.specular_mipmaps.emplace_back(File::LoadImage(mip_path, false).buffer);
 		++level;
@@ -38,7 +38,7 @@ LoadedData Load(Description const & description)
 void Convert(LoadedData const & loaded, Name const & name, Managed<GL::TextureCubemap> & cubemaps)
 {
 	auto & diffuse = cubemaps.generate(name.string + "_diffuse").data;
-	diffuse.create(GL::TextureCubemap::ImageDescription{
+	diffuse.init(GL::TextureCubemap::ImageDesc{
 		.face_dimensions = loaded.diffuse_face_dimensions,
 		.has_alpha = false,
 		.color_space = GL::COLOR_SPACE::LINEAR_F32,
@@ -47,7 +47,7 @@ void Convert(LoadedData const & loaded, Name const & name, Managed<GL::TextureCu
 	});
 
 	auto & specular = cubemaps.generate(name.string + "_specular").data;
-	specular.create(GL::TextureCubemap::ImageDescription{
+	specular.init(GL::TextureCubemap::ImageDesc{
 		.face_dimensions = loaded.specular_face_dimensions,
 		.has_alpha = false,
 		.color_space = GL::COLOR_SPACE::LINEAR_F32,

@@ -5,15 +5,15 @@
 
 namespace GLSL::UniformBlock
 {
-	struct LoadedData
-	{
-		std::string source;
-	};
+struct LoadedData
+{
+	std::string source;
+};
 
-	struct Description
-	{
-		std::filesystem::path path;
-	};
+struct Desc
+{
+	std::filesystem::path path;
+};
 
-	LoadedData Load(Description const & description);
+LoadedData Load(Desc const & desc);
 }

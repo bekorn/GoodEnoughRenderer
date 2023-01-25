@@ -6,30 +6,30 @@
 
 namespace GLSL::Program
 {
+struct Stage
+{
+	GL::GLenum type;
+	std::string source;
+};
+
+struct Desc
+{
 	struct Stage
 	{
-		GL::GLenum type;
-		std::string source;
+		GL::GLenum stage;
+		std::filesystem::path path;
 	};
+	vector<Stage> stages;
+	// TODO(bekorn): The order will be important in a case in the future and this api will fail then :/
+	vector<std::string_view> include_strings;
+	vector<std::filesystem::path> include_paths;
+};
 
-	struct Description
-	{
-		struct Stage
-		{
-			GL::GLenum stage;
-			std::filesystem::path path;
-		};
-		vector<Stage> stages;
-		// TODO(bekorn): The order will be important in a case in the future and this api will fail then :/
-		vector<std::string_view> include_strings;
-		vector<std::filesystem::path> include_paths;
-	};
+struct LoadedData
+{
+	vector<Stage> stages;
+	vector<std::string> includes;
+};
 
-	struct LoadedData
-	{
-		vector<Stage> stages;
-		vector<std::string> includes;
-	};
-
-	LoadedData Load(Description const & description);
+LoadedData Load(Desc const & desc);
 }

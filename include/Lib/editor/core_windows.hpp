@@ -22,11 +22,11 @@ struct GameWindow : WindowBase
 		GL::FrameBuffer framebuffers[2];
 		float border_width = 10;
 
-		void create(Context const & ctx, GameWindow const & game_window);
+		void init(Context const & ctx, GameWindow const & game_window);
 		void render(Context const & ctx, GameWindow const & game_window);
 	} border;
 
-	void create(Context const & ctx) override;
+	void init(Context const & ctx) override;
 	void update(Context & ctx) override;
 	void render(Context const & ctx) override;
 };
@@ -74,7 +74,7 @@ struct ProgramWindow : WindowBase
 
 	Assets * assets;
 
-	void create(const Context & ctx) override;
+	void init(const Context & ctx) override;
 	void update(Context & ctx) override;
 };
 
@@ -106,7 +106,7 @@ struct CubemapWindow : WindowBase
 	i32 levels = 0, current_level = 0;
 	f32x2 size, view_size;
 
-	void create(Context const & ctx) override;
+	void init(Context const & ctx) override;
 	void update(Context & ctx) override;
 	void render(Context const & ctx) override;
 };
@@ -127,7 +127,7 @@ struct VolumeWindow : WindowBase
 	f32x2 view_size;
 	f32 z;
 
-	void create(Context const & ctx) override;
+	void init(Context const & ctx) override;
 	void update(Context & ctx) override;
 	void render(Context const & ctx) override;
 };

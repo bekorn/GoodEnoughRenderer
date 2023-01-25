@@ -4,38 +4,38 @@
 
 namespace GL
 {
-	using namespace gl45core;
-	using namespace gl45ext;
+using namespace gl45core;
+using namespace gl45ext;
 
-	auto constexpr VERSION_MAJOR = 4;
-	auto constexpr VERSION_MINOR = 5;
+auto constexpr VERSION_MAJOR = 4;
+auto constexpr VERSION_MINOR = 5;
 
-	// following DSA API https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
+// following DSA API https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
 
-	struct OpenGLObject
+struct OpenGLObject
+{
+	u32 id = 0;
+
+	CTOR(OpenGLObject, default)
+	COPY(OpenGLObject, delete)
+
+	OpenGLObject(OpenGLObject && other) noexcept
 	{
-		u32 id = 0;
-
-		CTOR(OpenGLObject, default)
-		COPY(OpenGLObject, delete)
-
-		OpenGLObject(OpenGLObject && other) noexcept
-		{
-			std::swap(id, other.id);
-		}
-		OpenGLObject& operator=(OpenGLObject && other) noexcept
-		{
-			std::swap(id, other.id);
-			return *this;
-		};
-	};
-
-	inline void create()
-	{
-		// configure NDC z to be [0, 1]
-		glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-
-		// dithering is not used and keeping it enabled produces warnings when using integer framebuffers
-		glDisable(GL_DITHER);
+		std::swap(id, other.id);
 	}
+	OpenGLObject & operator=(OpenGLObject && other) noexcept
+	{
+		std::swap(id, other.id);
+		return *this;
+	};
+};
+
+inline void init()
+{
+	// configure NDC z to be [0, 1]
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+
+	// dithering is not used and keeping it enabled produces warnings when using integer framebuffers
+	glDisable(GL_DITHER);
+}
 }

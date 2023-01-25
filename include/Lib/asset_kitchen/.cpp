@@ -7,7 +7,7 @@
 #include "cubemap/convert.hpp"
 #include "envmap/convert.hpp"
 
-void Descriptions::create(std::filesystem::path const & project_root)
+void Descriptions::init(std::filesystem::path const & project_root)
 {
 	root = project_root;
 
@@ -24,43 +24,43 @@ void Descriptions::create(std::filesystem::path const & project_root)
 		if (auto const member = document.FindMember("glsl_uniform_block"); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
-				auto [name, description] = GLSL::UniformBlock::Parse(item.GetObject(), project_root);
-				uniform_block.generate(name, description);
+				auto [name, desc] = GLSL::UniformBlock::Parse(item.GetObject(), project_root);
+				uniform_block.generate(name, desc);
 			}
 
 		if (auto const member = document.FindMember("glsl_program"); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
-				auto [name, description] = GLSL::Program::Parse(item.GetObject(), project_root);
-				glsl.generate(name, description);
+				auto [name, desc] = GLSL::Program::Parse(item.GetObject(), project_root);
+				glsl.generate(name, desc);
 			}
 
 		if (auto const member = document.FindMember("gltf"); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
-				auto [name, description] = GLTF::Parse(item.GetObject(), project_root);
-				gltf.generate(name, description);
+				auto [name, desc] = GLTF::Parse(item.GetObject(), project_root);
+				gltf.generate(name, desc);
 			}
 
 		if (auto const member = document.FindMember("texture"); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
-				auto [name, description] = Texture::Parse(item.GetObject(), project_root);
-				texture.generate(name, description);
+				auto [name, desc] = Texture::Parse(item.GetObject(), project_root);
+				texture.generate(name, desc);
 			}
 
 		if (auto const member = document.FindMember("cubemap"); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
-				auto [name, description] = Cubemap::Parse(item.GetObject(), project_root);
-				cubemap.generate(name, description);
+				auto [name, desc] = Cubemap::Parse(item.GetObject(), project_root);
+				cubemap.generate(name, desc);
 			}
 
 		if (auto const member = document.FindMember("envmap"); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
-				auto [name, description] = Envmap::Parse(item.GetObject(), project_root);
-				envmap.generate(name, description);
+				auto [name, desc] = Envmap::Parse(item.GetObject(), project_root);
+				envmap.generate(name, desc);
 			}
 	}
 }

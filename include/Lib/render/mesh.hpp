@@ -6,12 +6,12 @@
 
 namespace Render
 {
-	struct Mesh
-	{
-		vector<Drawable> drawables;
+struct Mesh
+{
+	vector<Drawable> drawables;
 
-		CTOR(Mesh, default)
-		COPY(Mesh, delete)
-		MOVE(Mesh, default)
-	};
+	CTOR(Mesh, default)
+	COPY(Mesh, delete)
+	MOVE(Mesh, default)
+};
 }

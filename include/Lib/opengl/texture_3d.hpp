@@ -18,7 +18,7 @@ struct Texture3D : OpenGLObject
 		glDeleteTextures(1, &id);
 	}
 
-	struct VolumeDescription
+	struct VolumeDesc
 	{
 		i32x3 dimensions;
 		GLenum internal_format;
@@ -36,7 +36,7 @@ struct Texture3D : OpenGLObject
 		GLenum data_type;
 	};
 
-	void create(VolumeDescription const & desc)
+	void init(VolumeDesc const & desc)
 	{
 		glCreateTextures(GL_TEXTURE_3D, 1, &id);
 
@@ -81,7 +81,7 @@ struct Texture3D : OpenGLObject
 		glMakeTextureHandleResidentARB(handle);
 	}
 
-	struct ViewDescription
+	struct ViewDesc
 	{
 		Texture3D const & source;
 
@@ -96,7 +96,7 @@ struct Texture3D : OpenGLObject
 		optional<GLenum> wrap_r = nullopt;
 	};
 
-	void create(ViewDescription const & desc)
+	void init(ViewDesc const & desc)
 	{
 		i32 level_count;
 

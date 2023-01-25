@@ -42,13 +42,13 @@ i32 main(i32 argc, char** argv)
 	GLFW::Window window;
 	Imgui::Context imgui_context;
 
-	if (auto error = glfw_context.create())
+	if (auto error = glfw_context.init())
 	{
 		fmt::print(stderr, "{}", error.value());
 		std::exit(1);
 	}
 
-	if (auto error = window.create(
+	if (auto error = window.init(
 		{
 			.title = "Good Enough Renderer",
 			.size = {860, 860},
@@ -61,35 +61,35 @@ i32 main(i32 argc, char** argv)
 		std::exit(1);
 	}
 
-	imgui_context.create({.window = window});
+	imgui_context.init({.window = window});
 	fmt::print("{}\n", GL::GetContextInfo());
 
-	GL::create();
+	GL::init();
 
 	// Project assets
 	Descriptions descriptions;
-	descriptions.create(project_root);
+	descriptions.init(project_root);
 	Assets game_assets(descriptions);
-	game_assets.create();
+	game_assets.init();
 
 	// Editor assets
 	Descriptions editor_descriptions;
-	editor_descriptions.create(editor_root);
+	editor_descriptions.init(editor_root);
 	Assets editor_assets(editor_descriptions);
-	editor_assets.create();
+	editor_assets.init();
 
 	Game game(game_assets);
-	game.create();
+	game.init();
 
 	Editor::Context editor_ctx(game, editor_assets, window);
 	Editor::add_all_core_windows(editor_ctx);
 	editor_ctx.add_window(make_unique_one<Editor::EnvmapBakerWindow>());
 	editor_ctx.add_window(make_unique_one<GameSettingsWindow>());
 	editor_ctx.add_window(make_unique_one<MaterialWindow>());
-	editor_ctx.create();
+	editor_ctx.init();
 
-	FrameInfo frame_info;
-	FrameInfo previous_frame_info{
+	Render::FrameInfo frame_info;
+	Render::FrameInfo previous_frame_info{
 		.idx = 0,
 		.seconds_since_start = glfwGetTime(),
 		.seconds_since_last_frame = 0,

@@ -10,6 +10,6 @@
 
 namespace GLSL::UniformBlock
 {
-	Expected<GL::UniformBlock, std::string> Convert(LoadedData const & loaded);
-	std::pair<Name, Description> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir);
+Expected<GL::UniformBlock, std::string> Convert(LoadedData const & loaded);
+std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir);
 }

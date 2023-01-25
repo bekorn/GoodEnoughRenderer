@@ -8,64 +8,64 @@
 
 namespace GL
 {
-	struct ShaderStage : OpenGLObject
+struct ShaderStage : OpenGLObject
+{
+	CTOR(ShaderStage, default)
+	COPY(ShaderStage, delete)
+	MOVE(ShaderStage, default)
+
+	~ShaderStage()
 	{
-		CTOR(ShaderStage, default)
-		COPY(ShaderStage, delete)
-		MOVE(ShaderStage, default)
+		glDeleteShader(id);
+	}
 
-		~ShaderStage()
-		{
-			glDeleteShader(id);
-		}
-
-		struct Description
-		{
-			GLenum stage;
-			vector<char const*> const & sources;
-		};
-
-		void create(Description const & description)
-		{
-			id = glCreateShader(description.stage);
-
-			glShaderSource(id, description.sources.size(), description.sources.data(), nullptr);
-			glCompileShader(id);
-		}
+	struct Desc
+	{
+		GLenum stage;
+		vector<char const*> const & sources;
 	};
 
-	struct ShaderProgram : OpenGLObject
+	void init(Desc const & desc)
 	{
-		vector<AttributeMapping> attribute_mappings;
-		vector<UniformMapping> uniform_mappings;
-		vector<UniformBlockMapping> uniform_block_mappings;
-		vector<StorageBlockMapping> storage_block_mappings;
+		id = glCreateShader(desc.stage);
 
-		CTOR(ShaderProgram, default)
-		COPY(ShaderProgram, delete)
-		MOVE(ShaderProgram, default)
+		glShaderSource(id, desc.sources.size(), desc.sources.data(), nullptr);
+		glCompileShader(id);
+	}
+};
 
-		~ShaderProgram()
-		{
-			glDeleteProgram(id);
-		}
+struct ShaderProgram : OpenGLObject
+{
+	vector<AttributeMapping> attribute_mappings;
+	vector<UniformMapping> uniform_mappings;
+	vector<UniformBlockMapping> uniform_block_mappings;
+	vector<StorageBlockMapping> storage_block_mappings;
 
-		struct Description
-		{
-			vector<ShaderStage const*> const & shader_stages;
-		};
+	CTOR(ShaderProgram, default)
+	COPY(ShaderProgram, delete)
+	MOVE(ShaderProgram, default)
 
-		void create(Description const & description)
-		{
-			id = glCreateProgram();
+	~ShaderProgram()
+	{
+		glDeleteProgram(id);
+	}
 
-			for (auto & shader_stage: description.shader_stages)
-				glAttachShader(id, shader_stage->id);
-
-			glLinkProgram(id);
-
-			for (auto & shader_stage: description.shader_stages)
-				glDetachShader(id, shader_stage->id);
-		}
+	struct Desc
+	{
+		vector<ShaderStage const*> const & shader_stages;
 	};
+
+	void init(Desc const & desc)
+	{
+		id = glCreateProgram();
+
+		for (auto & shader_stage: desc.shader_stages)
+			glAttachShader(id, shader_stage->id);
+
+		glLinkProgram(id);
+
+		for (auto & shader_stage: desc.shader_stages)
+			glDetachShader(id, shader_stage->id);
+	}
+};
 }

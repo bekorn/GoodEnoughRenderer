@@ -26,7 +26,7 @@ struct WindowBase
 
 	virtual const char * get_name() = 0;
 
-	virtual void create(Context const & ctx)
+	virtual void init(Context const & ctx)
 	{};
 
 	virtual void update(Context & ctx)
@@ -42,7 +42,7 @@ struct State
 	COPY(State, delete);
 	MOVE(State, default);
 
-	FrameInfo frame_info;
+	Render::FrameInfo frame_info;
 	f64 game_update_in_seconds;
 	f64 game_render_in_seconds;
 
@@ -73,7 +73,7 @@ struct Context
 		game(game), editor_assets(editor_assets), gltf_window(gltf_window)
 	{}
 
-	void create()
+	void init()
 	{
 		// Enable docking
 		auto & io = ImGui::GetIO();
@@ -92,7 +92,7 @@ struct Context
 
 	void add_window(unique_one<WindowBase> && window)
 	{
-		window->create(*this);
+		window->init(*this);
 		windows.emplace_back(move(window));
 	}
 
@@ -153,7 +153,7 @@ struct Context
 		End();
 	}
 
-	void update_windows(FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds)
+	void update_windows(Render::FrameInfo const & frame_info, f64 game_update_in_seconds, f64 game_render_in_seconds)
 	{
 		state.frame_info = frame_info;
 		state.game_update_in_seconds = game_update_in_seconds;

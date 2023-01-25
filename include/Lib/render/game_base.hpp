@@ -23,7 +23,7 @@ struct GameBase
 
 	virtual ~GameBase() = default;
 
-	virtual void create() = 0;
+	virtual void init() = 0;
 	virtual void update(GLFW::Window const & window, FrameInfo const & frame_info) = 0;
 	virtual void render(GLFW::Window const & window, FrameInfo const & frame_info) = 0;
 };

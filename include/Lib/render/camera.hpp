@@ -2,6 +2,8 @@
 
 #include "Lib/core/core.hpp"
 
+namespace Render
+{
 template<typename C>
 concept Camera =
 requires(C const camera)
@@ -50,3 +52,4 @@ struct OrthographicCamera
 	f32x4x4 get_view_without_translate() const
 	{ return glm::lookAt(f32x3(0), target - position, up); }
 };
+}

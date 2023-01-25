@@ -38,7 +38,7 @@ struct Game : Render::GameBase
 
 	void create_framebuffer();
 	void create_uniform_buffers();
-	void create() override;
-	void update(GLFW::Window const & window, FrameInfo const & frame_info) override;
-	void render(GLFW::Window const & window, FrameInfo const & frame_info) override;
+	void init() override;
+	void update(GLFW::Window const & window, Render::FrameInfo const & frame_info) override;
+	void render(GLFW::Window const & window, Render::FrameInfo const & frame_info) override;
 };

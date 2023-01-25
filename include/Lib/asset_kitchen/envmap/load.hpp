@@ -5,7 +5,7 @@
 
 namespace Envmap
 {
-struct Description
+struct Desc
 {
 	std::filesystem::path path;
 };
@@ -18,5 +18,5 @@ struct LoadedData
 	i32x2 diffuse_face_dimensions;
 };
 
-LoadedData Load(Description const & description);
+LoadedData Load(Desc const & desc);
 }

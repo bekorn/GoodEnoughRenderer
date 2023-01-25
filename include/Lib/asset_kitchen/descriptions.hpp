@@ -14,12 +14,12 @@ struct Descriptions
 {
 	std::filesystem::path root;
 
-	Managed<GLSL::Program::Description> glsl;
-	Managed<GLSL::UniformBlock::Description> uniform_block;
-	Managed<GLTF::Description> gltf;
-	Managed<Texture::Description> texture;
-	Managed<Cubemap::Description> cubemap;
-	Managed<Envmap::Description> envmap;
+	Managed<GLSL::Program::Desc> glsl;
+	Managed<GLSL::UniformBlock::Desc> uniform_block;
+	Managed<GLTF::Desc> gltf;
+	Managed<Texture::Desc> texture;
+	Managed<Cubemap::Desc> cubemap;
+	Managed<Envmap::Desc> envmap;
 
-	void create(std::filesystem::path const & project_root);
+	void init(std::filesystem::path const & project_root);
 };

@@ -85,7 +85,7 @@ void EnvmapBakerWindow::generate_brdf_lut(Editor::Context const & ctx) const
 	auto texture_name = "envmap_brdf_lut"_name;
 	auto & texture = textures.get_or_generate(texture_name);
 	if (texture.id == 0)
-		texture.create(Texture2D::ImageDescription{
+		texture.init(Texture2D::ImageDesc{
 			.dimensions = texture_dimensions,
 			.has_alpha = false,
 			.color_space = GL::COLOR_SPACE::LINEAR_F32,
@@ -170,7 +170,7 @@ void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 		auto cubemap_name = Name(selected_name.string + "_cubemap");
 		auto & cubemap = cubemaps.get_or_generate(cubemap_name);
 		if (cubemap.id == 0)
-			cubemap.create(TextureCubemap::ImageDescription{
+			cubemap.init(TextureCubemap::ImageDesc{
 				.face_dimensions = cubemap_face_dimensions,
 				.has_alpha = false,
 				.color_space = GL::COLOR_SPACE::LINEAR_F32,
@@ -209,7 +209,7 @@ void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 		auto d_name = Name(selected_name.string + "_diffuse");
 		auto & d_envmap = cubemaps.get_or_generate(d_name);
 		if (d_envmap.id == 0)
-			d_envmap.create(TextureCubemap::ImageDescription{
+			d_envmap.init(TextureCubemap::ImageDesc{
 				.face_dimensions = d_face_dimensions,
 				.has_alpha = false,
 				.color_space = GL::COLOR_SPACE::LINEAR_F32,
@@ -245,7 +245,7 @@ void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 		auto s_name = Name(selected_name.string + "_specular");
 		auto & s_envmap = cubemaps.get_or_generate(s_name);
 		if (s_envmap.id == 0)
-			s_envmap.create(TextureCubemap::ImageDescription{
+			s_envmap.init(TextureCubemap::ImageDesc{
 				.face_dimensions = s_face_dimensions,
 				.has_alpha = false,
 				.color_space = GL::COLOR_SPACE::LINEAR_F32,

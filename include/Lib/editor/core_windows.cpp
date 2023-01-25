@@ -4,21 +4,21 @@
 
 namespace Editor
 {
-void GameWindow::create(Context const & ctx)
+void GameWindow::init(Context const & ctx)
 {
-	framebuffer.create(GL::FrameBuffer::Description{
+	framebuffer.init(GL::FrameBuffer::Desc{
 		.resolution = ctx.game.framebuffer.resolution,
 		.attachments = {
 			{
 				.type = &GL::FrameBuffer::color0,
-				.description= GL::Texture2D::AttachmentDescription{
+				.desc = GL::Texture2D::AttachmentDesc{
 					.internal_format = GL::GL_RGBA16F,
 					.mag_filter = GL::GL_NEAREST,
 				},
 			},
 			{
 				.type = &GL::FrameBuffer::depth,
-				.description = GL::Texture2D::AttachmentDescription{
+				.desc = GL::Texture2D::AttachmentDesc{
 					.internal_format = GL::GL_DEPTH_COMPONENT16,
 				},
 			},
@@ -26,7 +26,7 @@ void GameWindow::create(Context const & ctx)
 	});
 
 	// border
-	border.create(ctx, *this);
+	border.init(ctx, *this);
 
 	// Load gizmo meshes
 	auto & attribute_mappings = ctx.editor_assets.programs.get("gizmo"_name).attribute_mappings;
@@ -94,7 +94,7 @@ void GameWindow::render(Context const & ctx)
 		auto capture_resolution = game_fb.resolution + 2*border_width;
 
 		Texture2D frame;
-		frame.create(Texture2D::AttachmentDescription{
+		frame.init(Texture2D::AttachmentDesc{
 			.dimensions = capture_resolution,
 			.internal_format = GL_RGB8,
 		});
@@ -163,7 +163,7 @@ void GameWindow::render(Context const & ctx)
 		auto const padding = 8;
 		glViewport(framebuffer.resolution - (size + padding), i32x2(size));
 
-		auto view = visit([](Camera auto & c) { return c.get_view_without_translate(); }, ctx.game.camera);
+		auto view = visit([](Render::Camera auto & c) { return c.get_view_without_translate(); }, ctx.game.camera);
 		auto proj = glm::ortho<f32>(-1, +1, -1, +1, -1, +1);
 		auto transform = proj * view;
 		glUniformMatrix4fv(
@@ -196,15 +196,15 @@ void GameWindow::render(Context const & ctx)
 	}
 }
 
-void GameWindow::Border::create(Context const & ctx, GameWindow const & game_window)
+void GameWindow::Border::init(Context const & ctx, GameWindow const & game_window)
 {
 	for (auto & framebuffer: framebuffers)
-		framebuffer.create(GL::FrameBuffer::Description{
+		framebuffer.init(GL::FrameBuffer::Desc{
 			.resolution = game_window.framebuffer.resolution,
 			.attachments = {
 				{
 					.type = &GL::FrameBuffer::color0,
-					.description = GL::Texture2D::AttachmentDescription{
+					.desc = GL::Texture2D::AttachmentDesc{
 						.internal_format = GL::GL_RG16UI,
 					},
 				}
@@ -244,8 +244,8 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 
 	auto & jump_flood_init_program = ctx.editor_assets.programs.get("jump_flood_init");
 	glUseProgram(jump_flood_init_program.id);
-	auto view = visit([](Camera auto & c){ return c.get_view(); }, ctx.game.camera);
-	auto proj = visit([](Camera auto & c){ return c.get_projection(); }, ctx.game.camera);
+	auto view = visit([](Render::Camera auto & c){ return c.get_view(); }, ctx.game.camera);
+	auto proj = visit([](Render::Camera auto & c){ return c.get_projection(); }, ctx.game.camera);
 	auto transform = proj * view * node.matrix;
 	glUniformMatrix4fv(
 		GetLocation(jump_flood_init_program.uniform_mappings, "transform"),
@@ -371,7 +371,7 @@ void UniformBufferWindow::update(Context & ctx)
 	}
 }
 
-void ProgramWindow::create(const Context & ctx)
+void ProgramWindow::init(const Context & ctx)
 {
 	assets = &ctx.game.assets;
 }
@@ -584,8 +584,8 @@ void TextureWindow::update(Context & ctx)
 		if (is_level_changed)
 		{
 			GL::Texture2D new_view;
-			new_view.create(
-				GL::Texture2D::ViewDescription{
+			new_view.init(
+				GL::Texture2D::ViewDesc{
 					.source = texture,
 					.base_level = current_level,
 					.level_count = 1
@@ -613,17 +613,17 @@ void TextureWindow::update(Context & ctx)
 	}
 }
 
-void CubemapWindow::create(const Context & ctx)
+void CubemapWindow::init(const Context & ctx)
 {
 	auto view_resolution = i32x2(240, 240);
 
-	framebuffer.create(
-		GL::FrameBuffer::Description{
+	framebuffer.init(
+		GL::FrameBuffer::Desc{
 			.resolution = view_resolution,
 			.attachments = {
 				{
 					.type = &GL::FrameBuffer::color0,
-					.description = GL::Texture2D::AttachmentDescription{
+					.desc = GL::Texture2D::AttachmentDesc{
 						.internal_format = GL::GL_RGBA16F,
 					},
 				}
@@ -670,8 +670,8 @@ void CubemapWindow::update(Context & ctx)
 		if (is_level_changed)
 		{
 			GL::TextureCubemap new_view;
-			new_view.create(
-				GL::TextureCubemap::ViewDescription{
+			new_view.init(
+				GL::TextureCubemap::ViewDesc{
 					.source = cubemap,
 					.base_level = current_level,
 					.level_count = 1
@@ -718,8 +718,8 @@ void CubemapWindow::render(const Context & ctx)
 		GetLocation(environment_mapping_program.uniform_mappings, "environment_map"),
 		view.handle
 	);
-	auto view = visit([](Camera auto & c) { return c.get_view(); }, ctx.game.camera);
-	auto projection = visit([](Camera auto & c) { return c.get_projection(); }, ctx.game.camera);
+	auto view = visit([](Render::Camera auto & c) { return c.get_view(); }, ctx.game.camera);
+	auto projection = visit([](Render::Camera auto & c) { return c.get_projection(); }, ctx.game.camera);
 	auto view_projection = projection * view;
 	auto invVP = inverse(f32x3x3(view_projection));
 	auto view_dirs = invVP * f32x4x3{
@@ -754,17 +754,17 @@ void CubemapWindow::render(const Context & ctx)
 	}
 }
 
-void VolumeWindow::create(const Context & ctx)
+void VolumeWindow::init(const Context & ctx)
 {
 	auto view_resolution = i32x2(240, 240);
 
-	framebuffer.create(
-		GL::FrameBuffer::Description{
+	framebuffer.init(
+		GL::FrameBuffer::Desc{
 			.resolution = view_resolution,
 			.attachments = {
 				{
 					.type = &GL::FrameBuffer::color0,
-					.description = GL::Texture2D::AttachmentDescription{
+					.desc = GL::Texture2D::AttachmentDesc{
 						.internal_format = GL::GL_RGBA16F,
 					},
 				}
@@ -810,8 +810,8 @@ void VolumeWindow::update(Context & ctx)
 		if (is_level_changed)
 		{
 			GL::Texture3D new_view;
-			new_view.create(
-				GL::Texture3D::ViewDescription{
+			new_view.init(
+				GL::Texture3D::ViewDesc{
 					.source = volume,
 					.base_level = current_level,
 					.level_count = 1
@@ -1047,9 +1047,9 @@ void CameraWindow::update(Context & ctx)
 {
 	using namespace ImGui;
 
-	if (std::holds_alternative<PerspectiveCamera>(ctx.game.camera))
+	if (std::holds_alternative<Render::PerspectiveCamera>(ctx.game.camera))
 	{
-		auto & camera = std::get<PerspectiveCamera>(ctx.game.camera);
+		auto & camera = std::get<Render::PerspectiveCamera>(ctx.game.camera);
 		Text("Perspective camera");
 		DragFloat3("Position", begin(camera.position));
 		DragFloat3("Up", begin(camera.up));
@@ -1058,9 +1058,9 @@ void CameraWindow::update(Context & ctx)
 		DragFloat("Near", &camera.near);
 		DragFloat("Far", &camera.far);
 	}
-	else if (std::holds_alternative<OrthographicCamera>(ctx.game.camera))
+	else if (std::holds_alternative<Render::OrthographicCamera>(ctx.game.camera))
 	{
-		auto & camera = std::get<OrthographicCamera>(ctx.game.camera);
+		auto & camera = std::get<Render::OrthographicCamera>(ctx.game.camera);
 		Text("Orthographic camera");
 		DragFloat3("Position", begin(camera.position));
 		DragFloat3("Up", begin(camera.up));

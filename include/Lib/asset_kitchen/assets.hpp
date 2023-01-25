@@ -39,7 +39,7 @@ struct Assets
 	COPY(Assets, delete)
 	MOVE(Assets, delete)
 
-	void create()
+	void init()
 	{
 		for (auto const & [name, _] : descriptions.uniform_block)
 			load_glsl_uniform_block(name);
