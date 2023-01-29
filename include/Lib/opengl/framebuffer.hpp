@@ -53,5 +53,20 @@ struct FrameBuffer : OpenGLObject
 		glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT2, color2.id, 0);
 		glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT3, color3.id, 0);
 	}
+
+	//	https://www.khronos.org/opengl/wiki/Framebuffer_Object#Empty_framebuffers
+	// TODO(bekorn): maybe move this into a seperate type to make it extra light
+	struct EmptyDesc
+	{
+		i32x2 resolution;
+	};
+
+	void init(EmptyDesc const & desc)
+	{
+		glCreateFramebuffers(1, &id);
+
+		glNamedFramebufferParameteri(id, GL_FRAMEBUFFER_DEFAULT_WIDTH, desc.resolution.x);
+		glNamedFramebufferParameteri(id, GL_FRAMEBUFFER_DEFAULT_HEIGHT, desc.resolution.y);
+	}
 };
 }

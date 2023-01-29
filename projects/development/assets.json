@@ -59,5 +59,14 @@
         "frag": "glsl/program/tone_mapping.frag.glsl"
       }
     },
+    // Volume SDF
+    {
+      "name": "voxelizer",
+      "stages": {
+        "vert": "glsl/program/sdf_volume/voxelizer.vert.glsl",
+        "geom": "glsl/program/sdf_volume/voxelizer.geom.glsl",
+        "frag": "glsl/program/sdf_volume/voxelizer.frag.glsl",
+      }
+    },
   ],
 }
