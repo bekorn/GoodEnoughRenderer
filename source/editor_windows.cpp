@@ -106,30 +106,45 @@ void Voxelizer::update(Editor::Context & ctx)
 	if (SameLine(), Button("Clear"))
 		should_clear = true;
 
+	Checkbox("Visualize Voxels", &should_visualize_voxels);
+
 	InputInt("fragment_multiplier", &fragment_multiplier);
 }
 
 void Voxelizer::render(Editor::Context const & ctx)
 {
-	using namespace GL;
-
 	if (should_clear)
 	{
 		should_clear = false;
-
-		auto clear_color = u8x4(0);
-		glClearTexSubImage(
-			ctx.game.assets.volumes.get(voxels_name).id, 0,
-			0, 0, 0,
-			voxels_res.x, voxels_res.y, voxels_res.z,
-			GL_RGBA, GL_UNSIGNED_BYTE, begin(clear_color)
-		);
+		clear(ctx);
 	}
 
-	if (not should_compute)
-		return;
+	if (should_compute)
+	{
+		should_compute = false;
+		voxelize(ctx);
+	}
 
-	should_compute = false;
+	if (should_visualize_voxels)
+		visualize_voxels(ctx);
+}
+
+void Voxelizer::clear(const Editor::Context & ctx)
+{
+	using namespace GL;
+
+	auto clear_color = u8x4(0);
+	glClearTexSubImage(
+		ctx.game.assets.volumes.get(voxels_name).id, 0,
+		0, 0, 0,
+		voxels_res.x, voxels_res.y, voxels_res.z,
+		GL_RGBA, GL_UNSIGNED_BYTE, begin(clear_color)
+	);
+}
+
+void Voxelizer::voxelize(const Editor::Context & ctx)
+{
+	using namespace GL;
 
 	/// Get mesh
 	const Render::Mesh * mesh = nullptr;
@@ -147,7 +162,7 @@ void Voxelizer::render(Editor::Context const & ctx)
 
 	if (mesh == nullptr)
 	{
-		fmt::print(stderr, "{}", "Please Select a Node\n");
+		fmt::print(stderr, "{}", "Please Select a Node with a mesh\n");
 		return;
 	}
 
@@ -167,20 +182,10 @@ void Voxelizer::render(Editor::Context const & ctx)
 
 	auto & voxelizer_program = ctx.game.assets.programs.get("voxelizer"_name);
 	glUseProgram(voxelizer_program.id);
-#if 1
 	glUniformHandleui64ARB(
 		GetLocation(voxelizer_program.uniform_mappings, "voxels"),
 		voxels.handle
 	);
-#else
-	glBindImageTexture(
-		GetLocation(voxelizer_program.uniform_mappings, "voxels"),
-		voxels.id, 0,
-		false, 0,
-		GL_WRITE_ONLY,
-		GL_RGBA8
-	);
-#endif
 	glUniform3iv(
 		GetLocation(voxelizer_program.uniform_mappings, "voxels_res"),
 		1, begin(voxels_res)
@@ -196,5 +201,29 @@ void Voxelizer::render(Editor::Context const & ctx)
 		glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
 	}
 
-	fmt::print("Voxelizes {}\n", node_name);
+	fmt::print("Voxelized {}\n", node_name);
+}
+
+void Voxelizer::visualize_voxels(const Editor::Context & ctx)
+{
+	using namespace GL;
+
+	if (not ctx.state.should_game_render)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, ctx.game.framebuffer.id);
+	glViewport(i32x2(0), ctx.game.framebuffer.resolution);
+	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(false);
+
+	auto & voxel_to_cube_program = ctx.game.assets.programs.get("voxel_to_cube");
+	glUseProgram(voxel_to_cube_program.id);
+	glUniform3iv(
+		GetLocation(voxel_to_cube_program.uniform_mappings, "volume_res"),
+		1, begin(voxels_res)
+	);
+	glUniformHandleui64ARB(
+		GetLocation(voxel_to_cube_program.uniform_mappings, "volume"),
+		ctx.game.assets.volumes.get(voxels_name).handle
+	);
+	glDrawArrays(GL_POINTS, 0, compMul(voxels_res));
 }

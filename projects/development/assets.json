@@ -68,5 +68,16 @@
         "frag": "glsl/program/sdf_volume/voxelizer.frag.glsl",
       }
     },
+    {
+      "name": "voxel_to_cube",
+      "stages": {
+        "vert": "glsl/program/sdf_volume/voxel_to_cube.vert.glsl",
+        "geom": "glsl/program/sdf_volume/voxel_to_cube.geom.glsl",
+        "frag": "glsl/program/sdf_volume/voxel_to_cube.frag.glsl",
+      },
+      "include_paths": [
+        "glsl/uniform_block/camera.unib.glsl",
+      ]
+    },
   ],
 }
