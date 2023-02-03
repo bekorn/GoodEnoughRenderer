@@ -148,6 +148,7 @@ void Voxelizer::voxelize(const Editor::Context & ctx)
 
 	/// Get mesh
 	const Render::Mesh * mesh = nullptr;
+	f32x4x4 TransformM;
 
 	auto & scene_tree = ctx.game.assets.scene_tree;
 	auto & node_name = ctx.state.selected_node_name;
@@ -157,7 +158,10 @@ void Voxelizer::voxelize(const Editor::Context & ctx)
 		auto & node = scene_tree.get(node_idx);
 
 		if (node.mesh != nullptr)
+		{
 			mesh = node.mesh;
+			TransformM = node.matrix;
+		}
 	}
 
 	if (mesh == nullptr)
@@ -194,7 +198,10 @@ void Voxelizer::voxelize(const Editor::Context & ctx)
 		GetLocation(voxelizer_program.uniform_mappings, "fragment_multiplier"),
 		1, &fragment_multiplier
 	);
-
+	glUniformMatrix4fv(
+		GetLocation(voxelizer_program.uniform_mappings, "TransformM"),
+		1, false, begin(TransformM)
+	);
 	for (auto & drawable : mesh->drawables)
 	{
 		glBindVertexArray(drawable.vertex_array.id);

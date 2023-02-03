@@ -12,6 +12,7 @@ void main()
 
     ivec3 texel = ivec3(GS_pos * voxels_res);
     imageStore(voxels, texel, vec4(GS_pos, 1));
+
     // to visualize reprojected triangles
-    imageStore(voxels, ivec3(gl_FragCoord.xy / fragment_multiplier, 0), vec4(GS_pos, 1));
+//    imageStore(voxels, ivec3(gl_FragCoord.xy / fragment_multiplier, 0), vec4(GS_pos, 1));
 }

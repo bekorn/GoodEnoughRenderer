@@ -1,7 +1,10 @@
+// projects each triangle into the axis that will generate the most fragments
+// by picking the axis with the least change as the depth (z) axis
+// see the diagrams at https://developer.nvidia.com/content/basics-gpu-voxelization
+
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
-in vec3 VS_pos[3];
 out vec3 GS_pos;
 
 int minCompIdx(vec3 v)
@@ -14,32 +17,36 @@ int minCompIdx(vec3 v)
 
 void main()
 {
-    vec3 v0 = gl_in[0].gl_Position.xyz;
-    vec3 v1 = gl_in[1].gl_Position.xyz;
-    vec3 v2 = gl_in[2].gl_Position.xyz;
-    vec3 center = (v0 + v1 + v2) / 3;
+    vec3 verts[3] = {
+        gl_in[0].gl_Position.xyz,
+        gl_in[1].gl_Position.xyz,
+        gl_in[2].gl_Position.xyz,
+    };
 
-    vec3 aabb_min = min(min(v0, v1), v2);
-    vec3 aabb_max = max(max(v0, v1), v2);
+    vec3 aabb_min = min(min(verts[0], verts[1]), verts[2]);
+    vec3 aabb_max = max(max(verts[0], verts[1]), verts[2]);
     vec3 aabb_size = aabb_max - aabb_min;
     int min_comp_idx = minCompIdx(aabb_size);
 
-    int proj_axis[2] = {
+    int proj_axes[2] = {
         (min_comp_idx + 1) % 3,
         (min_comp_idx + 2) % 3,
-        //min_comp_idx, but z will be 0
+        //min_comp_idx
     };
+
+    // TODO(bekorn): not sure if moving the triangle/fragments to the center will still be usefull
+    // after proper transformation and bounding box implementation
+    vec3 center = (verts[0] + verts[1] + verts[2]) / 3;
 
     for (int i = 0; i < 3; ++i)
     {
-        vec3 v = gl_in[i].gl_Position.xyz - center;
-//        v *= 3;
+        vec3 v = verts[i] - center;
 
-        gl_Position.x = v[proj_axis[0]];
-        gl_Position.y = v[proj_axis[1]];
+        gl_Position.x = v[proj_axes[0]];
+        gl_Position.y = v[proj_axes[1]];
         gl_Position.z = 0.5;
 
-        GS_pos = VS_pos[i];
+        GS_pos = verts[i] * 0.5 + 0.5;
         EmitVertex();
     }
     EndPrimitive();
