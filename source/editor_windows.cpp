@@ -93,6 +93,10 @@ void Voxelizer::init(Editor::Context const & ctx)
 
 		.min_filter = GL::GL_NEAREST,
 		.mag_filter = GL::GL_NEAREST,
+
+		.wrap_s = GL::GL_CLAMP_TO_BORDER,
+		.wrap_t = GL::GL_CLAMP_TO_BORDER,
+		.wrap_r = GL::GL_CLAMP_TO_BORDER,
 	});
 }
 
@@ -220,17 +224,25 @@ void Voxelizer::visualize_voxels(const Editor::Context & ctx)
 
 	glBindFramebuffer(GL_FRAMEBUFFER, ctx.game.framebuffer.id);
 	glViewport(i32x2(0), ctx.game.framebuffer.resolution);
-	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(false);
+	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(true);
 
 	auto & voxel_to_cube_program = ctx.game.assets.programs.get("voxel_to_cube");
 	glUseProgram(voxel_to_cube_program.id);
-	glUniform3iv(
-		GetLocation(voxel_to_cube_program.uniform_mappings, "volume_res"),
-		1, begin(voxels_res)
-	);
 	glUniformHandleui64ARB(
 		GetLocation(voxel_to_cube_program.uniform_mappings, "volume"),
 		ctx.game.assets.volumes.get(voxels_name).handle
 	);
-	glDrawArrays(GL_POINTS, 0, compMul(voxels_res));
+	glUniform3iv(
+		GetLocation(voxel_to_cube_program.uniform_mappings, "volume_res"),
+		1, begin(voxels_res)
+	);
+	auto compute_res = voxels_res + 1; // include boundaries, then ceil to multiple of 4  (see voxel_to_cube.vert.glsl)
+	auto reminder = compute_res % 4;
+	auto mask = i32x3(notEqual(reminder, i32x3(0)));
+	compute_res += mask * (4 - reminder);
+	glUniform3iv(
+		GetLocation(voxel_to_cube_program.uniform_mappings, "compute_res"),
+		1, begin(compute_res)
+	);
+	glDrawArrays(GL_POINTS, 0, compMul(compute_res));
 }

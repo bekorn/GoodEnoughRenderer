@@ -1,8 +1,9 @@
-in flat vec3 GS_pos;
+in flat int GS_axis;
 
 out vec4 out_color;
 
 void main()
 {
-    out_color = vec4(GS_pos, 1);
+    out_color = vec4(0, 0, 0, 1);
+    out_color[GS_axis] = 0.8;
 }
