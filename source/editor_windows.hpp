@@ -37,9 +37,12 @@ struct Sdf3dWindow : Editor::WindowBase
 	i32x3 const volume_res = i32x3(2*60);
 	void voxelize(Editor::Context const & ctx);
 
-	bool should_visualize_voxels = false;
-	void visualize_voxels(Editor::Context const & ctx);
-
 	bool should_calculate_sdf = false;
 	void calculate_sdf(Editor::Context const & ctx);
+
+	bool should_visualize_volume = false;
+	void visualize_volume(Editor::Context const & ctx);
+
+	bool should_visualize_voxels = false;
+	void visualize_voxels(Editor::Context const & ctx);
 };

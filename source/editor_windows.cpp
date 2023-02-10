@@ -111,7 +111,7 @@ void Sdf3dWindow::update(Editor::Context & ctx)
 
 	InputInt("Fragment Multiplier", &fragment_multiplier);
 
-	auto frag = R"(asdasd)";
+	Checkbox("Visualize Volume", &should_visualize_volume);
 
 	if (TreeNode("Debug"))
 	{
@@ -146,6 +146,9 @@ void Sdf3dWindow::render(Editor::Context const & ctx)
 		should_calculate_sdf = false;
 		calculate_sdf(ctx);
 	}
+
+	if (should_visualize_volume)
+		visualize_volume(ctx);
 
 	if (should_visualize_voxels)
 		visualize_voxels(ctx);
@@ -234,38 +237,6 @@ void Sdf3dWindow::voxelize(const Editor::Context & ctx)
 	fmt::print("Voxelized {}\n", node_name);
 }
 
-void Sdf3dWindow::visualize_voxels(const Editor::Context & ctx)
-{
-	using namespace GL;
-
-	if (not ctx.state.should_game_render)
-		return;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, ctx.game.framebuffer.id);
-	glViewport(i32x2(0), ctx.game.framebuffer.resolution);
-	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(true);
-
-	auto & voxel_to_cube_program = ctx.game.assets.programs.get("voxel_to_cube");
-	glUseProgram(voxel_to_cube_program.id);
-	glUniformHandleui64ARB(
-		GetLocation(voxel_to_cube_program.uniform_mappings, "volume"),
-		ctx.game.assets.volumes.get(volume_name).handle
-	);
-	glUniform3iv(
-		GetLocation(voxel_to_cube_program.uniform_mappings, "volume_res"),
-		1, begin(volume_res)
-	);
-	auto compute_res = volume_res + 1; // include boundaries, then ceil to multiple of 4  (see voxel_to_cube.vert.glsl)
-	auto reminder = compute_res % 4;
-	auto mask = i32x3(notEqual(reminder, i32x3(0)));
-	compute_res += mask * (4 - reminder);
-	glUniform3iv(
-		GetLocation(voxel_to_cube_program.uniform_mappings, "compute_res"),
-		1, begin(compute_res)
-	);
-	glDrawArrays(GL_POINTS, 0, compMul(compute_res));
-}
-
 void Sdf3dWindow::calculate_sdf(const Editor::Context & ctx)
 {
 	using namespace GL;
@@ -284,7 +255,6 @@ void Sdf3dWindow::calculate_sdf(const Editor::Context & ctx)
 		.wrap_t = GL::GL_CLAMP_TO_BORDER,
 		.wrap_r = GL::GL_CLAMP_TO_BORDER,
 	});
-
 
 	/// Run jump flood
 	{
@@ -363,4 +333,57 @@ void Sdf3dWindow::calculate_sdf(const Editor::Context & ctx)
 		);
 		glDrawArrays(GL_POINTS, 0, compMul(volume_res));
 	}
+}
+
+void Sdf3dWindow::visualize_volume(const Editor::Context & ctx)
+{
+	using namespace GL;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, ctx.game.framebuffer.id);
+	glViewport(i32x2(0), ctx.game.framebuffer.resolution);
+
+	glDisable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(false);
+
+	auto & program = ctx.game.assets.programs.get("is_in_volume");
+	glUseProgram(program.id);
+
+	glUniformHandleui64ARB(
+		GetLocation(program.uniform_mappings, "depth_attachment"),
+		ctx.game.framebuffer.depth.handle
+	);
+
+	glDrawArrays(GL_POINTS, 0, 1);
+}
+
+void Sdf3dWindow::visualize_voxels(const Editor::Context & ctx)
+{
+	using namespace GL;
+
+	if (not ctx.state.should_game_render)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, ctx.game.framebuffer.id);
+	glViewport(i32x2(0), ctx.game.framebuffer.resolution);
+	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(false);
+
+	auto & voxel_to_cube_program = ctx.game.assets.programs.get("voxel_to_cube");
+	glUseProgram(voxel_to_cube_program.id);
+	glUniformHandleui64ARB(
+		GetLocation(voxel_to_cube_program.uniform_mappings, "volume"),
+		ctx.game.assets.volumes.get(volume_name).handle
+	);
+	glUniform3iv(
+		GetLocation(voxel_to_cube_program.uniform_mappings, "volume_res"),
+		1, begin(volume_res)
+	);
+	auto compute_res = volume_res + 1; // include boundaries, then ceil to multiple of 4  (see voxel_to_cube.vert.glsl)
+	auto reminder = compute_res % 4;
+	auto mask = i32x3(notEqual(reminder, i32x3(0)));
+	compute_res += mask * (4 - reminder);
+	glUniform3iv(
+		GetLocation(voxel_to_cube_program.uniform_mappings, "compute_res"),
+		1, begin(compute_res)
+	);
+	glDrawArrays(GL_POINTS, 0, compMul(compute_res));
 }

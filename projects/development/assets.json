@@ -93,5 +93,16 @@
         "frag": "glsl/program/sdf_volume/jump_flood_3d_finalize.frag.glsl",
       },
     },
+    {
+      "name": "is_in_volume",
+      "stages": {
+        "vert": "glsl/program/sdf_volume/is_in_volume.vert.glsl",
+        "geom": "glsl/program/sdf_volume/is_in_volume.geom.glsl",
+        "frag": "glsl/program/sdf_volume/is_in_volume.frag.glsl",
+      },
+      "include_paths": [
+        "glsl/uniform_block/camera.unib.glsl",
+      ]
+    },
   ],
 }
