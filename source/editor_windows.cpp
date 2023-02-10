@@ -83,12 +83,12 @@ void MaterialWindow::update(Editor::Context & ctx)
 	}
 }
 
-void Voxelizer::init(Editor::Context const & ctx)
+void Sdf3dWindow::init(Editor::Context const & ctx)
 {
-	auto & voxels = ctx.game.assets.volumes.generate(voxels_name).data;
+	auto & voxels = ctx.game.assets.volumes.generate(volume_name).data;
 
 	voxels.init(GL::Texture3D::VolumeDesc{
-		.dimensions = voxels_res,
+		.dimensions = volume_res,
 		.internal_format = GL::GL_RGBA8,
 
 		.min_filter = GL::GL_NEAREST,
@@ -100,22 +100,34 @@ void Voxelizer::init(Editor::Context const & ctx)
 	});
 }
 
-void Voxelizer::update(Editor::Context & ctx)
+void Sdf3dWindow::update(Editor::Context & ctx)
 {
 	using namespace ImGui;
 
-	if (Button("Compute"))
-		should_compute = true;
-
+	if (Button("Calculate"))
+		should_voxelize = should_calculate_sdf = true;
 	if (SameLine(), Button("Clear"))
 		should_clear = true;
 
-	Checkbox("Visualize Voxels", &should_visualize_voxels);
+	InputInt("Fragment Multiplier", &fragment_multiplier);
 
-	InputInt("fragment_multiplier", &fragment_multiplier);
+	auto frag = R"(asdasd)";
+
+	if (TreeNode("Debug"))
+	{
+		if (Button("Mesh > Voxel"))
+			should_voxelize = true;
+
+		if (Button("Voxel > SDF"))
+			should_calculate_sdf = true;
+
+		Checkbox("Visualize Voxels", &should_visualize_voxels);
+
+		TreePop();
+	}
 }
 
-void Voxelizer::render(Editor::Context const & ctx)
+void Sdf3dWindow::render(Editor::Context const & ctx)
 {
 	if (should_clear)
 	{
@@ -123,30 +135,36 @@ void Voxelizer::render(Editor::Context const & ctx)
 		clear(ctx);
 	}
 
-	if (should_compute)
+	if (should_voxelize)
 	{
-		should_compute = false;
+		should_voxelize = false;
 		voxelize(ctx);
+	}
+
+	if (should_calculate_sdf)
+	{
+		should_calculate_sdf = false;
+		calculate_sdf(ctx);
 	}
 
 	if (should_visualize_voxels)
 		visualize_voxels(ctx);
 }
 
-void Voxelizer::clear(const Editor::Context & ctx)
+void Sdf3dWindow::clear(const Editor::Context & ctx)
 {
 	using namespace GL;
 
 	auto clear_color = u8x4(0);
 	glClearTexSubImage(
-		ctx.game.assets.volumes.get(voxels_name).id, 0,
+		ctx.game.assets.volumes.get(volume_name).id, 0,
 		0, 0, 0,
-		voxels_res.x, voxels_res.y, voxels_res.z,
+		volume_res.x, volume_res.y, volume_res.z,
 		GL_RGBA, GL_UNSIGNED_BYTE, begin(clear_color)
 	);
 }
 
-void Voxelizer::voxelize(const Editor::Context & ctx)
+void Sdf3dWindow::voxelize(const Editor::Context & ctx)
 {
 	using namespace GL;
 
@@ -174,15 +192,16 @@ void Voxelizer::voxelize(const Editor::Context & ctx)
 		return;
 	}
 
-	auto & voxels = ctx.game.assets.volumes.get(voxels_name);
+	auto & voxels = ctx.game.assets.volumes.get(volume_name);
 
-	i32x2 render_res = fragment_multiplier * i32x2(voxels_res);
+	i32x2 render_res = fragment_multiplier * i32x2(volume_res);
 
 	FrameBuffer fb;
 	fb.init(FrameBuffer::EmptyDesc{
 		.resolution = render_res,
 	});
 	glBindFramebuffer(GL_FRAMEBUFFER, fb.id);
+
 
 	/// Mark surface voxels
 	glViewport({0, 0}, render_res);
@@ -196,7 +215,7 @@ void Voxelizer::voxelize(const Editor::Context & ctx)
 	);
 	glUniform3iv(
 		GetLocation(voxelizer_program.uniform_mappings, "voxels_res"),
-		1, begin(voxels_res)
+		1, begin(volume_res)
 	);
 	glUniform1iv(
 		GetLocation(voxelizer_program.uniform_mappings, "fragment_multiplier"),
@@ -215,7 +234,7 @@ void Voxelizer::voxelize(const Editor::Context & ctx)
 	fmt::print("Voxelized {}\n", node_name);
 }
 
-void Voxelizer::visualize_voxels(const Editor::Context & ctx)
+void Sdf3dWindow::visualize_voxels(const Editor::Context & ctx)
 {
 	using namespace GL;
 
@@ -230,13 +249,13 @@ void Voxelizer::visualize_voxels(const Editor::Context & ctx)
 	glUseProgram(voxel_to_cube_program.id);
 	glUniformHandleui64ARB(
 		GetLocation(voxel_to_cube_program.uniform_mappings, "volume"),
-		ctx.game.assets.volumes.get(voxels_name).handle
+		ctx.game.assets.volumes.get(volume_name).handle
 	);
 	glUniform3iv(
 		GetLocation(voxel_to_cube_program.uniform_mappings, "volume_res"),
-		1, begin(voxels_res)
+		1, begin(volume_res)
 	);
-	auto compute_res = voxels_res + 1; // include boundaries, then ceil to multiple of 4  (see voxel_to_cube.vert.glsl)
+	auto compute_res = volume_res + 1; // include boundaries, then ceil to multiple of 4  (see voxel_to_cube.vert.glsl)
 	auto reminder = compute_res % 4;
 	auto mask = i32x3(notEqual(reminder, i32x3(0)));
 	compute_res += mask * (4 - reminder);
@@ -245,4 +264,103 @@ void Voxelizer::visualize_voxels(const Editor::Context & ctx)
 		1, begin(compute_res)
 	);
 	glDrawArrays(GL_POINTS, 0, compMul(compute_res));
+}
+
+void Sdf3dWindow::calculate_sdf(const Editor::Context & ctx)
+{
+	using namespace GL;
+
+	auto & volume = ctx.game.assets.volumes.get(volume_name);
+
+	Texture3D temp_volume;
+	temp_volume.init(Texture3D::VolumeDesc{
+		.dimensions = volume_res,
+		.internal_format = GL::GL_RGBA8,
+
+		.min_filter = GL::GL_NEAREST,
+		.mag_filter = GL::GL_NEAREST,
+
+		.wrap_s = GL::GL_CLAMP_TO_BORDER,
+		.wrap_t = GL::GL_CLAMP_TO_BORDER,
+		.wrap_r = GL::GL_CLAMP_TO_BORDER,
+	});
+
+
+	/// Run jump flood
+	{
+		auto & jump_flood_program = ctx.game.assets.programs.get("jump_flood_3d");
+		glUseProgram(jump_flood_program.id);
+
+		i32 read_volume_unit;
+		glGetUniformiv(
+			jump_flood_program.id, GetLocation(jump_flood_program.uniform_mappings, "read_volume"),
+			&read_volume_unit
+		);
+		i32 write_volume_unit;
+		glGetUniformiv(
+			jump_flood_program.id, GetLocation(jump_flood_program.uniform_mappings, "write_volume"),
+			&write_volume_unit
+		);
+
+		glUniform3iv(
+			GetLocation(jump_flood_program.uniform_mappings, "volume_res"),
+			1, begin(volume_res)
+		);
+
+		i32 step = compMax(volume_res) / 2;
+		bool write_to_temp = true; // initial data is stored in volume, so we write to temp_volume first
+
+		while (step != 0)
+		{
+			glBindImageTexture(
+				write_volume_unit,
+				(write_to_temp ? volume : temp_volume).id, 0, 0, 0,
+				GL_WRITE_ONLY, GL_RGBA8
+			);
+			glBindImageTexture(
+				read_volume_unit,
+				(not write_to_temp ? volume : temp_volume).id, 0, 0, 0,
+				GL_READ_ONLY, GL_RGBA8
+			);
+			glUniform1i(
+				GetLocation(jump_flood_program.uniform_mappings, "step"),
+				step
+			);
+			glDrawArrays(GL_POINTS, 0, compMul(volume_res));
+
+			step /= 2;
+			write_to_temp = not write_to_temp;
+		}
+
+		if (not write_to_temp) // most recent write had made to temp_volume
+			glCopyImageSubData( // volume = move(temp_volume) does not play well with editor ui currently
+				temp_volume.id, GL_TEXTURE_3D, 0,
+				0, 0, 0,
+				volume.id, GL_TEXTURE_3D, 0,
+				0, 0, 0,
+				volume_res.x, volume_res.y, volume_res.z
+			);
+	}
+
+
+	/// Finalize jump flood
+	{
+		auto & jump_flood_finalize = ctx.game.assets.programs.get("jump_flood_3d_finalize");
+		glUseProgram(jump_flood_finalize.id);
+		i32 volume_unit;
+		glGetUniformiv(
+			jump_flood_finalize.id, GetLocation(jump_flood_finalize.uniform_mappings, "volume"),
+			&volume_unit
+		);
+		glBindImageTexture(
+			volume_unit,
+			volume.id, 0, 0, 0,
+			GL_READ_WRITE, GL_RGBA8
+		);
+		glUniform3iv(
+			GetLocation(jump_flood_finalize.uniform_mappings, "volume_res"),
+			1, begin(volume_res)
+		);
+		glDrawArrays(GL_POINTS, 0, compMul(volume_res));
+	}
 }

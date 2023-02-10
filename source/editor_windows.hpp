@@ -18,12 +18,12 @@ struct MaterialWindow : Editor::WindowBase
 	void update(Editor::Context & ctx) override;
 };
 
-struct Voxelizer : Editor::WindowBase
+struct Sdf3dWindow : Editor::WindowBase
 {
 	const char * get_name() override
-	{ return "Voxelizer"; }
+	{ return "SDF 3D"; }
 
-	Name voxels_name = "voxels";
+	Name volume_name = "voxels";
 
 	void init(Editor::Context const & ctx) override;
 	void update(Editor::Context & ctx) override;
@@ -32,11 +32,14 @@ struct Voxelizer : Editor::WindowBase
 	bool should_clear = false;
 	void clear(Editor::Context const & ctx);
 
-	bool should_compute = false;
+	bool should_voxelize = false;
 	i32 fragment_multiplier = 2;
-	i32x3 const voxels_res = i32x3(2*60);
+	i32x3 const volume_res = i32x3(2*60);
 	void voxelize(Editor::Context const & ctx);
 
 	bool should_visualize_voxels = false;
 	void visualize_voxels(Editor::Context const & ctx);
+
+	bool should_calculate_sdf = false;
+	void calculate_sdf(Editor::Context const & ctx);
 };
