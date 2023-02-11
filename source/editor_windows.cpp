@@ -256,6 +256,11 @@ void Sdf3dWindow::calculate_sdf(const Editor::Context & ctx)
 		.wrap_r = GL::GL_CLAMP_TO_BORDER,
 	});
 
+	// Even though the following draw calls do not render to a framebuffer, it fails to calculate sdf when the
+	// fragment_multiplier is large enough. Setting viewport to something small prevents that
+	glViewport(0, 0, 1, 1);
+
+
 	/// Run jump flood
 	{
 		auto & jump_flood_program = ctx.game.assets.programs.get("jump_flood_3d");
@@ -365,7 +370,7 @@ void Sdf3dWindow::visualize_voxels(const Editor::Context & ctx)
 
 	glBindFramebuffer(GL_FRAMEBUFFER, ctx.game.framebuffer.id);
 	glViewport(i32x2(0), ctx.game.framebuffer.resolution);
-	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(false);
+	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(true);
 
 	auto & voxel_to_cube_program = ctx.game.assets.programs.get("voxel_to_cube");
 	glUseProgram(voxel_to_cube_program.id);
