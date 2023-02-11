@@ -370,6 +370,7 @@ void Sdf3dWindow::visualize_voxels(const Editor::Context & ctx)
 
 	glBindFramebuffer(GL_FRAMEBUFFER, ctx.game.framebuffer.id);
 	glViewport(i32x2(0), ctx.game.framebuffer.resolution);
+	glDisable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(true);
 
 	auto & voxel_to_cube_program = ctx.game.assets.programs.get("voxel_to_cube");
@@ -378,10 +379,7 @@ void Sdf3dWindow::visualize_voxels(const Editor::Context & ctx)
 		GetLocation(voxel_to_cube_program.uniform_mappings, "volume"),
 		ctx.game.assets.volumes.get(volume_name).handle
 	);
-	glUniform3iv(
-		GetLocation(voxel_to_cube_program.uniform_mappings, "volume_res"),
-		1, begin(volume_res)
-	);
+
 	auto compute_res = volume_res + 1; // include boundaries, then ceil to multiple of 4  (see voxel_to_cube.vert.glsl)
 	auto reminder = compute_res % 4;
 	auto mask = i32x3(notEqual(reminder, i32x3(0)));
@@ -390,5 +388,13 @@ void Sdf3dWindow::visualize_voxels(const Editor::Context & ctx)
 		GetLocation(voxel_to_cube_program.uniform_mappings, "compute_res"),
 		1, begin(compute_res)
 	);
+
+	auto TransformVP = visit([](Render::Camera auto & c) { return c.get_projection() * c.get_view(); }, ctx.game.camera);
+	auto transform = TransformVP * translate(f32x3(-1)) * scale(2.f / f32x3(volume_res)); // maps [0,volume_res] to [-1,+1]
+	glUniformMatrix4fv(
+		GetLocation(voxel_to_cube_program.uniform_mappings, "transform"),
+		1, false, begin(transform)
+	);
+
 	glDrawArrays(GL_POINTS, 0, compMul(compute_res));
 }

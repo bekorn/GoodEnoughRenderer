@@ -74,24 +74,21 @@
         "vert": "glsl/program/sdf_volume/voxel_to_cube.vert.glsl",
         "geom": "glsl/program/sdf_volume/voxel_to_cube.geom.glsl",
         "frag": "glsl/program/sdf_volume/voxel_to_cube.frag.glsl",
-      },
-      "include_paths": [
-        "glsl/uniform_block/camera.unib.glsl",
-      ]
+      }
     },
     {
       "name": "jump_flood_3d",
       "stages": {
         "vert": "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
         "frag": "glsl/program/sdf_volume/jump_flood_3d.frag.glsl",
-      },
+      }
     },
     {
       "name": "jump_flood_3d_finalize",
       "stages": {
         "vert": "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
         "frag": "glsl/program/sdf_volume/jump_flood_3d_finalize.frag.glsl",
-      },
+      }
     },
     {
       "name": "is_in_volume",
