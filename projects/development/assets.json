@@ -29,10 +29,10 @@
   "glsl_program": [
     {
       "name": "gltf_pbrMetallicRoughness",
-      "stages": {
-        "vert": "glsl/program/gltf_pbrMetallicRoughness.vert.glsl",
-        "frag": "glsl/program/gltf_pbrMetallicRoughness.frag.glsl"
-      },
+      "stages": [
+        "glsl/program/gltf_pbrMetallicRoughness.vert.glsl",
+        "glsl/program/gltf_pbrMetallicRoughness.frag.glsl"
+      ],
       "include_paths": [
         "glsl/uniform_block/lights.unib.glsl",
         "glsl/uniform_block/camera.unib.glsl"
@@ -40,63 +40,63 @@
     },
     {
       "name": "gamma_correction",
-      "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/gamma_correction.frag.glsl"
-      }
+      "stages": [
+        "glsl/program/screen_pass.vert.glsl",
+        "glsl/program/gamma_correction.frag.glsl"
+      ]
     },
     {
       "name": "environment_mapping",
-      "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/environment_mapping.frag.glsl"
-      }
+      "stages": [
+        "glsl/program/screen_pass.vert.glsl",
+        "glsl/program/environment_mapping.frag.glsl"
+      ]
     },
     {
       "name": "tone_mapping",
-      "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/tone_mapping.frag.glsl"
-      }
+      "stages": [
+        "glsl/program/screen_pass.vert.glsl",
+        "glsl/program/tone_mapping.frag.glsl"
+      ]
     },
     // SDF 3D
     {
       "name": "voxelizer",
-      "stages": {
-        "vert": "glsl/program/sdf_volume/voxelizer.vert.glsl",
-        "geom": "glsl/program/sdf_volume/voxelizer.geom.glsl",
-        "frag": "glsl/program/sdf_volume/voxelizer.frag.glsl",
-      }
+      "stages": [
+        "glsl/program/sdf_volume/voxelizer.vert.glsl",
+        "glsl/program/sdf_volume/voxelizer.geom.glsl",
+        "glsl/program/sdf_volume/voxelizer.frag.glsl",
+      ]
     },
     {
       "name": "voxel_to_cube",
-      "stages": {
-        "vert": "glsl/program/sdf_volume/voxel_to_cube.vert.glsl",
-        "geom": "glsl/program/sdf_volume/voxel_to_cube.geom.glsl",
-        "frag": "glsl/program/sdf_volume/voxel_to_cube.frag.glsl",
-      }
+      "stages": [
+        "glsl/program/sdf_volume/voxel_to_cube.vert.glsl",
+        "glsl/program/sdf_volume/voxel_to_cube.geom.glsl",
+        "glsl/program/sdf_volume/voxel_to_cube.frag.glsl",
+      ]
     },
     {
       "name": "jump_flood_3d",
-      "stages": {
-        "vert": "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
-        "frag": "glsl/program/sdf_volume/jump_flood_3d.frag.glsl",
-      }
+      "stages": [
+        "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
+        "glsl/program/sdf_volume/jump_flood_3d.frag.glsl",
+      ]
     },
     {
       "name": "jump_flood_3d_finalize",
-      "stages": {
-        "vert": "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
-        "frag": "glsl/program/sdf_volume/jump_flood_3d_finalize.frag.glsl",
-      }
+      "stages": [
+        "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
+        "glsl/program/sdf_volume/jump_flood_3d_finalize.frag.glsl",
+      ]
     },
     {
       "name": "is_in_volume",
-      "stages": {
-        "vert": "glsl/program/sdf_volume/is_in_volume.vert.glsl",
-        "geom": "glsl/program/sdf_volume/is_in_volume.geom.glsl",
-        "frag": "glsl/program/sdf_volume/is_in_volume.frag.glsl",
-      },
+      "stages": [
+        "glsl/program/sdf_volume/is_in_volume.vert.glsl",
+        "glsl/program/sdf_volume/is_in_volume.geom.glsl",
+        "glsl/program/sdf_volume/is_in_volume.frag.glsl",
+      ],
       "include_paths": [
         "glsl/uniform_block/camera.unib.glsl",
       ]

@@ -8,77 +8,77 @@
   "glsl_program": [
     {
       "name": "gizmo",
-      "stages": {
-        "vert": "glsl/program/gizmo.vert.glsl",
-        "frag": "glsl/program/gizmo.frag.glsl"
-      }
+      "stages": [
+        "glsl/program/gizmo.vert.glsl",
+        "glsl/program/gizmo.frag.glsl"
+      ]
     },
     // Volume Window
     {
       "name": "volume_slice",
-      "stages": {
-        "vert": "glsl/program/empty.vert.glsl",
-        "geom": "glsl/program/volume_slice.geom.glsl",
-        "frag": "glsl/program/volume_slice.frag.glsl"
-      }
+      "stages": [
+        "glsl/program/empty.vert.glsl",
+        "glsl/program/volume_slice.geom.glsl",
+        "glsl/program/volume_slice.frag.glsl"
+      ]
     },
     // Border
     {
       "name": "jump_flood_init",
-      "stages": {
-        "vert": "glsl/program/border/jump_flood_init.vert.glsl",
-        "frag": "glsl/program/border/jump_flood_init.frag.glsl"
-      }
+      "stages": [
+        "glsl/program/border/jump_flood_init.vert.glsl",
+        "glsl/program/border/jump_flood_init.frag.glsl"
+      ]
     },
     {
       "name": "jump_flood",
-      "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/border/jump_flood.frag.glsl"
-      }
+      "stages": [
+        "glsl/program/screen_pass.vert.glsl",
+        "glsl/program/border/jump_flood.frag.glsl"
+      ]
     },
     {
       "name": "finalize_border",
-      "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/border/finalize_border.frag.glsl"
-      }
+      "stages": [
+        "glsl/program/screen_pass.vert.glsl",
+        "glsl/program/border/finalize_border.frag.glsl"
+      ]
     },
     // EnvMap Baker
     {
       "name": "equirectangular_to_cubemap",
-      "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/envmap/equirectangular_to_cubemap.frag.glsl"
-      }
+      "stages": [
+        "glsl/program/screen_pass.vert.glsl",
+        "glsl/program/envmap/equirectangular_to_cubemap.frag.glsl"
+      ]
     },
     {
       "name": "envmap_brdf_lut",
-      "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/envmap/brdf_lut.frag.glsl"
-      },
+      "stages": [
+        "glsl/program/screen_pass.vert.glsl",
+        "glsl/program/envmap/brdf_lut.frag.glsl"
+      ],
       "include_paths": [
         "glsl/program/envmap/common.glsl",
       ]
     },
     {
       "name": "envmap_diffuse",
-      "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/envmap/diffuse.frag.glsl"
-      },
+      "stages": [
+        "glsl/program/screen_pass.vert.glsl",
+        "glsl/program/envmap/diffuse.frag.glsl"
+      ],
       "include_paths": [
         "glsl/program/envmap/common.glsl",
       ]
     },
     {
       "name": "envmap_specular",
-      "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
-        "frag": "glsl/program/envmap/specular.frag.glsl"
-      },
-      "include_paths":  [
+      "stages": [
+        "glsl/program/screen_pass.vert.glsl",
+        "glsl/program/envmap/specular.frag.glsl"
+      ],
+      "include_paths": [
         "glsl/program/envmap/common.glsl",
       ]
     },

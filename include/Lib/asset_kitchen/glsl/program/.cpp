@@ -111,11 +111,20 @@ std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const &
 	auto name = o.FindMember("name")->value.GetString();
 	GLSL::Program::Desc desc;
 
-	for (auto & item : o.FindMember("stages")->value.GetObject())
+	for (auto & item : o.FindMember("stages")->value.GetArray())
+	{
+		const char * const path = item.GetString();
+
+		// assert path == <path>/<name>.<stage>.glsl
+		auto stage = std::string_view(path);
+		stage.remove_suffix(stage.size() - stage.rfind('.'));
+		stage = stage.substr(stage.rfind('.') + 1);
+
 		desc.stages.push_back({
-			.stage = ToGLenum(item.name.GetString()),
-			.path = root_dir / item.value.GetString(),
+			.stage = ToGLenum(stage),
+			.path = root_dir / path,
 		});
+	}
 
 	if (auto member = o.FindMember("include_paths"); member != o.MemberEnd())
 		for (auto & item: member->value.GetArray())
