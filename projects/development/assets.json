@@ -59,5 +59,47 @@
         "frag": "glsl/program/tone_mapping.frag.glsl"
       }
     },
+    // SDF 3D
+    {
+      "name": "voxelizer",
+      "stages": {
+        "vert": "glsl/program/sdf_volume/voxelizer.vert.glsl",
+        "geom": "glsl/program/sdf_volume/voxelizer.geom.glsl",
+        "frag": "glsl/program/sdf_volume/voxelizer.frag.glsl",
+      }
+    },
+    {
+      "name": "voxel_to_cube",
+      "stages": {
+        "vert": "glsl/program/sdf_volume/voxel_to_cube.vert.glsl",
+        "geom": "glsl/program/sdf_volume/voxel_to_cube.geom.glsl",
+        "frag": "glsl/program/sdf_volume/voxel_to_cube.frag.glsl",
+      }
+    },
+    {
+      "name": "jump_flood_3d",
+      "stages": {
+        "vert": "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
+        "frag": "glsl/program/sdf_volume/jump_flood_3d.frag.glsl",
+      }
+    },
+    {
+      "name": "jump_flood_3d_finalize",
+      "stages": {
+        "vert": "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
+        "frag": "glsl/program/sdf_volume/jump_flood_3d_finalize.frag.glsl",
+      }
+    },
+    {
+      "name": "is_in_volume",
+      "stages": {
+        "vert": "glsl/program/sdf_volume/is_in_volume.vert.glsl",
+        "geom": "glsl/program/sdf_volume/is_in_volume.geom.glsl",
+        "frag": "glsl/program/sdf_volume/is_in_volume.frag.glsl",
+      },
+      "include_paths": [
+        "glsl/uniform_block/camera.unib.glsl",
+      ]
+    },
   ],
 }

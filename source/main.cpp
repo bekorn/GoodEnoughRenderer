@@ -86,6 +86,7 @@ i32 main(i32 argc, char** argv)
 	editor_ctx.add_window(make_unique_one<Editor::EnvmapBakerWindow>());
 	editor_ctx.add_window(make_unique_one<GameSettingsWindow>());
 	editor_ctx.add_window(make_unique_one<MaterialWindow>());
+	editor_ctx.add_window(make_unique_one<Sdf3dWindow>());
 	editor_ctx.init();
 
 	Render::FrameInfo frame_info;

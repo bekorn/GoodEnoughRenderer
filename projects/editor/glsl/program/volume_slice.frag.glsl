@@ -1,11 +1,15 @@
-in vec2 uv;
+in vec3 pos;
 
 uniform sampler3D volume;
-uniform float z;
 
 out vec4 out_color;
 
 void main()
 {
-    out_color = textureLod(volume, vec3(uv, z), 0);
+    vec4 color = textureLod(volume, pos, 0);
+
+//    if (color.a == 0)
+//        discard;
+
+    out_color = color;
 }

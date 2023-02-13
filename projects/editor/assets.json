@@ -17,7 +17,8 @@
     {
       "name": "volume_slice",
       "stages": {
-        "vert": "glsl/program/screen_pass.vert.glsl",
+        "vert": "glsl/program/empty.vert.glsl",
+        "geom": "glsl/program/volume_slice.geom.glsl",
         "frag": "glsl/program/volume_slice.frag.glsl"
       }
     },

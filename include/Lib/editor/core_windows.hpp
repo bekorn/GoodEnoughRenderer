@@ -125,7 +125,7 @@ struct VolumeWindow : WindowBase
 	i32 levels = 0, current_level = 0;
 	f32x3 size;
 	f32x2 view_size;
-	f32 z;
+	f32x3 slice_pos = f32x3(0.5);
 
 	void init(Context const & ctx) override;
 	void update(Context & ctx) override;

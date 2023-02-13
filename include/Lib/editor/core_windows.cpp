@@ -767,6 +767,12 @@ void VolumeWindow::init(const Context & ctx)
 					.desc = GL::Texture2D::AttachmentDesc{
 						.internal_format = GL::GL_RGBA16F,
 					},
+				},
+				{
+					.type = &GL::FrameBuffer::depth,
+					.desc = GL::Texture2D::AttachmentDesc{
+						.internal_format = GL::GL_DEPTH_COMPONENT16,
+					},
 				}
 			}
 		}
@@ -828,8 +834,11 @@ void VolumeWindow::update(Context & ctx)
 
 			is_level_changed = false;
 		}
+
 		LabelText("Resolution", "%d x %d x %d", i32(size.x), i32(size.y), i32(size.z));
-		SliderFloat("Z", &z, 0, 1, "%.2f");
+
+		SliderFloat3("Slice Position", begin(slice_pos), 0, 1, "%.2f");
+
 		Image(
 			reinterpret_cast<void *>(i64(framebuffer.color0.id)),
 			{view_size.x, view_size.y},
@@ -854,17 +863,33 @@ void VolumeWindow::render(const Context & ctx)
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.id);
 	glViewport(i32x2(0), framebuffer.resolution);
 
+	glDisable(GL_CULL_FACE);
+	glColorMask(true, true, true, true), glDepthMask(true), glDepthFunc(GL_LESS);
+
+	f32x4 clear_color(1, 1, 1, 0.5);
+	glClearNamedFramebufferfv(framebuffer.id, GL_COLOR, 0, begin(clear_color));
+	f32 clear_depth(1);
+	glClearNamedFramebufferfv(framebuffer.id, GL_DEPTH, 0, &clear_depth);
+
 	auto & volume_slice_program = ctx.editor_assets.programs.get("volume_slice");
 	glUseProgram(volume_slice_program.id);
 	glUniformHandleui64ARB(
 		GetLocation(volume_slice_program.uniform_mappings, "volume"),
 		view.handle
 	);
-	glUniform1f(
-		GetLocation(volume_slice_program.uniform_mappings, "z"),
-		z
+	glUniform3fv(
+		GetLocation(volume_slice_program.uniform_mappings, "slice_pos"),
+		1, begin(slice_pos)
 	);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	auto view = visit([](Render::Camera auto & c) { return c.get_view(); }, ctx.game.camera);
+	auto projection = visit([](Render::Camera auto & c) { return c.get_projection(); }, ctx.game.camera);
+	auto view_projection = projection * view;
+	auto invVP = inverse(f32x3x3(view_projection));
+	glUniformMatrix4fv(
+		GetLocation(volume_slice_program.uniform_mappings, "TransformVP"),
+		1, false, begin(view_projection)
+	);
+	glDrawArrays(GL_POINTS, 0, 3);
 
 	// gamma correction
 	{
