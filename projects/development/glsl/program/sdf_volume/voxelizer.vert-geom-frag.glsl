@@ -2,6 +2,18 @@
 // by picking the axis with the least change as the depth (z) axis
 // see the diagrams at https://developer.nvidia.com/content/basics-gpu-voxelization
 
+#ifdef ONLY_VERT ///////////////////////////////////////////////////////////////////////////////////////////////////////
+uniform mat4 TransformM;
+
+in vec3 pos;
+
+void main()
+{
+    gl_Position = TransformM * vec4(pos, 1);
+}
+#endif
+
+#ifdef ONLY_GEOM ///////////////////////////////////////////////////////////////////////////////////////////////////////
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
@@ -51,3 +63,24 @@ void main()
     }
     EndPrimitive();
 }
+#endif
+
+#ifdef ONLY_FRAG ///////////////////////////////////////////////////////////////////////////////////////////////////////
+uniform layout(rgba8) writeonly image3D voxels;
+uniform ivec3 voxels_res;
+uniform int fragment_multiplier = 1;
+
+in vec3 GS_pos;
+
+void main()
+{
+//  for some reason imageSize.z is always 1 :/
+//    ivec3 voxels_res = imageSize(voxels);
+
+    ivec3 texel = ivec3(GS_pos * voxels_res);
+    imageStore(voxels, texel, vec4(GS_pos, 1));
+
+// to visualize reprojected triangles
+//    imageStore(voxels, ivec3(gl_FragCoord.xy / fragment_multiplier, 0), vec4(GS_pos, 1));
+}
+#endif

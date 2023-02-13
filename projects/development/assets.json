@@ -62,41 +62,23 @@
     // SDF 3D
     {
       "name": "voxelizer",
-      "stages": [
-        "glsl/program/sdf_volume/voxelizer.vert.glsl",
-        "glsl/program/sdf_volume/voxelizer.geom.glsl",
-        "glsl/program/sdf_volume/voxelizer.frag.glsl",
-      ]
+      "stages": ["glsl/program/sdf_volume/voxelizer.vert-geom-frag.glsl"]
     },
     {
       "name": "voxel_to_cube",
-      "stages": [
-        "glsl/program/sdf_volume/voxel_to_cube.vert.glsl",
-        "glsl/program/sdf_volume/voxel_to_cube.geom.glsl",
-        "glsl/program/sdf_volume/voxel_to_cube.frag.glsl",
-      ]
+      "stages": ["glsl/program/sdf_volume/voxel_to_cube.vert-geom-frag.glsl"]
     },
     {
       "name": "jump_flood_3d",
-      "stages": [
-        "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
-        "glsl/program/sdf_volume/jump_flood_3d.frag.glsl",
-      ]
+      "stages": ["glsl/program/sdf_volume/jump_flood_3d.vert-frag.glsl"]
     },
     {
       "name": "jump_flood_3d_finalize",
-      "stages": [
-        "glsl/program/sdf_volume/jump_flood_3d.vert.glsl",
-        "glsl/program/sdf_volume/jump_flood_3d_finalize.frag.glsl",
-      ]
+      "stages": ["glsl/program/sdf_volume/jump_flood_3d_finalize.vert-frag.glsl"]
     },
     {
       "name": "is_in_volume",
-      "stages": [
-        "glsl/program/sdf_volume/is_in_volume.vert.glsl",
-        "glsl/program/sdf_volume/is_in_volume.geom.glsl",
-        "glsl/program/sdf_volume/is_in_volume.frag.glsl",
-      ],
+      "stages": ["glsl/program/sdf_volume/is_in_volume.vert-geom-frag.glsl"],
       "include_paths": [
         "glsl/uniform_block/camera.unib.glsl",
       ]

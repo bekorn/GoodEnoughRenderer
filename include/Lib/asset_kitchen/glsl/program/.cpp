@@ -12,7 +12,7 @@ LoadedData Load(Desc const & desc)
 
 	loaded.stages.reserve(desc.stages.size());
 	for (auto const & [stage, path]: desc.stages)
-		loaded.stages.emplace_back(Stage{
+		loaded.stages.emplace_back(LoadedData::Stage{
 			.type = stage,
 			.source = File::LoadAsString(path),
 		});
@@ -26,65 +26,71 @@ LoadedData Load(Desc const & desc)
 	return loaded;
 }
 
+namespace Helpers
+{
+const char * to_string(GL::GLenum stage)
+{
+	switch (stage)
+	{
+	case (GL::GL_VERTEX_SHADER): return "VERT";
+	case (GL::GL_FRAGMENT_SHADER): return "FRAG";
+	case (GL::GL_GEOMETRY_SHADER): return "GEOM";
+	case (GL::GL_COMPUTE_SHADER): return "COMP";
+	default: assert(false);
+	}
+}
+}
+
 Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded)
 {
 	using namespace Helpers;
 
-	std::stringstream error_log;
+	vector<const char*> sources; // = { <includes>, "#define <stage>", "#line 1\n", <stage_source> }
+	sources.resize(loaded.includes.size() + 3);
 
-	vector<const char*> includes;
-	includes.resize(loaded.includes.size() + 2); // +1 for the #line, +1 for the stage source
 	for (auto i = 0; i < loaded.includes.size(); ++i)
-		includes[i] = loaded.includes[i].data();
+		sources[i] = loaded.includes[i].data();
 
-	includes[includes.size() - 2] = "#line 1\n";
+	sources[sources.size() - 2] = "#line 1\n";
 
-	bool all_stages_compiled = true;
 
+	/// Compile stages
 	vector<GL::ShaderStage> stages;
 	stages.resize(loaded.stages.size());
+	std::string error_log;
 	for (auto i = 0; i < stages.size(); ++i)
 	{
 		auto & stage = stages[i];
-		auto const & data_stage = loaded.stages[i];
+		auto const & loaded_stage = loaded.stages[i];
 
-		includes.back() = data_stage.source.data(); // put stage source as the last one
+		auto stage_define = fmt::format("#define ONLY_{}\n", to_string(loaded_stage.type));
+		sources[sources.size() - 3] = stage_define.data();
 
-		stage.init(
-			{
-				.stage = data_stage.type,
-				.sources = includes,
-			}
-		);
+		sources.back() = loaded_stage.source.data();
 
+		stage.init({
+			.stage = loaded_stage.type,
+			.sources = sources,
+		});
 		if (not is_compiled(stage))
-		{
-			all_stages_compiled = false;
-			error_log << IntoString(data_stage.type) << ": " << get_log(stage);
-		}
+			fmt::format_to(back_inserter(error_log), "{}: {}", IntoString(loaded_stage.type), get_log(stage));
 	}
+	if (not error_log.empty())
+		return {move(error_log)};
 
-	if (not all_stages_compiled)
-		return {error_log.str()};
 
-
+	/// Compile program
 	vector<GL::ShaderStage const*> stages_descs;
 	stages_descs.reserve(stages.size());
 	for(auto & s: stages)
 		stages_descs.emplace_back(&s);
 
 	GL::ShaderProgram program;
-	program.init(
-		{
-			.shader_stages = stages_descs
-		}
-	);
-
+	program.init({
+		.shader_stages = stages_descs,
+	});
 	if (not is_linked(program))
-	{
-		error_log << "Compilation failed! Linking Error:\n" << get_log(program);
-		return {error_log.str()};
-	}
+		return {fmt::format("Compilation failed! Linking Error:\n{}", get_log(program))};
 
 	set_attribute_mapping(program);
 	set_uniform_mapping(program);
@@ -95,7 +101,7 @@ Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded)
 
 namespace Helpers
 {
-GL::GLenum ToGLenum(std::string_view stage)
+GL::GLenum to_glenum(std::string_view stage)
 {
 	if (stage == "vert") return GL::GL_VERTEX_SHADER;
 	if (stage == "frag") return GL::GL_FRAGMENT_SHADER;
@@ -115,15 +121,22 @@ std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const &
 	{
 		const char * const path = item.GetString();
 
-		// assert path == <path>/<name>.<stage>.glsl
-		auto stage = std::string_view(path);
-		stage.remove_suffix(stage.size() - stage.rfind('.'));
-		stage = stage.substr(stage.rfind('.') + 1);
+		// assert path == <path>/<name>.<1char-separated-stages>.glsl
+		auto stages = std::string_view(path);
+		stages.remove_suffix(stages.size() - stages.rfind('.'));
+		stages = stages.substr(stages.rfind('.') + 1);
 
-		desc.stages.push_back({
-			.stage = ToGLenum(stage),
-			.path = root_dir / path,
-		});
+		do
+		{
+			auto stage = stages.substr(0, 4); // all stages are char[4]
+			stages.remove_prefix(glm::min(usize(5), stages.size()));
+
+			desc.stages.push_back({
+				.stage = to_glenum(stage),
+				.path = root_dir / path,
+			});
+		}
+		while (not stages.empty());
 	}
 
 	if (auto member = o.FindMember("include_paths"); member != o.MemberEnd())

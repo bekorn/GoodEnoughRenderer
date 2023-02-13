@@ -1,5 +1,15 @@
 // see https://www.comp.nus.edu.sg/~tants/jfa/i3d06.pdf
 
+#ifdef ONLY_VERT ///////////////////////////////////////////////////////////////////////////////////////////////////////
+out flat int idx;
+
+void main()
+{
+    idx = gl_VertexID;
+}
+#endif
+
+#ifdef ONLY_FRAG ///////////////////////////////////////////////////////////////////////////////////////////////////////
 uniform layout(binding = 0, rgba8) readonly  image3D read_volume;
 uniform layout(binding = 1, rgba8) writeonly image3D write_volume;
 uniform ivec3 volume_res;
@@ -44,3 +54,4 @@ void main()
     if (closest != uvec3(0))
         imageStore(write_volume, voxel_idx, vec4(closest, 1));
 }
+#endif

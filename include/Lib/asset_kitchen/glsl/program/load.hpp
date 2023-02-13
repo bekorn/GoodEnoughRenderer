@@ -6,12 +6,6 @@
 
 namespace GLSL::Program
 {
-struct Stage
-{
-	GL::GLenum type;
-	std::string source;
-};
-
 struct Desc
 {
 	struct Stage
@@ -27,6 +21,11 @@ struct Desc
 
 struct LoadedData
 {
+	struct Stage
+	{
+		GL::GLenum type;
+		std::string source;
+	};
 	vector<Stage> stages;
 	vector<std::string> includes;
 };

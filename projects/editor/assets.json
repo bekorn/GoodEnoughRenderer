@@ -8,27 +8,17 @@
   "glsl_program": [
     {
       "name": "gizmo",
-      "stages": [
-        "glsl/program/gizmo.vert.glsl",
-        "glsl/program/gizmo.frag.glsl"
-      ]
+      "stages": ["glsl/program/gizmo.vert-frag.glsl"]
     },
     // Volume Window
     {
       "name": "volume_slice",
-      "stages": [
-        "glsl/program/empty.vert.glsl",
-        "glsl/program/volume_slice.geom.glsl",
-        "glsl/program/volume_slice.frag.glsl"
-      ]
+      "stages": ["glsl/program/volume_slice.vert-geom-frag.glsl"]
     },
     // Border
     {
       "name": "jump_flood_init",
-      "stages": [
-        "glsl/program/border/jump_flood_init.vert.glsl",
-        "glsl/program/border/jump_flood_init.frag.glsl"
-      ]
+      "stages": ["glsl/program/border/jump_flood_init.vert-frag.glsl"]
     },
     {
       "name": "jump_flood",

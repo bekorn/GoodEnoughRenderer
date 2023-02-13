@@ -1,3 +1,13 @@
+#ifdef ONLY_VERT ///////////////////////////////////////////////////////////////////////////////////////////////////////
+out flat int idx;
+
+void main()
+{
+    idx = gl_VertexID;
+}
+#endif
+
+#ifdef ONLY_FRAG ///////////////////////////////////////////////////////////////////////////////////////////////////////
 uniform layout(binding = 0, rgba8) image3D volume;
 uniform ivec3 volume_res;
 
@@ -21,3 +31,4 @@ void main()
 
     imageStore(volume, voxel_idx, vec4(closest_pos, distance(pos, closest_pos)));
 }
+#endif
