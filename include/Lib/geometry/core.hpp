@@ -10,7 +10,7 @@ namespace Attribute
 {
 struct Key
 {
-	enum class Common : u8
+	enum Common : u8
 	{
 		POSITION,
 		NORMAL,
@@ -41,8 +41,6 @@ struct Key
 	const char * name_to_string() const
 	{
 		if (holds_alternative<Common>(name))
-		{
-			using enum Common;
 			switch (get<Common>(name))
 			{
 			case POSITION: return "POSITION";
@@ -53,7 +51,6 @@ struct Key
 			case JOINTS: return "JOINTS";
 			case WEIGHTS: return "WEIGHTS";
 			}
-		}
 		else
 			return get<std::string>(name).data();
 	}
@@ -61,13 +58,12 @@ struct Key
 
 struct Type
 {
-	enum class Value : u16
+	enum Value : u8
 	{
 		F32,
 		I8, I16, I32, I8NORM, I16NORM, I32NORM,
 		U8, U16, U32, U8NORM, U16NORM, U32NORM,
 	};
-	using enum Value;
 
 	Value value;
 

@@ -64,7 +64,7 @@ struct VertexArray : OpenGLObject
 			glVertexArrayAttribFormat(
 				id,
 				attribute.location,
-				data.dimension, IntoGLenum(data.type), data.type.is_normalized(),
+				data.dimension, to_glenum(data.type), data.type.is_normalized(),
 				0
 			);
 			glEnableVertexArrayAttrib(id, attribute.location);

@@ -5,22 +5,22 @@
 
 namespace GL
 {
-std::string GetContextInfo();
+std::string get_context_info();
 
-void DebugCallback(
+void debug_callback(
 	GLenum source,
 	GLenum type, GLuint id, GLenum severity,
 	GLsizei length, const GLchar * message,
 	const void * userParam
 );
 
-std::string_view GLSLTypeToString(GLenum type);
+const char * glsl_uniform_type_to_string(GLenum type);
 
-u32 ComponentTypeSize(GLenum type);
+u32 gl_component_type_size(GLenum type);
 
-GLenum IntoGLenum(Geometry::Attribute::Type::Value type);
+GLenum to_glenum(Geometry::Attribute::Type::Value type);
 
-Geometry::Attribute::Type IntoAttributeType(GLenum type, bool is_normalized);
+Geometry::Attribute::Type to_attribute_type(GLenum type, bool is_normalized);
 
 
 // shortcuts

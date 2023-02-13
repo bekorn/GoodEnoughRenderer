@@ -62,7 +62,7 @@ i32 main(i32 argc, char** argv)
 	}
 
 	imgui_context.init({.window = window});
-	fmt::print("{}\n", GL::GetContextInfo());
+	fmt::print("{}\n", GL::get_context_info());
 
 	GL::init();
 

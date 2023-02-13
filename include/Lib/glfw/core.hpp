@@ -104,7 +104,7 @@ struct Window
 
 			glEnable(GL_DEBUG_OUTPUT);
 			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-			glDebugMessageCallback(DebugCallback, nullptr);
+			glDebugMessageCallback(debug_callback, nullptr);
 			glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
 			fmt::print("GL Debug initialized\n");

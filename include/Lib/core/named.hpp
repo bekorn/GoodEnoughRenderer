@@ -48,7 +48,7 @@ struct fmt::formatter<Name>
 
 	template<typename FormatContext>
 	auto format(Name name, FormatContext & ctx) const
-	{ return fmt::format_to(ctx.out(), "{:>20}|{}", name.hash, name.string); }
+	{ return fmt::format_to(ctx.out(), "{:>16X}|{}", name.hash, name.string); }
 };
 
 template<typename T>

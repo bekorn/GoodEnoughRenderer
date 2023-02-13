@@ -73,7 +73,7 @@ void MaterialWindow::update(Editor::Context & ctx)
 			break;
 		}
 		default:
-		{ LabelText(name.data(), "%s is not supported", GL::GLSLTypeToString(variable.glsl_type).data()); }
+		{ LabelText(name.data(), "%s is not supported", GL::glsl_uniform_type_to_string(variable.glsl_type)); }
 		}
 
 	if (edited)

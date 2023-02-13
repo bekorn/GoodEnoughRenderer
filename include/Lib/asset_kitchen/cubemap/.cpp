@@ -7,7 +7,7 @@ namespace Cubemap
 {
 namespace Helpers
 {
-GL::GLenum ToGLenum(std::string_view filter)
+GL::GLenum to_glenum(std::string_view filter)
 {
 	using namespace std::string_view_literals;
 	if (filter == "NEAREST"sv) return GL::GL_NEAREST;
@@ -25,10 +25,10 @@ std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const &
 	Desc desc;
 	desc.path = root_dir / o.FindMember("path")->value.GetString();
 	desc.levels = File::JSON::GetI32(o, "levels", 1);
-	desc.min_filter = Helpers::ToGLenum(
+	desc.min_filter = Helpers::to_glenum(
 		File::JSON::GetString(o, "min_filter", desc.levels == 1 ? "LINEAR" : "LINEAR_MIPMAP_LINEAR")
 	);
-	desc.mag_filter = Helpers::ToGLenum(
+	desc.mag_filter = Helpers::to_glenum(
 		File::JSON::GetString(o, "mag_filter", "LINEAR")
 	);
 

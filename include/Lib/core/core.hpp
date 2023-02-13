@@ -1,8 +1,6 @@
 #pragma once
 #pragma message("-- read CORE/core.Hpp --")
 
-#include ".pchpp"
-
 using byte = std::byte;
 
 using i8 = glm::i8;

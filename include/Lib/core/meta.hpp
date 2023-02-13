@@ -16,7 +16,7 @@ constexpr bool DEBUG_GL = false;
 // https://blog.kowalczyk.info/article/j/guide-to-predefined-macros-in-c-compilers-gcc-clang-msvc-etc..html
 namespace Meta
 {
-	enum class Platform
+	enum struct Platform
 	{
 		WIN64
 	}
@@ -27,7 +27,7 @@ namespace Meta
 #endif
 	;
 
-	enum class Compiler
+	enum struct Compiler
 	{
 		MSVC
 	}

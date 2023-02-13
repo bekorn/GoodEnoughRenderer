@@ -364,7 +364,7 @@ void UniformBufferWindow::update(Context & ctx)
 			{
 				TableNextColumn(), TextFMT("{}", key);
 				TableNextColumn(), TextFMT("{}", variable.offset);
-				TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(variable.glsl_type));
+				TableNextColumn(), TextFMT("{}", GL::glsl_uniform_type_to_string(variable.glsl_type));
 			}
 			EndTable();
 		}
@@ -426,7 +426,9 @@ void ProgramWindow::update(Context & ctx)
 
 	if (auto iter = assets->program_errors.find(selected_name); iter != assets->program_errors.end())
 	{
-		TextColored({1, 0, 0, 1}, "%s", iter->second.data());
+		PushStyleColor(ImGuiCol_Text, {1, 0, 0, 1});
+		TextWrapped("%s", iter->second.data());
+		PopStyleColor();
 		return;
 	}
 
@@ -442,7 +444,7 @@ void ProgramWindow::update(Context & ctx)
 		{
 			TableNextColumn(), TextFMT("{}", attribute.key);
 			TableNextColumn(), TextFMT("{}", attribute.per_patch ? "true" : "false");
-			TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(attribute.glsl_type));
+			TableNextColumn(), TextFMT("{}", GL::glsl_uniform_type_to_string(attribute.glsl_type));
 			TableNextColumn(), TextFMT("{}", attribute.location);
 		}
 		EndTable();
@@ -458,7 +460,7 @@ void ProgramWindow::update(Context & ctx)
 		for (auto const & uniform: named_program.data.uniform_mappings)
 		{
 			TableNextColumn(), TextFMT("{}", uniform.key);
-			TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(uniform.glsl_type));
+			TableNextColumn(), TextFMT("{}", GL::glsl_uniform_type_to_string(uniform.glsl_type));
 			TableNextColumn(), TextFMT("{}", uniform.location);
 		}
 		EndTable();
@@ -497,7 +499,7 @@ void ProgramWindow::update(Context & ctx)
 				for (auto const & variable: uniform_block.variables)
 				{
 					TableNextColumn(), TextFMT("{}", variable.offset);
-					TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(variable.glsl_type));
+					TableNextColumn(), TextFMT("{}", GL::glsl_uniform_type_to_string(variable.glsl_type));
 					TableNextColumn(), TextFMT("{}", variable.key);
 				}
 				EndTable();
@@ -539,7 +541,7 @@ void ProgramWindow::update(Context & ctx)
 				for (auto const & variable: storage_block.variables)
 				{
 					TableNextColumn(), TextFMT("{}", variable.offset);
-					TableNextColumn(), TextFMT("{}", GL::GLSLTypeToString(variable.glsl_type));
+					TableNextColumn(), TextFMT("{}", GL::glsl_uniform_type_to_string(variable.glsl_type));
 					TableNextColumn(), TextFMT("{}", variable.key);
 				}
 				EndTable();
