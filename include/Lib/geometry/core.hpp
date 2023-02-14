@@ -40,19 +40,20 @@ struct Key
 
 	const char * name_to_string() const
 	{
-		if (holds_alternative<Common>(name))
-			switch (get<Common>(name))
-			{
-			case POSITION: return "POSITION";
-			case NORMAL: return "NORMAL";
-			case TANGENT: return "TANGENT";
-			case TEXCOORD: return "TEXCOORD";
-			case COLOR: return "COLOR";
-			case JOINTS: return "JOINTS";
-			case WEIGHTS: return "WEIGHTS";
-			}
-		else
+		if (holds_alternative<std::string>(name))
 			return get<std::string>(name).data();
+
+		switch (get<Common>(name))
+		{
+		case POSITION: return "POSITION";
+		case NORMAL: return "NORMAL";
+		case TANGENT: return "TANGENT";
+		case TEXCOORD: return "TEXCOORD";
+		case COLOR: return "COLOR";
+		case JOINTS: return "JOINTS";
+		case WEIGHTS: return "WEIGHTS";
+		}
+		assert_enum_out_of_range();
 	}
 };
 
@@ -92,6 +93,7 @@ struct Type
 		case I32NORM:
 		case U32NORM: return 4;
 		}
+		assert_enum_out_of_range();
 	}
 
 	bool is_normalized() const
@@ -112,6 +114,7 @@ struct Type
 		case I32:
 		case U32: return false;
 		}
+		assert_enum_out_of_range();
 	}
 
 	const char * value_to_string() const
@@ -133,6 +136,7 @@ struct Type
 		case U16NORM: return "U16NORM";
 		case U32NORM: return "U32NORM";
 		}
+		assert_enum_out_of_range();
 	}
 };
 

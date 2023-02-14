@@ -7,7 +7,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}-Binaries")
 
 # common flags
 if (MSVC)
-#    add_compile_options(/W4 /WX)
+    # checks if a switch statement without a default case handles every enum value
+    # https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-4-c4062?view=msvc-170
+    add_compile_options(/w14062)
     # better optimizations and make glm use SIMD (https://github.com/g-truc/glm/blob/master/manual.md#section2_11)
     add_compile_options(/arch:AVX2)
 else()

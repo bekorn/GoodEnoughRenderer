@@ -201,7 +201,7 @@ const char * glsl_uniform_type_to_string(GLenum type)
 	case (GL_UNSIGNED_INT64_VEC3_ARB): return "u64vec3";
 	case (GL_UNSIGNED_INT64_VEC4_ARB): return "u64vec4";
 
-	default: return "unknown type :(";
+	default: assert_case_not_handled();
 	}
 }
 
@@ -223,7 +223,7 @@ u32 gl_component_type_size(GLenum type)
 	case GL_FLOAT: return sizeof(GLfloat);
 	case GL_DOUBLE: return sizeof(GLdouble);
 
-	default: throw std::runtime_error("Unknown component Type :(");
+	default: assert_case_not_handled();
 	}
 }
 
@@ -246,6 +246,7 @@ GLenum to_glenum(Geometry::Attribute::Type::Value type)
 	case U32:
 	case U32NORM: return GL_UNSIGNED_INT;
 	}
+	assert_enum_out_of_range();
 }
 
 Geometry::Attribute::Type to_attribute_type(GLenum type, bool is_normalized)
@@ -260,19 +261,20 @@ Geometry::Attribute::Type to_attribute_type(GLenum type, bool is_normalized)
 		case GL_UNSIGNED_BYTE: return U8NORM;
 		case GL_UNSIGNED_SHORT: return U16NORM;
 		case GL_UNSIGNED_INT: return U32NORM;
+		case GL_FLOAT: assert_failure("GL_FLOAT con not be normalized");
+		default: assert_case_not_handled();
 		}
 	else
 		switch (type)
 		{
-		case GL_FLOAT: return F32;
 		case GL_BYTE: return I8;
 		case GL_SHORT: return I16;
 		case GL_INT: return I32;
 		case GL_UNSIGNED_BYTE: return U8;
 		case GL_UNSIGNED_SHORT: return U16;
 		case GL_UNSIGNED_INT: return U32;
+		case GL_FLOAT: return F32;
+		default: assert_case_not_handled();
 		}
-
-	throw std::runtime_error("Unknown type or combination :(");
 }
 }

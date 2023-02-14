@@ -36,7 +36,7 @@ const char * to_string(GL::GLenum stage)
 	case (GL::GL_FRAGMENT_SHADER): return "FRAG";
 	case (GL::GL_GEOMETRY_SHADER): return "GEOM";
 	case (GL::GL_COMPUTE_SHADER): return "COMP";
-	default: assert(false);
+	default: assert_case_not_handled();
 	}
 }
 }
@@ -107,6 +107,7 @@ GL::GLenum to_glenum(std::string_view stage)
 	if (stage == "frag") return GL::GL_FRAGMENT_SHADER;
 	if (stage == "geom") return GL::GL_GEOMETRY_SHADER;
 	if (stage == "comp") return GL::GL_COMPUTE_SHADER;
+	assert_case_not_handled();
 }
 }
 

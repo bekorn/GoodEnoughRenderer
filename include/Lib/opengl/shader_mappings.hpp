@@ -97,7 +97,7 @@ auto & GetMapping(Range const & mappings, Key const & key)
 		if (key == mapping.key)
 			return mapping;
 
-	assert(("key not found", false));
+	assert_failure("key not found");
 }
 
 // results should be cached for better performance

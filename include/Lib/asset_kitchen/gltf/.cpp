@@ -387,7 +387,8 @@ namespace Helpers
 			case 5126: return F32;
 			}
 
-		throw std::runtime_error("Unknown type or combination :(");
+		// above values are all the alloved ones therefore,
+		assert_enum_out_of_range();
 	}
 }
 

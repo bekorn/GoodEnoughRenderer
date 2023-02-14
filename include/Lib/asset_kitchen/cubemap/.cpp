@@ -16,7 +16,7 @@ GL::GLenum to_glenum(std::string_view filter)
 	if (filter == "NEAREST_MIPMAP_LINEAR"sv) return GL::GL_NEAREST_MIPMAP_LINEAR;
 	if (filter == "LINEAR_MIPMAP_NEAREST"sv) return GL::GL_LINEAR_MIPMAP_NEAREST;
 	if (filter == "LINEAR_MIPMAP_LINEAR"sv) return GL::GL_LINEAR_MIPMAP_LINEAR;
-	assert(("Cubemap filter is unknown", false));
+	assert_case_not_handled();
 }
 }
 

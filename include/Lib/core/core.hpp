@@ -90,6 +90,8 @@ template<typename T>
 auto inline make_unique_array(size_t const size)
 { return std::make_unique<T[]>(size); }
 
+// TODO(bekorn) move to core/containers
+#include "intrinsics.hpp"
 // Simple byte buffer
 struct ByteBuffer
 {
@@ -129,7 +131,7 @@ struct ByteBuffer
 	template<typename T>
 	auto span_as(usize byte_offset, usize size) const
 	{
-		assert(("Out of bounds access", byte_offset + size <= this->size));
+		assert(byte_offset + size <= this->size, "Out of bounds access");
 		return span<T>(
 			reinterpret_cast<T*>(data.get() + byte_offset),
 			reinterpret_cast<T*>(data.get() + byte_offset + size)
