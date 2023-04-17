@@ -1,4 +1,4 @@
-**![ScreenShot](https://drive.google.com/uc?export=view&id=1P4RQFhDjnaFaes-Lgcotvu9DJII12MQI)
+![ScreenShot](https://drive.google.com/uc?export=view&id=1P4RQFhDjnaFaes-Lgcotvu9DJII12MQI)
 
 ### Features
 
@@ -84,4 +84,4 @@ However, it's getting more difficult with each feature so I made some changes re
 - Each goal/version will have its own project that contains the necessary features to accomplish it
 
 Goals are planned as little projects on their own, with challenging requirements that are not possible with the current version.
-Here is the [active goal](https://github.com/bekorn/GoodEnoughRenderer/issues/2).**
+Here is the [active goal](https://github.com/bekorn/GoodEnoughRenderer/issues/2).
