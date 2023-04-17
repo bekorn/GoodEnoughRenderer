@@ -159,7 +159,7 @@ void Game::init()
 
 void Game::update(GLFW::Window const & window, Render::FrameInfo const & frame_info)
 {
-	//	cmaera movement with WASD+QE+CTRL
+	//	camera movement with WASD+QE+CTRL
 	{
 		auto dir = f32x3(0);
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) dir.z -= 1;

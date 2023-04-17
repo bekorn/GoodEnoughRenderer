@@ -59,6 +59,7 @@ struct State
 	Name selected_node_name;
 };
 
+// TODO move to cpp
 struct Context
 {
 	Render::GameBase & game;

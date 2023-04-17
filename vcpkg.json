@@ -37,13 +37,5 @@
       "version>=": "9.0.0"
     }
   ],
-  "features": {
-    "benchmark": {
-      "description": "Build benchmarks",
-      "dependencies": [
-        "benchmark"
-      ]
-    }
-  },
   "builtin-baseline": "440075a9fccf52cab386521967e4f074acd1bd34"
 }

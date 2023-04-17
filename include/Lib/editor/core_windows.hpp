@@ -34,7 +34,7 @@ struct GameWindow : WindowBase
 struct MetricsWindow : WindowBase
 {
 	const char * get_name() override
-	{ return "Metrics "; }
+	{ return "Metrics"; }
 
 	template<usize FrameCount>
 	struct moving_average
