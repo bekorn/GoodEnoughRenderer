@@ -1,5 +1,6 @@
 #include "Lib/core/core.hpp"
 #include "Lib/opengl/core.hpp"
+#include "Lib/opengl/globals.hpp"
 #include "Lib/opengl/use_dedicated_device_by_default.hpp"
 #include "Lib/glfw/core.hpp"
 #include "Lib/imgui/core.hpp"
@@ -65,6 +66,7 @@ i32 main(i32 argc, char** argv)
 	fmt::print("{}\n", GL::get_context_info());
 
 	GL::init();
+	GL::init_globals();
 
 	// Project assets
 	Descriptions descriptions;

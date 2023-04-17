@@ -1,6 +1,7 @@
 #include "core_windows.hpp"
 
 #include "Lib/file_management/core.hpp"
+#include "Lib/opengl/globals.hpp"
 
 namespace Editor
 {
@@ -192,6 +193,7 @@ void GameWindow::render(Context const & ctx)
 			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
 			framebuffer.color0.handle
 		);
+		glBindVertexArray(GL::dummy_vao.id);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 }
@@ -277,6 +279,7 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 			GetLocation(jump_flood_program.uniform_mappings, "step"),
 			step
 		);
+		glBindVertexArray(GL::dummy_vao.id);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		step /= 2;
@@ -300,6 +303,7 @@ void GameWindow::Border::render(Context const & ctx, GameWindow const & game_win
 		GetLocation(border_program.uniform_mappings, "border_width"),
 		border_width
 	);
+	glBindVertexArray(GL::dummy_vao.id);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
@@ -734,6 +738,7 @@ void CubemapWindow::render(const Context & ctx)
 		GetLocation(environment_mapping_program.uniform_mappings, "view_directions"),
 		1, false, begin(view_dirs)
 	);
+	glBindVertexArray(GL::dummy_vao.id);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	// TODO(bekorn): HDR -> LDR tone mapping? Maybe it can be optional via a checkbox.
@@ -752,6 +757,7 @@ void CubemapWindow::render(const Context & ctx)
 			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
 			framebuffer.color0.handle
 		);
+		glBindVertexArray(GL::dummy_vao.id);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 }
@@ -906,6 +912,7 @@ void VolumeWindow::render(const Context & ctx)
 			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
 			framebuffer.color0.handle
 		);
+		glBindVertexArray(GL::dummy_vao.id);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 }

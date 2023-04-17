@@ -2,6 +2,7 @@
 
 #include "Lib/core/core.hpp"
 #include "Lib/core/named.hpp"
+#include "Lib/opengl/globals.hpp"
 
 void Game::create_framebuffer()
 {
@@ -105,7 +106,7 @@ void Game::create_uniform_buffers()
 		Buffer::StorageBlockDesc{
 			.usage = GL_DYNAMIC_DRAW,
 			.storage_block = material_block,
-			.array_size = assets.materials.resources.size(),
+			.array_size = glm::max(usize(16), assets.materials.resources.size()),
 		}
 	);
 
@@ -323,6 +324,7 @@ void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_i
 			GetLocation(environment_map_program.uniform_mappings, "view_directions"),
 			1, false, begin(view_dirs)
 		);
+		glBindVertexArray(GL::dummy_vao.id);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
@@ -336,6 +338,7 @@ void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_i
 			GetLocation(tone_mapping_program.uniform_mappings, "color_attachment"),
 			framebuffer.color0.handle
 		);
+		glBindVertexArray(GL::dummy_vao.id);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 
@@ -353,6 +356,7 @@ void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_i
 			GetLocation(gamma_correction_program.uniform_mappings, "color_attachment"),
 			framebuffer.color0.handle
 		);
+		glBindVertexArray(GL::dummy_vao.id);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
 }

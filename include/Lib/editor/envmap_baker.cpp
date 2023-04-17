@@ -3,6 +3,7 @@
 #include "utils.hpp"
 
 #include "Lib/file_management/core.hpp"
+#include "Lib/opengl/globals.hpp"
 
 namespace Editor
 {
@@ -99,6 +100,7 @@ void EnvmapBakerWindow::generate_brdf_lut(Editor::Context const & ctx) const
 	glNamedFramebufferTexture(fb.id, GL_COLOR_ATTACHMENT0, texture.id, 0);
 	glViewport({0, 0}, texture_dimensions);
 
+	glBindVertexArray(GL::dummy_vao.id);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 
@@ -198,6 +200,7 @@ void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 				1, false, begin(view_dirs)
 			);
 
+			glBindVertexArray(GL::dummy_vao.id);
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
 
@@ -236,6 +239,7 @@ void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 				1, false, begin(view_dirs)
 			);
 
+			glBindVertexArray(GL::dummy_vao.id);
 			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
 
@@ -287,6 +291,7 @@ void EnvmapBakerWindow::generate_envmap(Editor::Context const & ctx) const
 					1, false, begin(view_dirs)
 				);
 
+				glBindVertexArray(GL::dummy_vao.id);
 				glDrawArrays(GL_TRIANGLES, 0, 3);
 			}
 		}
