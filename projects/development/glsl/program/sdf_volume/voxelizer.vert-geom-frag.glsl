@@ -17,13 +17,13 @@ void main()
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
-out vec3 GS_pos;
+out vec3 GS_voxel_pos;
 
-int minCompIdx(vec3 v)
+int maxCompIdx(vec3 v)
 {
     int idx = 0;
-    if (v[1] < v[idx]) idx = 1;
-    if (v[2] < v[idx]) idx = 2;
+    if (v[1] > v[idx]) idx = 1;
+    if (v[2] > v[idx]) idx = 2;
     return idx;
 }
 
@@ -37,28 +37,31 @@ void main()
 
     vec3 aabb_min = min(min(verts[0], verts[1]), verts[2]);
     vec3 aabb_max = max(max(verts[0], verts[1]), verts[2]);
-    vec3 aabb_size = aabb_max - aabb_min;
-    int min_comp_idx = minCompIdx(aabb_size);
+    // TODO: check against volume's bounding box
+    if (any(lessThan(aabb_max, vec3(-1))) || any(greaterThan(aabb_min, vec3(1))))
+        return;
+
+    vec3 e0 = verts[1] - verts[0];
+    vec3 e1 = verts[2] - verts[0];
+    vec3 n = cross(e0, e1);
+    int dominant_axis = maxCompIdx(abs(n));
 
     int proj_axes[2] = {
-        (min_comp_idx + 1) % 3,
-        (min_comp_idx + 2) % 3,
-        //min_comp_idx
+        (dominant_axis + 1) % 3,
+        (dominant_axis + 2) % 3,
+        //dominant_axis
     };
-
-    // TODO(bekorn): not sure if moving the triangle/fragments to the center will still be usefull
-    // after proper transformation and bounding box implementation
-    vec3 center = (verts[0] + verts[1] + verts[2]) / 3;
 
     for (int i = 0; i < 3; ++i)
     {
-        vec3 v = verts[i] - center;
+        vec3 v = verts[i];
 
         gl_Position.x = v[proj_axes[0]];
         gl_Position.y = v[proj_axes[1]];
         gl_Position.z = 0.5;
 
-        GS_pos = verts[i] * 0.5 + 0.5;
+        // map world -> uvw
+        GS_voxel_pos = v * 0.5 + 0.5;
         EmitVertex();
     }
     EndPrimitive();
@@ -66,21 +69,24 @@ void main()
 #endif
 
 #ifdef ONLY_FRAG ///////////////////////////////////////////////////////////////////////////////////////////////////////
-uniform layout(rgba8) writeonly image3D voxels;
+uniform layout(r32ui) uimage3D voxels;
 uniform ivec3 voxels_res;
 uniform int fragment_multiplier = 1;
 
-in vec3 GS_pos;
+in vec3 GS_voxel_pos;
 
 void main()
 {
-//  for some reason imageSize.z is always 1 :/
-//    ivec3 voxels_res = imageSize(voxels);
+    vec3 pos = GS_voxel_pos * voxels_res;
+    ivec3 texel = ivec3(pos);
 
-    ivec3 texel = ivec3(GS_pos * voxels_res);
-    imageStore(voxels, texel, vec4(GS_pos, 1));
+    vec3 diff = pos - (texel + 0.5);
+    float dist = dot(diff, diff);
+    // put dist on the most significant digits so the AtomicMin will set the voxel to the val with the minimum dist
+    uint val = packUnorm4x8(vec4(dist, GS_voxel_pos));
+    imageAtomicMin(voxels, texel, val);
 
 // to visualize reprojected triangles
-//    imageStore(voxels, ivec3(gl_FragCoord.xy / fragment_multiplier, 0), vec4(GS_pos, 1));
+//    imageAtomicMin(voxels, ivec3(gl_FragCoord.xy / fragment_multiplier, 0), val);
 }
 #endif

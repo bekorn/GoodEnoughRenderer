@@ -29,9 +29,9 @@ ivec3 map_1_3(int idx, ivec3 res)
 void main()
 {
     ivec3 voxel_idx = map_1_3(idx, volume_res);
-    vec3 pos = vec3(voxel_idx) / volume_res;
+    vec3 pos = (vec3(voxel_idx) + 0.5) / volume_res;
 
-    vec3 closest = vec3(0);
+    vec3 closest = imageLoad(read_volume, voxel_idx).xyz;
     float shortest_dist = 1. / 0.;
 
     for (int x = -1; x <= 1; ++x)
@@ -39,9 +39,11 @@ void main()
     for (int z = -1; z <= 1; ++z)
     {
         ivec3 sample_voxel_idx = voxel_idx + step * ivec3(x, y, z);
-        vec3 sample_pos = imageLoad(read_volume, sample_voxel_idx).xyz;
+        vec4 sample_ = imageLoad(read_volume, sample_voxel_idx);
+        if (sample_.a == 0) continue;
+        vec3 sample_pos = sample_.xyz;
 
-        vec3 diff = abs(pos - sample_pos);
+        vec3 diff = pos - sample_pos;
         float dist = dot(diff, diff);
 
         if (dist < shortest_dist)
@@ -51,7 +53,6 @@ void main()
         }
     }
 
-    if (closest != uvec3(0))
-        imageStore(write_volume, voxel_idx, vec4(closest, 1));
+    imageStore(write_volume, voxel_idx, vec4(closest, shortest_dist != 1. / 0.));
 }
 #endif

@@ -1,3 +1,6 @@
+// Reorders voxel data into usable form: vec4(dist, pos) -> vec4(pos, dist)
+// Usage: glDrawArrays(GL_POINTS, 0, compMul(voxel_res))
+
 #ifdef ONLY_VERT ///////////////////////////////////////////////////////////////////////////////////////////////////////
 out flat int idx;
 
@@ -8,8 +11,8 @@ void main()
 #endif
 
 #ifdef ONLY_FRAG ///////////////////////////////////////////////////////////////////////////////////////////////////////
-uniform layout(binding = 0, rgba8) image3D volume;
-uniform ivec3 volume_res;
+uniform layout(rgba8) image3D voxels;
+uniform ivec3 voxels_res;
 
 in flat int idx;
 
@@ -24,11 +27,10 @@ ivec3 map_1_3(int idx, ivec3 res)
 
 void main()
 {
-    ivec3 voxel_idx = map_1_3(idx, volume_res);
-    vec3 pos = (vec3(voxel_idx) + 0.5) / volume_res;
-
-    vec3 closest_pos = imageLoad(volume, voxel_idx).xyz;
-
-    imageStore(volume, voxel_idx, vec4(closest_pos, distance(pos, closest_pos)));
+    ivec3 voxel_idx = map_1_3(idx, voxels_res);
+    vec4 data = imageLoad(voxels, voxel_idx);
+    vec3 pos = data.gba;
+    bool is_empty = data == vec4(1);
+    imageStore(voxels, voxel_idx, is_empty ? vec4(0) : vec4(pos, 1));
 }
 #endif

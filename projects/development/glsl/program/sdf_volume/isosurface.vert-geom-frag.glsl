@@ -1,3 +1,8 @@
+// Usage: glDrawArrays(GL_POINTS, 0, 1)
+//  Assumes: sdf volume at (0, 0, 0) with dimensions (2, 2, 2)
+// GEOM: Generates a cube on the boundary of the sdf
+// FRAG: Sphere traces the sdf until the isosurface value is reached
+
 #ifdef ONLY_VERT ///////////////////////////////////////////////////////////////////////////////////////////////////////
 void main() {}
 #endif
@@ -36,51 +41,52 @@ void main()
     for (int i = 0; i < 8; ++i)
         corners_clip[i] = TransformVP * vec4(corners_object[i], 1);
 
-    emit_quad(0, 2, 4, 6); // -x
+    emit_quad(0, 4, 2, 6); // -x
     emit_quad(1, 3, 5, 7); // +x
 
     emit_quad(0, 1, 4, 5); // -y
-    emit_quad(2, 3, 6, 7); // +y
+    emit_quad(2, 6, 3, 7); // +y
 
-    emit_quad(0, 1, 2, 3); // -z
+    emit_quad(0, 2, 1, 3); // -z
     emit_quad(4, 5, 6, 7); // +z
 }
 #endif
 
 #ifdef ONLY_FRAG ///////////////////////////////////////////////////////////////////////////////////////////////////////
-uniform sampler2D depth_attachment;
+layout (depth_greater) out float gl_FragDepth;
+uniform sampler3D sdf;
+uniform float isosurface_value;
 
 in vec3 GS_pos_object;
+vec3 GS_pos_world = GS_pos_object;
 
 out vec4 out_color;
 
 void main()
 {
-    // wireframe
+    vec3 dir = normalize(GS_pos_world - CameraWorldPosition);
+    vec3 origin = GS_pos_object;
+    float t = 0;
+    float dist;
+
+    int iter, max_iter = 256;
+    for (iter = 0; iter < max_iter; ++iter)
     {
-        ivec3 test = ivec3(greaterThan(abs(GS_pos_object), vec3(0.98)));
-        if (test.x + test.y + test.z >= 2)
-        {
-            out_color = vec4(0.9.xxx, 1);
-            return;
-        }
+        vec3 pos = (origin + dir * t);
+        if (any(greaterThan(abs(pos), vec3(1)))) discard;
+
+        dist = texture(sdf, pos * 0.5 + 0.5).a;
+        t += dist * 0.5; // move half dist to increase accuracy
+
+        if (dist < isosurface_value) break;
     }
 
-    float depth = texelFetch(depth_attachment, ivec2(gl_FragCoord.xy), 0).r;
+    vec3 pos = origin + dir * t;
 
-    // skip background
-    if (depth == 1)
-        discard;
+    out_color = vec4(pos, 1);
+//    out_color = vec4(vec3(float(iter) / max_iter), 1);
 
-    vec2 uv = gl_FragCoord.xy / textureSize(depth_attachment, 0);
-
-    vec4 pos_world = TransformVP_inv * vec4(uv * 2 - 1, depth, 1);
-    pos_world /= pos_world.w;
-
-    if (any(greaterThan(abs(vec3(pos_world)), vec3(1))))
-        discard;
-
-    ivec3 pattern = ivec3((pos_world + 1) * 4) & 1;
-    out_color = vec4(pattern * 0.8 , 1);
+    vec4 pos_clip = TransformVP * vec4(pos, 1);
+    gl_FragDepth = pos_clip.z / pos_clip.w;
 }
 #endif

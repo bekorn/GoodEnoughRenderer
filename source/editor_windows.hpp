@@ -45,4 +45,9 @@ struct Sdf3dWindow : Editor::WindowBase
 
 	bool should_visualize_voxels = false;
 	void visualize_voxels(Editor::Context const & ctx);
+
+	bool should_visualize_isosurface = false;
+	f32 isosurface_value = 0;
+	GL::Texture3D sdf_view;
+	void visualize_isosurface(Editor::Context const & ctx);
 };

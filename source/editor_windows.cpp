@@ -98,6 +98,17 @@ void Sdf3dWindow::init(Editor::Context const & ctx)
 		.wrap_t = GL::GL_CLAMP_TO_BORDER,
 		.wrap_r = GL::GL_CLAMP_TO_BORDER,
 	});
+
+	sdf_view.init(GL::Texture3D::ViewDesc{
+		.source = voxels,
+
+		.min_filter = GL::GL_LINEAR,
+		.mag_filter = GL::GL_LINEAR,
+
+		.wrap_s = GL::GL_CLAMP_TO_EDGE,
+		.wrap_t = GL::GL_CLAMP_TO_EDGE,
+		.wrap_r = GL::GL_CLAMP_TO_EDGE,
+	});
 }
 
 void Sdf3dWindow::update(Editor::Context & ctx)
@@ -122,6 +133,10 @@ void Sdf3dWindow::update(Editor::Context & ctx)
 			should_calculate_sdf = true;
 
 		Checkbox("Visualize Voxels", &should_visualize_voxels);
+
+		Checkbox("Visualize Isosurface", &should_visualize_isosurface);
+		if (should_visualize_isosurface)
+			SliderFloat("Value", &isosurface_value, 0, 1);
 
 		TreePop();
 	}
@@ -152,6 +167,9 @@ void Sdf3dWindow::render(Editor::Context const & ctx)
 
 	if (should_visualize_voxels)
 		visualize_voxels(ctx);
+
+	if (should_visualize_isosurface)
+		visualize_isosurface(ctx);
 }
 
 void Sdf3dWindow::clear(const Editor::Context & ctx)
@@ -159,10 +177,8 @@ void Sdf3dWindow::clear(const Editor::Context & ctx)
 	using namespace GL;
 
 	auto clear_color = u8x4(0);
-	glClearTexSubImage(
+	glClearTexImage(
 		ctx.game.assets.volumes.get(volume_name).id, 0,
-		0, 0, 0,
-		volume_res.x, volume_res.y, volume_res.z,
 		GL_RGBA, GL_UNSIGNED_BYTE, begin(clear_color)
 	);
 }
@@ -196,6 +212,10 @@ void Sdf3dWindow::voxelize(const Editor::Context & ctx)
 	}
 
 	auto & voxels = ctx.game.assets.volumes.get(volume_name);
+	{
+		f32x4 clear_color(1, 1, 1, 1);
+		glClearTexImage(voxels.id, 0, GL_RGBA, GL_FLOAT, begin(clear_color));
+	}
 
 	i32x2 render_res = fragment_multiplier * i32x2(volume_res);
 
@@ -207,31 +227,48 @@ void Sdf3dWindow::voxelize(const Editor::Context & ctx)
 
 
 	/// Mark surface voxels
-	glViewport({0, 0}, render_res);
-	glDisable(GL_CULL_FACE);
-
-	auto & voxelizer_program = ctx.game.assets.programs.get("voxelizer"_name);
-	glUseProgram(voxelizer_program.id);
-	glUniformHandleui64ARB(
-		GetLocation(voxelizer_program.uniform_mappings, "voxels"),
-		voxels.handle
-	);
-	glUniform3iv(
-		GetLocation(voxelizer_program.uniform_mappings, "voxels_res"),
-		1, begin(volume_res)
-	);
-	glUniform1iv(
-		GetLocation(voxelizer_program.uniform_mappings, "fragment_multiplier"),
-		1, &fragment_multiplier
-	);
-	glUniformMatrix4fv(
-		GetLocation(voxelizer_program.uniform_mappings, "TransformM"),
-		1, false, begin(TransformM)
-	);
-	for (auto & drawable : mesh->drawables)
 	{
-		glBindVertexArray(drawable.vertex_array.id);
-		glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+		glViewport({0, 0}, render_res);
+		glDisable(GL_CULL_FACE);
+
+		auto & voxelizer_program = ctx.game.assets.programs.get("voxelizer"_name);
+		glUseProgram(voxelizer_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(voxelizer_program.uniform_mappings, "voxels"),
+			voxels.handle
+		);
+		glUniform3iv(
+			GetLocation(voxelizer_program.uniform_mappings, "voxels_res"),
+			1, begin(volume_res)
+		);
+		glUniform1iv(
+			GetLocation(voxelizer_program.uniform_mappings, "fragment_multiplier"),
+			1, &fragment_multiplier
+		);
+		glUniformMatrix4fv(
+			GetLocation(voxelizer_program.uniform_mappings, "TransformM"),
+			1, false, begin(TransformM)
+		);
+		for (auto & drawable : mesh->drawables)
+		{
+			glBindVertexArray(drawable.vertex_array.id);
+			glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
+		}
+	}
+
+	/// Finalize
+	{
+		auto & voxelizer_finalize_program = ctx.game.assets.programs.get("voxelizer_finalize"_name);
+		glUseProgram(voxelizer_finalize_program.id);
+		glUniformHandleui64ARB(
+			GetLocation(voxelizer_finalize_program.uniform_mappings, "voxels"),
+			voxels.handle
+		);
+		glUniform3iv(
+			GetLocation(voxelizer_finalize_program.uniform_mappings, "voxels_res"),
+			1, begin(volume_res)
+		);
+		glDrawArrays(GL_POINTS, 0, compMul(volume_res));
 	}
 
 	fmt::print("Voxelized {}\n", node_name);
@@ -289,12 +326,12 @@ void Sdf3dWindow::calculate_sdf(const Editor::Context & ctx)
 		{
 			glBindImageTexture(
 				write_volume_unit,
-				(write_to_temp ? volume : temp_volume).id, 0, 0, 0,
+				(write_to_temp ? temp_volume : volume).id, 0, 0, 0,
 				GL_WRITE_ONLY, GL_RGBA8
 			);
 			glBindImageTexture(
 				read_volume_unit,
-				(not write_to_temp ? volume : temp_volume).id, 0, 0, 0,
+				(not write_to_temp ? temp_volume : volume).id, 0, 0, 0,
 				GL_READ_ONLY, GL_RGBA8
 			);
 			glUniform1i(
@@ -397,4 +434,30 @@ void Sdf3dWindow::visualize_voxels(const Editor::Context & ctx)
 	);
 
 	glDrawArrays(GL_POINTS, 0, compMul(compute_res));
+}
+
+void Sdf3dWindow::visualize_isosurface(const Editor::Context & ctx)
+{
+	using namespace GL;
+
+	if (not ctx.state.should_game_render)
+		return;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, ctx.game.framebuffer.id);
+	glViewport(i32x2(0), ctx.game.framebuffer.resolution);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST), glDepthFunc(GL_LESS), glDepthMask(true);
+
+	auto & isosurface_program = ctx.game.assets.programs.get("isosurface");
+	glUseProgram(isosurface_program.id);
+	glUniformHandleui64ARB(
+		GetLocation(isosurface_program.uniform_mappings, "sdf"),
+		sdf_view.handle
+	);
+	glUniform1f(
+		GetLocation(isosurface_program.uniform_mappings, "isosurface_value"),
+		isosurface_value
+	);
+
+	glDrawArrays(GL_POINTS, 0, 1);
 }

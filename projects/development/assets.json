@@ -65,6 +65,10 @@
       "stages": ["glsl/program/sdf_volume/voxelizer.vert-geom-frag.glsl"]
     },
     {
+      "name": "voxelizer_finalize",
+      "stages": ["glsl/program/sdf_volume/voxelizer_finalize.vert-frag.glsl"]
+    },
+    {
       "name": "voxel_to_cube",
       "stages": ["glsl/program/sdf_volume/voxel_to_cube.vert-geom-frag.glsl"]
     },
@@ -79,6 +83,13 @@
     {
       "name": "is_in_volume",
       "stages": ["glsl/program/sdf_volume/is_in_volume.vert-geom-frag.glsl"],
+      "include_paths": [
+        "glsl/uniform_block/camera.unib.glsl",
+      ]
+    },
+    {
+      "name": "isosurface",
+      "stages": ["glsl/program/sdf_volume/isosurface.vert-geom-frag.glsl"],
       "include_paths": [
         "glsl/uniform_block/camera.unib.glsl",
       ]
