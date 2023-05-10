@@ -128,6 +128,8 @@ struct Texture2D : OpenGLObject
 	{
 		Texture2D const & source;
 
+		optional<GLenum> internal_format = nullopt;
+
 		i32 base_level = 0;
 		i32 level_count = 0; // 0 -> all levels
 
@@ -172,7 +174,9 @@ struct Texture2D : OpenGLObject
 			glGetTextureParameteriv(desc.source.id, GL_TEXTURE_WRAP_T, &wrap_t);
 
 		GLenum internal_format;
-		glGetTextureLevelParameteriv(desc.source.id, desc.base_level, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
+
+		if (desc.internal_format) internal_format = desc.internal_format.value();
+		else glGetTextureLevelParameteriv(desc.source.id, desc.base_level, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
 
 		glGenTextures(1, &id);
 		glTextureView(
