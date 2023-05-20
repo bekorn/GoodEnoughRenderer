@@ -117,6 +117,8 @@ void Sdf3dWindow::update(Editor::Context & ctx)
 
 	if (Button("Calculate"))
 		should_voxelize = should_calculate_sdf = true;
+	if (SameLine(), Checkbox("Every Frame", &should_calculate_sdf_every_frame); should_calculate_sdf_every_frame)
+		should_voxelize = should_calculate_sdf = true;
 	if (SameLine(), Button("Clear"))
 		should_clear = true;
 
@@ -270,8 +272,6 @@ void Sdf3dWindow::voxelize(const Editor::Context & ctx)
 		);
 		glDrawArrays(GL_POINTS, 0, compMul(volume_res));
 	}
-
-	fmt::print("Voxelized {}\n", node_name);
 }
 
 void Sdf3dWindow::calculate_sdf(const Editor::Context & ctx)

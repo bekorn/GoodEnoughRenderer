@@ -34,10 +34,11 @@ struct Sdf3dWindow : Editor::WindowBase
 
 	bool should_voxelize = false;
 	i32 fragment_multiplier = 2;
-	i32x3 const volume_res = i32x3(2*60);
+	i32x3 const volume_res = i32x3(2*16);
 	void voxelize(Editor::Context const & ctx);
 
 	bool should_calculate_sdf = false;
+	bool should_calculate_sdf_every_frame = false;
 	void calculate_sdf(Editor::Context const & ctx);
 
 	bool should_visualize_volume = false;
