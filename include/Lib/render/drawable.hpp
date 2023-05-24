@@ -23,7 +23,10 @@ struct Drawable
 	//  should load all the attributes that might be required but nothing more
 	void load(span<GL::AttributeMapping const> attribute_mappings)
 	{
-		vertex_array.init(primitive, attribute_mappings);
+		vertex_array.init(GL::VertexArray::Desc{
+			.geometry = primitive,
+			.attribute_mappings = attribute_mappings,
+		});
 	}
 
 	void unload()

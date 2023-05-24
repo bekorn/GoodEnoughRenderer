@@ -4,6 +4,10 @@
 #include "Lib/core/named.hpp"
 #include "Lib/opengl/globals.hpp"
 
+// !!! Temporary
+GL::VertexArray lines_vao;
+Geometry::Primitive line_geom;
+
 void Game::create_framebuffer()
 {
 	framebuffer.init(GL::FrameBuffer::Desc{
@@ -156,6 +160,25 @@ void Game::init()
 		assets.texture_cubemaps.generate(settings.envmap_diffuse).data.init(desc);
 		assets.texture_cubemaps.generate(settings.envmap_specular).data.init(desc);
 	}
+
+
+	// init lines_vao
+	line_geom.attributes.try_emplace(
+		Geometry::Attribute::Key{Geometry::Attribute::Key::POSITION, 0},
+		Geometry::Attribute::Data{Geometry::Attribute::Type::F32, 3, array{
+			f32x3{1, -1, -1},
+			f32x3{1, +1, -1},
+			f32x3{1, +1, +1},
+			f32x3{1, -1, +1},
+		}}
+	);
+	line_geom.indices = {0, 1, 1, 2, 2, 3};
+
+	lines_vao.init(GL::VertexArray::Desc{
+		.geometry = line_geom,
+		.attribute_mappings = assets.programs.get("lines"_name).attribute_mappings,
+		.usage = GL::GL_DYNAMIC_DRAW
+	});
 }
 
 void Game::update(GLFW::Window const & window, Render::FrameInfo const & frame_info)
@@ -301,6 +324,22 @@ void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_i
 					glDrawElements(GL_TRIANGLES, drawable.vertex_array.element_count, GL_UNSIGNED_INT, nullptr);
 				}
 			}
+	}
+
+	// Lines
+	{
+		auto & lines_program = assets.programs.get("lines");
+		glUseProgram(lines_program.id);
+
+		for (auto & p : line_geom.attributes.at({Geometry::Attribute::Key::POSITION, 0}).buffer.span_as<f32x3>())
+		{
+			p *= 1.001f;
+		}
+		lines_vao.update(line_geom, assets.programs.get("lines"_name).attribute_mappings);
+
+
+		glBindVertexArray(lines_vao.id);
+		glDrawElements(GL_LINES, lines_vao.element_count, GL_UNSIGNED_INT, nullptr);
 	}
 
 	// environment mapping

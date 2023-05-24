@@ -59,6 +59,13 @@
         "glsl/program/tone_mapping.frag.glsl"
       ]
     },
+    {
+      "name": "lines",
+      "stages": ["glsl/program/lines.vert-frag.glsl"],
+      "include_paths": [
+        "glsl/uniform_block/camera.unib.glsl",
+      ]
+    },
     // SDF 3D
     {
       "name": "voxelizer",

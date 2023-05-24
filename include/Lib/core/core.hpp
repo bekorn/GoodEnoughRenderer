@@ -113,6 +113,14 @@ struct ByteBuffer
 		pointer = nullptr;
 	}
 
+	// copy an array
+	template<typename T, usize N>
+	ByteBuffer(array<T, N> const & array) :
+		ByteBuffer(sizeof(T) * N)
+	{
+		std::memcpy(data.get(), (byte*)array.data(), size);
+	}
+
 	byte* begin() const
 	{ return data.get(); }
 
