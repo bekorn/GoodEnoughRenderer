@@ -34,7 +34,7 @@ struct Sdf3dWindow : Editor::WindowBase
 
 	bool should_voxelize = false;
 	i32 fragment_multiplier = 2;
-	i32x3 const volume_res = i32x3(2*16);
+	i32x3 const volume_res = i32x3(32);
 	void voxelize(Editor::Context const & ctx);
 
 	bool should_calculate_sdf = false;
@@ -49,6 +49,6 @@ struct Sdf3dWindow : Editor::WindowBase
 
 	bool should_visualize_isosurface = false;
 	f32 isosurface_value = 0;
-	GL::Texture3D sdf_view;
+	Name voxels_linear_view_name = "voxels_linear_view";
 	void visualize_isosurface(Editor::Context const & ctx);
 };

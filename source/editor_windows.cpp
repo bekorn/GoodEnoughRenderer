@@ -99,7 +99,9 @@ void Sdf3dWindow::init(Editor::Context const & ctx)
 		.wrap_r = GL::GL_CLAMP_TO_BORDER,
 	});
 
-	sdf_view.init(GL::Texture3D::ViewDesc{
+	auto & voxels_linear_view = ctx.game.assets.volumes.generate(voxels_linear_view_name).data;
+
+	voxels_linear_view.init(GL::Texture3D::ViewDesc{
 		.source = voxels,
 
 		.min_filter = GL::GL_LINEAR,
@@ -452,7 +454,7 @@ void Sdf3dWindow::visualize_isosurface(const Editor::Context & ctx)
 	glUseProgram(isosurface_program.id);
 	glUniformHandleui64ARB(
 		GetLocation(isosurface_program.uniform_mappings, "sdf"),
-		sdf_view.handle
+		ctx.game.assets.volumes.get(voxels_linear_view_name).handle
 	);
 	glUniform1f(
 		GetLocation(isosurface_program.uniform_mappings, "isosurface_value"),

@@ -66,6 +66,13 @@
         "glsl/uniform_block/camera.unib.glsl",
       ]
     },
+    {
+      "name": "lines_generate",
+      "stages": ["glsl/program/lines_generate.comp.glsl"],
+      "include_paths": [
+        "glsl/uniform_block/frame_info.unib.glsl",
+      ]
+    },
     // SDF 3D
     {
       "name": "voxelizer",

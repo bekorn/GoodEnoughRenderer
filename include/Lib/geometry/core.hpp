@@ -149,9 +149,11 @@ struct Data
 };
 }
 
+using Attributes = std::unordered_map<Attribute::Key, Attribute::Data, Attribute::Key::Hasher>;
+
 struct Primitive
 {
-	std::unordered_map<Attribute::Key, Attribute::Data, Attribute::Key::Hasher> attributes;
+	Attributes attributes;
 	vector<u32> indices;
 
 	CTOR(Primitive, default);

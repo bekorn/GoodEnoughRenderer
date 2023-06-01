@@ -5,8 +5,9 @@
 #include "Lib/opengl/globals.hpp"
 
 // !!! Temporary
+i32 const line_count = 8*8;
+i32 const line_length = 128;
 GL::VertexArray lines_vao;
-Geometry::Primitive line_geom;
 
 void Game::create_framebuffer()
 {
@@ -163,22 +164,36 @@ void Game::init()
 
 
 	// init lines_vao
-	line_geom.attributes.try_emplace(
+	Geometry::Attributes vertex_attributes;
+	vertex_attributes.try_emplace(
 		Geometry::Attribute::Key{Geometry::Attribute::Key::POSITION, 0},
-		Geometry::Attribute::Data{Geometry::Attribute::Type::F32, 3, array{
-			f32x3{1, -1, -1},
-			f32x3{1, +1, -1},
-			f32x3{1, +1, +1},
-			f32x3{1, -1, +1},
-		}}
+		Geometry::Attribute::Data{Geometry::Attribute::Type::F32, 3}
 	);
-	line_geom.indices = {0, 1, 1, 2, 2, 3};
-
-	lines_vao.init(GL::VertexArray::Desc{
-		.geometry = line_geom,
+	auto const element_count = line_count * (line_length - 1) * 2;
+	lines_vao.init(GL::VertexArray::EmptyDesc{
+		.vertex_count = line_count * line_length,
+		.vertex_attributes = vertex_attributes,
+		.element_count = element_count,
 		.attribute_mappings = assets.programs.get("lines"_name).attribute_mappings,
-		.usage = GL::GL_DYNAMIC_DRAW
+		.usage = GL::GL_DYNAMIC_COPY,
 	});
+	array<u32, element_count> lines_indices;
+	for (auto l = 0; l < line_count; l++)
+	{
+		auto vert_base = l * line_length;
+		auto elem_base = l * (line_length - 1) * 2;
+
+		for (auto i = 0; i < line_length - 1; i++)
+		{
+			auto vert_idx = vert_base + i;
+			auto elem_idx = elem_base + i * 2;
+
+			lines_indices[elem_idx + 0] = vert_idx + 0;
+			lines_indices[elem_idx + 1] = vert_idx + 1;
+		}
+	}
+
+	GL::glNamedBufferSubData(lines_vao.element_buffer.id, 0, element_count * sizeof(u32), lines_indices.data());
 }
 
 void Game::update(GLFW::Window const & window, Render::FrameInfo const & frame_info)
@@ -328,15 +343,17 @@ void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_i
 
 	// Lines
 	{
+		auto & lines_generate_program = assets.programs.get("lines_generate");
+		glUseProgram(lines_generate_program.id);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lines_vao.vertex_buffer.id);
+		glUniformHandleui64ARB(
+			GetLocation(lines_generate_program.uniform_mappings, "sdf"),
+			assets.volumes.get("voxels_linear_view").handle
+		);
+		glDispatchCompute(1, 1, 1);
+
 		auto & lines_program = assets.programs.get("lines");
 		glUseProgram(lines_program.id);
-
-		for (auto & p : line_geom.attributes.at({Geometry::Attribute::Key::POSITION, 0}).buffer.span_as<f32x3>())
-		{
-			p *= 1.001f;
-		}
-		lines_vao.update(line_geom, assets.programs.get("lines"_name).attribute_mappings);
-
 
 		glBindVertexArray(lines_vao.id);
 		glDrawElements(GL_LINES, lines_vao.element_count, GL_UNSIGNED_INT, nullptr);

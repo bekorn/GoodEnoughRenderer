@@ -46,7 +46,10 @@ struct VertexArray : OpenGLObject
 			auto const & [_, data] = *geo_attribute;
 			buffer_size += data.buffer.size;
 		}
-		vertex_buffer.init({.size = buffer_size});
+		vertex_buffer.init(Buffer::EmptyDesc{
+			.usage = desc.usage,
+			.size = buffer_size,
+		});
 
 		auto buffer_bind_idx = 0;
 		GLintptr buffer_offset = 0;
@@ -82,12 +85,81 @@ struct VertexArray : OpenGLObject
 		}
 
 		element_buffer.init(Buffer::Desc{
+			.usage = desc.usage,
 			.data = span((byte *) desc.geometry.indices.data(), desc.geometry.indices.size() * sizeof(u32)),
 		});
 
 		glVertexArrayElementBuffer(id, element_buffer.id);
 
 		element_count = desc.geometry.indices.size();
+	}
+
+	struct EmptyDesc
+	{
+		i32 vertex_count;
+		Geometry::Attributes const & vertex_attributes;
+		i32 element_count;
+		span<AttributeMapping const> attribute_mappings;
+		GLenum usage = GL_STATIC_DRAW;
+	};
+
+	void init(EmptyDesc const & desc)
+	{
+		glCreateVertexArrays(1, &id);
+
+		/// Vertex Buffer
+		usize vertex_buffer_size = 0;
+		for (auto const & attribute: desc.attribute_mappings)
+		{
+			auto const vertex_attribute = desc.vertex_attributes.find(attribute.key);
+			if (vertex_attribute == desc.vertex_attributes.end())
+				continue;
+
+			auto const & [_, data] = *vertex_attribute;
+			vertex_buffer_size += desc.vertex_count * data.type.size() * data.dimension;
+		}
+		vertex_buffer.init(Buffer::EmptyDesc{
+			.usage = desc.usage,
+			.size = vertex_buffer_size,
+		});
+
+		auto buffer_bind_idx = 0;
+		GLintptr buffer_offset = 0;
+		for (auto const & attribute: desc.attribute_mappings)
+		{
+			auto const geo_attribute = desc.vertex_attributes.find(attribute.key);
+			if (geo_attribute == desc.vertex_attributes.end())
+				continue;
+
+			auto const & [key, data] = *geo_attribute;
+
+			glVertexArrayVertexBuffer(
+				id,
+				buffer_bind_idx,
+				vertex_buffer.id, buffer_offset, data.type.size() * data.dimension
+			);
+			glVertexArrayAttribFormat(
+				id,
+				attribute.location,
+				data.dimension, to_glenum(data.type), data.type.is_normalized(),
+				0
+			);
+			glEnableVertexArrayAttrib(id, attribute.location);
+			glVertexArrayAttribBinding(id, attribute.location, buffer_bind_idx);
+
+			buffer_bind_idx++;
+			buffer_offset += static_cast<GLintptr>(data.buffer.size);
+		}
+
+		/// Element Buffer
+		element_buffer.init(Buffer::EmptyDesc{
+			.usage = desc.usage,
+			.size = desc.element_count * sizeof(u32),
+		});
+
+		glVertexArrayElementBuffer(id, element_buffer.id);
+
+		element_count = desc.element_count;
 	}
 
 	void update(Geometry::Primitive const & geometry, span<AttributeMapping const> attribute_mappings)
