@@ -59,16 +59,17 @@
         "glsl/program/tone_mapping.frag.glsl"
       ]
     },
+    /// SDF Lines
     {
-      "name": "lines",
-      "stages": ["glsl/program/lines.vert-frag.glsl"],
+      "name": "lines_draw",
+      "stages": ["glsl/program/sdf_lines/draw.vert-frag.glsl"],
       "include_paths": [
         "glsl/uniform_block/camera.unib.glsl",
       ]
     },
     {
-      "name": "lines_generate",
-      "stages": ["glsl/program/lines_generate.comp.glsl"],
+      "name": "lines_generate_paths",
+      "stages": ["glsl/program/sdf_lines/generate_paths.comp.glsl"],
       "include_paths": [
         "glsl/uniform_block/frame_info.unib.glsl",
       ]

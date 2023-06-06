@@ -5,9 +5,11 @@
 #include "Lib/opengl/globals.hpp"
 
 // !!! Temporary
-i32 const line_count = 8*8;
-i32 const line_length = 128;
+i32 const line_count_axis = 8;
+i32 const line_count = line_count_axis * line_count_axis;
+i32 const line_length = 32;
 GL::VertexArray lines_vao;
+Geometry::Primitive lines_geo;
 
 void Game::create_framebuffer()
 {
@@ -65,22 +67,22 @@ void Game::create_uniform_buffers()
 	lights_uniform_block.set(map, "Lights[0].position", f32x3{0, 1, 3});
 	lights_uniform_block.set(map, "Lights[0].color", f32x3{1, 0, 0});
 	lights_uniform_block.set(map, "Lights[0].range", f32{2 * 2});
-	lights_uniform_block.set(map, "Lights[0].is_active", true);
+	lights_uniform_block.set(map, "Lights[0].is_active", false);
 
 	lights_uniform_block.set(map, "Lights[1].position", f32x3{0, 1, -3});
 	lights_uniform_block.set(map, "Lights[1].color", f32x3{0, 1, 0});
 	lights_uniform_block.set(map, "Lights[1].range", f32{1.6 * 2});
-	lights_uniform_block.set(map, "Lights[1].is_active", true);
+	lights_uniform_block.set(map, "Lights[1].is_active", false);
 
 	lights_uniform_block.set(map, "Lights[2].position", f32x3{-2, 3, 0});
 	lights_uniform_block.set(map, "Lights[2].color", f32x3{1, 1, 1});
 	lights_uniform_block.set(map, "Lights[2].range", f32{3.5 * 2});
-	lights_uniform_block.set(map, "Lights[2].is_active", true);
+	lights_uniform_block.set(map, "Lights[2].is_active", false);
 
 	lights_uniform_block.set(map, "Lights[3].position", f32x3{-10, 1, 0});
 	lights_uniform_block.set(map, "Lights[3].color", f32x3{0, 0, 1});
 	lights_uniform_block.set(map, "Lights[3].range", f32{2.5 * 2});
-	lights_uniform_block.set(map, "Lights[3].is_active", true);
+	lights_uniform_block.set(map, "Lights[3].is_active", false);
 	glUnmapNamedBuffer(lights_uniform_buffer.id);
 
 
@@ -164,20 +166,26 @@ void Game::init()
 
 
 	// init lines_vao
-	Geometry::Attributes vertex_attributes;
-	vertex_attributes.try_emplace(
+	auto const vertex_count = line_count * line_length;
+
+	ByteBuffer positions(vertex_count * sizeof(f32x3));
+	for (i32 i = 0; auto & p : positions.span_as<f32x3>())
+	{
+		i32 line_idx = i / line_length;
+		i32 local_idx = i % line_length;
+		auto line_grid_idx = f32x2(line_idx % line_count_axis, line_idx / line_count_axis);
+		auto line_begin = mix(f32x2(-0.5), f32x2(+0.5), line_grid_idx / f32(line_count_axis - 1));
+		p = f32x3(line_begin, 1 + f32(local_idx) / line_length);
+
+		i++;
+	}
+	lines_geo.attributes.try_emplace(
 		Geometry::Attribute::Key{Geometry::Attribute::Key::POSITION, 0},
-		Geometry::Attribute::Data{Geometry::Attribute::Type::F32, 3}
+		Geometry::Attribute::Data{Geometry::Attribute::Type::F32, 3, move(positions)}
 	);
+
 	auto const element_count = line_count * (line_length - 1) * 2;
-	lines_vao.init(GL::VertexArray::EmptyDesc{
-		.vertex_count = line_count * line_length,
-		.vertex_attributes = vertex_attributes,
-		.element_count = element_count,
-		.attribute_mappings = assets.programs.get("lines"_name).attribute_mappings,
-		.usage = GL::GL_DYNAMIC_COPY,
-	});
-	array<u32, element_count> lines_indices;
+	lines_geo.indices.resize(element_count);
 	for (auto l = 0; l < line_count; l++)
 	{
 		auto vert_base = l * line_length;
@@ -188,12 +196,16 @@ void Game::init()
 			auto vert_idx = vert_base + i;
 			auto elem_idx = elem_base + i * 2;
 
-			lines_indices[elem_idx + 0] = vert_idx + 0;
-			lines_indices[elem_idx + 1] = vert_idx + 1;
+			lines_geo.indices[elem_idx + 0] = vert_idx + 0;
+			lines_geo.indices[elem_idx + 1] = vert_idx + 1;
 		}
 	}
 
-	GL::glNamedBufferSubData(lines_vao.element_buffer.id, 0, element_count * sizeof(u32), lines_indices.data());
+	lines_vao.init(GL::VertexArray::Desc{
+		.geometry = lines_geo,
+		.attribute_mappings = assets.programs.get("lines_draw"_name).attribute_mappings,
+		.usage = GL::GL_DYNAMIC_COPY,
+	});
 }
 
 void Game::update(GLFW::Window const & window, Render::FrameInfo const & frame_info)
@@ -223,6 +235,11 @@ void Game::update(GLFW::Window const & window, Render::FrameInfo const & frame_i
 
 	// Update scene tree
 	assets.scene_tree.update_transforms();
+
+	if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_R))
+		lines_vao.update(lines_geo, assets.programs.get("lines_draw").attribute_mappings);
+	if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE))
+		settings.is_lines_active = not settings.is_lines_active;
 }
 
 void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_info)
@@ -343,16 +360,19 @@ void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_i
 
 	// Lines
 	{
-		auto & lines_generate_program = assets.programs.get("lines_generate");
-		glUseProgram(lines_generate_program.id);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lines_vao.vertex_buffer.id);
-		glUniformHandleui64ARB(
-			GetLocation(lines_generate_program.uniform_mappings, "sdf"),
-			assets.volumes.get("voxels_linear_view").handle
-		);
-		glDispatchCompute(1, 1, 1);
+		if (settings.is_lines_active and frame_info.idx % 2 == 0)
+		{
+			auto & lines_generate_program = assets.programs.get("lines_generate_paths");
+			glUseProgram(lines_generate_program.id);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lines_vao.vertex_buffer.id);
+			glUniformHandleui64ARB(
+				GetLocation(lines_generate_program.uniform_mappings, "sdf"),
+				assets.volumes.get("voxels_linear_view").handle
+			);
+			glDispatchCompute(1, 1, 1);
+		}
 
-		auto & lines_program = assets.programs.get("lines");
+		auto & lines_program = assets.programs.get("lines_draw");
 		glUseProgram(lines_program.id);
 
 		glBindVertexArray(lines_vao.id);

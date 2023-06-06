@@ -27,6 +27,8 @@ struct Game : Render::GameBase
 		Name envmap_specular = "envmap_specular";
 
 		bool is_gamma_correction_comp = false;
+
+		bool is_lines_active = false;
 	} settings;
 
 	GL::MappedBuffer frame_info_uniform_buffer;

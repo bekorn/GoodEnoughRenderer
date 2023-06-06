@@ -13,6 +13,8 @@ void GameSettingsWindow::update(Editor::Context & ctx)
 	static bool is_vsync_on = true;
 	if (Checkbox("is vsync on", &is_vsync_on))
 		glfwSwapInterval(is_vsync_on ? 1 : 0);
+
+	Checkbox("Update Lines", &game.settings.is_lines_active);
 }
 
 void MaterialWindow::update(Editor::Context & ctx)
@@ -111,6 +113,10 @@ void Sdf3dWindow::init(Editor::Context const & ctx)
 		.wrap_t = GL::GL_CLAMP_TO_EDGE,
 		.wrap_r = GL::GL_CLAMP_TO_EDGE,
 	});
+
+	// !!! Temporary
+	const_cast<Editor::Context &>(ctx).state.selected_node_name = ctx.game.assets.scene_tree.get({0, 0}).name;
+	should_voxelize = should_calculate_sdf = true;
 }
 
 void Sdf3dWindow::update(Editor::Context & ctx)

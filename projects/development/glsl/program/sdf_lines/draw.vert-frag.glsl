@@ -3,7 +3,7 @@ in vec3 position;
 
 out flat vec3 color;
 
-const int line_size = 128;
+const int line_size = 32;
 
 vec3 rand_1_3(float p)
 {
@@ -15,8 +15,10 @@ vec3 rand_1_3(float p)
 void main()
 {
     float line_idx = gl_VertexID / line_size;
-    color = pow(rand_1_3(line_idx / 10 + 1), vec3(2.5));
-    color = max(vec3(0.05), 1.4 * color);
+    float r = rand_1_3(line_idx / 10 + 1).x;
+    const vec3 col0 = vec3(234, 240, 62) / 255.;
+    const vec3 col1 = vec3(255, 0, 32) / 255.;
+    color = mix(col0, col1, r * 1.5);
 
     gl_Position = TransformVP * vec4(position, 1);
 }
