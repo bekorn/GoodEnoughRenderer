@@ -5,10 +5,10 @@
 #include "Lib/opengl/globals.hpp"
 
 // !!! Temporary
-i32 const line_count_axis = 8;
+i32 const line_count_axis = 2;
 i32 const line_count = line_count_axis * line_count_axis;
 i32 const line_length = 32;
-GL::VertexArray lines_vao;
+GL::VertexArray lines_vao, tubes_vao;
 Geometry::Primitive lines_geo;
 
 void Game::create_framebuffer()
@@ -166,46 +166,113 @@ void Game::init()
 
 
 	// init lines_vao
-	auto const vertex_count = line_count * line_length;
-
-	ByteBuffer positions(vertex_count * sizeof(f32x3));
-	for (i32 i = 0; auto & p : positions.span_as<f32x3>())
 	{
-		i32 line_idx = i / line_length;
-		i32 local_idx = i % line_length;
-		auto line_grid_idx = f32x2(line_idx % line_count_axis, line_idx / line_count_axis);
-		auto line_begin = mix(f32x2(-0.5), f32x2(+0.5), line_grid_idx / f32(line_count_axis - 1));
-		p = f32x3(line_begin, 1 + f32(local_idx) / line_length);
+		auto const vertex_count = line_count * line_length;
 
-		i++;
-	}
-	lines_geo.attributes.try_emplace(
-		Geometry::Attribute::Key{Geometry::Attribute::Key::POSITION, 0},
-		Geometry::Attribute::Data{Geometry::Attribute::Type::F32, 3, move(positions)}
-	);
-
-	auto const element_count = line_count * (line_length - 1) * 2;
-	lines_geo.indices.resize(element_count);
-	for (auto l = 0; l < line_count; l++)
-	{
-		auto vert_base = l * line_length;
-		auto elem_base = l * (line_length - 1) * 2;
-
-		for (auto i = 0; i < line_length - 1; i++)
+		ByteBuffer positions(vertex_count * sizeof(f32x3));
+		for (i32 i = 0; auto & p : positions.span_as<f32x3>())
 		{
-			auto vert_idx = vert_base + i;
-			auto elem_idx = elem_base + i * 2;
+			i32 line_idx = i / line_length;
+			i32 local_idx = i % line_length;
+			auto line_grid_idx = f32x2(line_idx % line_count_axis, line_idx / line_count_axis);
+			auto line_begin = mix(f32x2(-0.5), f32x2(+0.5), line_grid_idx / f32(line_count_axis - 1));
+			p = f32x3(line_begin, 1 + f32(local_idx) / line_length);
 
-			lines_geo.indices[elem_idx + 0] = vert_idx + 0;
-			lines_geo.indices[elem_idx + 1] = vert_idx + 1;
+			i++;
 		}
+		lines_geo.attributes.try_emplace(
+			Geometry::Attribute::Key{Geometry::Attribute::Key::POSITION, 0},
+			Geometry::Attribute::Data{Geometry::Attribute::Type::F32, 3, move(positions)}
+		);
+
+		auto const element_count = line_count * (line_length - 1) * 2;
+		lines_geo.indices.resize(element_count);
+		for (auto l = 0; l < line_count; l++)
+		{
+			auto vert_base = l * line_length;
+			auto elem_base = l * (line_length - 1) * 2;
+
+			for (auto i = 0; i < line_length - 1; i++)
+			{
+				auto vert_idx = vert_base + i;
+				auto elem_idx = elem_base + i * 2;
+
+				lines_geo.indices[elem_idx + 0] = vert_idx + 0;
+				lines_geo.indices[elem_idx + 1] = vert_idx + 1;
+			}
+		}
+
+		lines_vao.init(GL::VertexArray::Desc{
+			.geometry = lines_geo,
+			.attribute_mappings = assets.programs.get("lines_draw"_name).attribute_mappings,
+			.usage = GL::GL_DYNAMIC_COPY,
+		});
 	}
 
-	lines_vao.init(GL::VertexArray::Desc{
-		.geometry = lines_geo,
-		.attribute_mappings = assets.programs.get("lines_draw"_name).attribute_mappings,
-		.usage = GL::GL_DYNAMIC_COPY,
-	});
+	// init tubes_vao
+	{
+		auto const ring_res = 6;
+		auto const ring_count = line_length - 2;
+
+		auto const vertex_count_of_one = 2*1 + ring_count*ring_res;
+		auto const vertex_count = line_count * vertex_count_of_one;
+
+		auto const element_count_of_one = (2 * ring_res + (ring_count-1/*in between*/) * ring_res * 2)/*triangles*/ * 3;
+		auto const element_count = line_count * element_count_of_one;
+
+		tubes_vao.init(GL::VertexArray::EmptyDesc{
+			.vertex_count = vertex_count,
+			.vertex_attributes = lines_geo.attributes,
+			.element_count = element_count,
+			.attribute_mappings = assets.programs.get("lines_draw"_name).attribute_mappings,
+			.usage = GL::GL_DYNAMIC_COPY,
+		});
+
+		// vertex buffer will be structured as:
+		// [ (oooo) (oooo) ... (oooo) (o) (o) ]
+		//    ring0  ring1      ringN  H   T
+		// H: head, T: tail, (ring0, ringN): body, N: line_length-2
+
+		vector<u32> elements(element_count);
+		// compute elements for the first tube
+		auto elements_size = 0;
+		// head & tail
+		for (auto i = 0; i < ring_res; ++i)
+		{
+			elements[elements_size++] = vertex_count_of_one - 2; // head vertex
+			elements[elements_size++] = (i+0)%ring_res; // first ring
+			elements[elements_size++] = (i+1)%ring_res; // first ring
+		}
+		for (auto i = 0; i < ring_res; ++i)
+		{
+			elements[elements_size++] = vertex_count_of_one - 1; // tail vertex
+			elements[elements_size++] = (ring_count-1)*ring_res + (i+0)%ring_res; // last ring
+			elements[elements_size++] = (ring_count-1)*ring_res + (i+1)%ring_res; // last ring
+		}
+		// body
+		for (auto r = 0; r < ring_count - 1/*iterating in between*/; ++r)
+		{
+			auto ring_base = r * ring_res;
+			auto next_ring_base = (r+1) * ring_res;
+			// form quads between rings
+			for (auto i = 0; i < ring_res; ++i)
+			{
+				elements[elements_size++] = ring_base + (i+0)%ring_res;
+				elements[elements_size++] = ring_base + (i+1)%ring_res;
+				elements[elements_size++] = next_ring_base + (i+1)%ring_res;
+
+				elements[elements_size++] = ring_base + (i+0)%ring_res;
+				elements[elements_size++] = next_ring_base + (i+0)%ring_res;
+				elements[elements_size++] = next_ring_base + (i+1)%ring_res;
+			}
+		}
+		// copy these elements for the rest of the tubes
+		for (auto l = 1; l < line_count; ++l)
+			for (auto i = 0; i < element_count_of_one; ++i)
+				elements[l * element_count_of_one + i] = l * vertex_count_of_one + elements[i];
+
+		GL::glNamedBufferSubData(tubes_vao.element_buffer.id, 0, elements.size() * sizeof(u32), elements.data());
+	}
 }
 
 void Game::update(GLFW::Window const & window, Render::FrameInfo const & frame_info)
@@ -362,21 +429,34 @@ void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_i
 	{
 		if (settings.is_lines_active and frame_info.idx % 2 == 0)
 		{
-			auto & lines_generate_program = assets.programs.get("lines_generate_paths");
-			glUseProgram(lines_generate_program.id);
+			auto & paths_program = assets.programs.get("lines_generate_paths");
+			glUseProgram(paths_program.id);
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lines_vao.vertex_buffer.id);
 			glUniformHandleui64ARB(
-				GetLocation(lines_generate_program.uniform_mappings, "sdf"),
+				GetLocation(paths_program.uniform_mappings, "sdf"),
 				assets.volumes.get("voxels_linear_view").handle
 			);
+			glDispatchCompute(1, 1, 1);
+
+			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+			auto & tubes_program = assets.programs.get("lines_generate_tubes");
+			glUseProgram(tubes_program.id);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lines_vao.vertex_buffer.id);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, tubes_vao.vertex_buffer.id);
 			glDispatchCompute(1, 1, 1);
 		}
 
 		auto & lines_program = assets.programs.get("lines_draw");
 		glUseProgram(lines_program.id);
 
+		glDisable(GL_CULL_FACE);
+
 		glBindVertexArray(lines_vao.id);
 		glDrawElements(GL_LINES, lines_vao.element_count, GL_UNSIGNED_INT, nullptr);
+
+		glBindVertexArray(tubes_vao.id);
+		glDrawElements(GL_TRIANGLES, tubes_vao.element_count, GL_UNSIGNED_INT, nullptr);
 	}
 
 	// environment mapping

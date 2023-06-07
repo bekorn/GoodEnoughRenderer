@@ -129,12 +129,12 @@ struct ByteBuffer
 	}
 
 	template<typename T>
-	auto span_as(usize byte_offset, usize size) const
+	auto span_as(usize byte_offset, usize byte_size) const
 	{
-		assert(byte_offset + size <= this->size, "Out of bounds access");
+		assert(byte_offset + byte_size <= this->size, "Out of bounds access");
 		return span<T>(
 			reinterpret_cast<T*>(data.get() + byte_offset),
-			reinterpret_cast<T*>(data.get() + byte_offset + size)
+			reinterpret_cast<T*>(data.get() + byte_offset + byte_size)
 		);
 	}
 

@@ -74,6 +74,10 @@
         "glsl/uniform_block/frame_info.unib.glsl",
       ]
     },
+    {
+      "name": "lines_generate_tubes",
+      "stages": ["glsl/program/sdf_lines/generate_tubes.comp.glsl"],
+    },
     // SDF 3D
     {
       "name": "voxelizer",

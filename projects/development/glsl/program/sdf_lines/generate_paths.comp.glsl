@@ -1,4 +1,4 @@
-#define LOCAL_SIZE 8
+#define LOCAL_SIZE 2
 layout(local_size_x = LOCAL_SIZE, local_size_y = LOCAL_SIZE, local_size_z = 1) in;
 
 sampler3D sdf;
@@ -39,7 +39,7 @@ vec3 get_position(uint idx)
 
 void main()
 {
-    float r = 1. / 32;
+    float r = 0.6 / 32;
 
     vec3 head = get_position(0);
     vec3 dir = normalize(head - get_position(1));
