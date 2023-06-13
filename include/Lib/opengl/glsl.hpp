@@ -12,4 +12,6 @@ std::string const GLSL_COMMON_EXTENSIONS = R"___(
 layout(bindless_sampler) uniform;
 layout(bindless_image) uniform;
 )___";
+
+std::string const GLSL_LANGUAGE_CONFIG = GLSL_VERSION_MACRO + GLSL_COMMON_EXTENSIONS;
 }

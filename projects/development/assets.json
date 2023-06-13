@@ -64,6 +64,7 @@
       "name": "lines_draw",
       "stages": ["glsl/program/sdf_lines/draw.vert-frag.glsl"],
       "include_paths": [
+        "glsl/program/sdf_lines/config.glsl",
         "glsl/uniform_block/camera.unib.glsl",
       ]
     },
@@ -71,12 +72,16 @@
       "name": "lines_generate_paths",
       "stages": ["glsl/program/sdf_lines/generate_paths.comp.glsl"],
       "include_paths": [
+        "glsl/program/sdf_lines/config.glsl",
         "glsl/uniform_block/frame_info.unib.glsl",
       ]
     },
     {
       "name": "lines_generate_tubes",
       "stages": ["glsl/program/sdf_lines/generate_tubes.comp.glsl"],
+      "include_paths": [
+        "glsl/program/sdf_lines/config.glsl",
+      ]
     },
     // SDF 3D
     {

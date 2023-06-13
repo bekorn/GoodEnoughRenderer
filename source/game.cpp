@@ -5,7 +5,7 @@
 #include "Lib/opengl/globals.hpp"
 
 // !!! Temporary
-i32 const line_count_axis = 2;
+i32 const line_count_axis = 8;
 i32 const line_count = line_count_axis * line_count_axis;
 i32 const line_length = 32;
 GL::VertexArray lines_vao, tubes_vao;

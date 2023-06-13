@@ -3,12 +3,6 @@ in vec3 position;
 
 out flat vec3 color;
 
-const int line_size = 32;
-
-const int ring_res = 6;
-const int ring_count = line_size - 2;
-const int tube_size = 2 * 1/*head & tail*/ + ring_count * ring_res/*body*/;
-
 vec3 rand_1_3(float p)
 {
     vec3 p3 = fract(vec3(p) * vec3(.131, .130, .973));

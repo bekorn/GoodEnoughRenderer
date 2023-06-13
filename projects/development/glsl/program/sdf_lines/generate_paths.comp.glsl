@@ -1,4 +1,3 @@
-#define LOCAL_SIZE 2
 layout(local_size_x = LOCAL_SIZE, local_size_y = LOCAL_SIZE, local_size_z = 1) in;
 
 sampler3D sdf;
@@ -22,17 +21,14 @@ void query_sdf(vec3 pos, out vec3 closest, out float dist)
     dist = sdf.w;
 }
 
-const int line_size = 32;
-const uint base = gl_LocalInvocationIndex * line_size*3;
-
 void set_position(uint idx, vec3 pos)
 {
-    idx = base + 3 * idx;
+    idx = line_base + 3 * idx;
     positions[idx + 0] = pos[0]; positions[idx + 1] = pos[1]; positions[idx + 2] = pos[2];
 }
 vec3 get_position(uint idx)
 {
-    idx = base + 3 * idx;
+    idx = line_base + 3 * idx;
     return vec3(positions[idx + 0], positions[idx + 1], positions[idx + 2]);
 }
 

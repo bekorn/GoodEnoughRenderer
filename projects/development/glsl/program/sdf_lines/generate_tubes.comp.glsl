@@ -1,4 +1,3 @@
-#define LOCAL_SIZE 2
 layout(local_size_x = LOCAL_SIZE, local_size_y = LOCAL_SIZE, local_size_z = 1) in;
 
 layout(binding = 0) readonly buffer LineVAO
@@ -13,16 +12,6 @@ layout(binding = 1) writeonly buffer TubeVAO
 //    ring0  ring1      ringN  H   T
 // H: head, T: tail, (ring0, ringN): body, N: line_length-2
 };
-
-const float TWO_PI = 2 * 3.14156;
-
-const int line_size = 32;
-const uint line_base = gl_LocalInvocationIndex * line_size*3;
-
-const int ring_res = 6;
-const int ring_count = line_size - 2;
-const int tube_size = 2 * 1/*head & tail*/ + ring_count * ring_res/*body*/;
-const uint tube_base = gl_LocalInvocationIndex * tube_size*3;
 
 vec3 get_line_position(uint idx)
 {
@@ -100,6 +89,7 @@ void main()
 
         for (int i = 0; i < ring_res; ++i)
         {
+            const float TWO_PI = 2 * 3.14156;
             float rad = (float(i) / ring_res) * TWO_PI;
             float x = cos(rad);
             float y = sin(rad);

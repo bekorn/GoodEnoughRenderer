@@ -45,11 +45,13 @@ Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded)
 {
 	using namespace Helpers;
 
-	vector<const char*> sources; // = { <includes>, "#define <stage>", "#line 1\n", <stage_source> }
-	sources.resize(loaded.includes.size() + 3);
+	vector<const char*> sources; // = { language_config, stage_define, loaded.includes, "#line 1", stage_source }
+	sources.resize(1 + 1 + loaded.includes.size() + 1 + 1);
+
+	sources[0] = GL::GLSL_LANGUAGE_CONFIG.data();
 
 	for (auto i = 0; i < loaded.includes.size(); ++i)
-		sources[i] = loaded.includes[i].data();
+		sources[i + 1 + 1] = loaded.includes[i].data();
 
 	sources[sources.size() - 2] = "#line 1\n";
 
@@ -64,9 +66,9 @@ Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded)
 		auto const & loaded_stage = loaded.stages[i];
 
 		auto stage_define = fmt::format("#define ONLY_{}\n", to_string(loaded_stage.type));
-		sources[sources.size() - 3] = stage_define.data();
+		sources[1] = stage_define.data();
 
-		sources.back() = loaded_stage.source.data();
+		sources[sources.size() - 1] = loaded_stage.source.data();
 
 		stage.init({
 			.stage = loaded_stage.type,
@@ -144,8 +146,6 @@ std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const &
 		for (auto & item: member->value.GetArray())
 			desc.include_paths.push_back(root_dir / item.GetString());
 
-	desc.include_strings.push_back(GL::GLSL_VERSION_MACRO);
-	desc.include_strings.push_back(GL::GLSL_COMMON_EXTENSIONS);
 	if (auto member = o.FindMember("include_strings"); member != o.MemberEnd())
 		for (auto & item: member->value.GetArray())
 			desc.include_strings.emplace_back(item.GetString());
