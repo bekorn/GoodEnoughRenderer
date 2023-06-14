@@ -29,6 +29,7 @@ struct Game : Render::GameBase
 		bool is_gamma_correction_comp = false;
 
 		bool is_lines_active = false;
+		i32 lines_update_per_frame = 8;
 	} settings;
 
 	GL::MappedBuffer frame_info_uniform_buffer;

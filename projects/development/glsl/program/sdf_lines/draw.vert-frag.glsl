@@ -14,8 +14,8 @@ void main()
 {
     float line_idx = gl_VertexID / tube_size;
     float r = rand_1_3(line_idx / 10 + 1).x;
-    const vec3 col0 = vec3(234, 240, 62) / 255.;
-    const vec3 col1 = vec3(255, 0, 32) / 255.;
+    const vec3 col0 = vec3(62, 14, 255) / 255.;
+    const vec3 col1 = vec3(32, 205, 80) / 255.;
     color = mix(col0, col1, r * 1.5);
 
 //    color = rand_1_3(gl_VertexID);

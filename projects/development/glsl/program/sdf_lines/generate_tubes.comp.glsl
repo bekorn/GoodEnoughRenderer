@@ -68,10 +68,10 @@ void main()
         vec3 Pnext = get_line_position(r + 2);
 
         vec3 tangent = normalize(Pnext - Pprev);
-        vec3 bitangent = normalize(cross(previous_tangent, tangent));
+        vec3 bitangent = cross(previous_tangent, tangent);
         vec3 normal;
 
-        if (dot(bitangent, bitangent) == 0)
+        if (dot(bitangent, bitangent) < 0.0001)
         {
             normal = previous_normal;
         }
@@ -85,7 +85,7 @@ void main()
         vec3 center = Pcurr;
         vec3 up = normal;
         vec3 right = bitangent;
-        float radius = get_radius(float(r+1) / line_size);
+        float radius = get_radius(r / float(ring_count-1));
 
         for (int i = 0; i < ring_res; ++i)
         {

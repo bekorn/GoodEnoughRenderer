@@ -64,20 +64,20 @@ void Game::create_uniform_buffers()
 	glBindBufferBase(GL_UNIFORM_BUFFER, lights_uniform_block.binding, lights_uniform_buffer.id);
 
 	auto * map = (byte *) glMapNamedBuffer(lights_uniform_buffer.id, GL_WRITE_ONLY);
-	lights_uniform_block.set(map, "Lights[0].position", f32x3{0, 1, 3});
-	lights_uniform_block.set(map, "Lights[0].color", f32x3{1, 0, 0});
-	lights_uniform_block.set(map, "Lights[0].range", f32{2 * 2});
-	lights_uniform_block.set(map, "Lights[0].is_active", false);
+	lights_uniform_block.set(map, "Lights[0].position", f32x3{4, 5, 5});
+	lights_uniform_block.set(map, "Lights[0].color", f32x3{2});
+	lights_uniform_block.set(map, "Lights[0].range", f32{10 * 2});
+	lights_uniform_block.set(map, "Lights[0].is_active", true);
 
-	lights_uniform_block.set(map, "Lights[1].position", f32x3{0, 1, -3});
-	lights_uniform_block.set(map, "Lights[1].color", f32x3{0, 1, 0});
-	lights_uniform_block.set(map, "Lights[1].range", f32{1.6 * 2});
-	lights_uniform_block.set(map, "Lights[1].is_active", false);
+	lights_uniform_block.set(map, "Lights[1].position", f32x3{5, 4, 5});
+	lights_uniform_block.set(map, "Lights[1].color", f32x3{2});
+	lights_uniform_block.set(map, "Lights[1].range", f32{10 * 2});
+	lights_uniform_block.set(map, "Lights[1].is_active", true);
 
-	lights_uniform_block.set(map, "Lights[2].position", f32x3{-2, 3, 0});
-	lights_uniform_block.set(map, "Lights[2].color", f32x3{1, 1, 1});
-	lights_uniform_block.set(map, "Lights[2].range", f32{3.5 * 2});
-	lights_uniform_block.set(map, "Lights[2].is_active", false);
+	lights_uniform_block.set(map, "Lights[2].position", f32x3{5, 5, 4});
+	lights_uniform_block.set(map, "Lights[2].color", f32x3{2});
+	lights_uniform_block.set(map, "Lights[2].range", f32{10 * 2});
+	lights_uniform_block.set(map, "Lights[2].is_active", true);
 
 	lights_uniform_block.set(map, "Lights[3].position", f32x3{-10, 1, 0});
 	lights_uniform_block.set(map, "Lights[3].color", f32x3{0, 0, 1});
@@ -436,9 +436,11 @@ void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_i
 				GetLocation(paths_program.uniform_mappings, "sdf"),
 				assets.volumes.get("voxels_linear_view").handle
 			);
-			glDispatchCompute(1, 1, 1);
-
-			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+			for (auto i = 0; i < settings.lines_update_per_frame; ++i)
+			{
+				glDispatchCompute(1, 1, 1);
+				glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+			}
 
 			auto & tubes_program = assets.programs.get("lines_generate_tubes");
 			glUseProgram(tubes_program.id);
@@ -452,8 +454,8 @@ void Game::render(GLFW::Window const & window, Render::FrameInfo const & frame_i
 
 		glDisable(GL_CULL_FACE);
 
-		glBindVertexArray(lines_vao.id);
-		glDrawElements(GL_LINES, lines_vao.element_count, GL_UNSIGNED_INT, nullptr);
+//		glBindVertexArray(lines_vao.id);
+//		glDrawElements(GL_LINES, lines_vao.element_count, GL_UNSIGNED_INT, nullptr);
 
 		glBindVertexArray(tubes_vao.id);
 		glDrawElements(GL_TRIANGLES, tubes_vao.element_count, GL_UNSIGNED_INT, nullptr);

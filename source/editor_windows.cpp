@@ -15,6 +15,7 @@ void GameSettingsWindow::update(Editor::Context & ctx)
 		glfwSwapInterval(is_vsync_on ? 1 : 0);
 
 	Checkbox("Update Lines", &game.settings.is_lines_active);
+	SameLine(), ImGui::SliderInt("Per Frame", &game.settings.lines_update_per_frame, 1, 16);
 }
 
 void MaterialWindow::update(Editor::Context & ctx)

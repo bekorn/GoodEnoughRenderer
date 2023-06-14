@@ -35,7 +35,7 @@ vec3 get_position(uint idx)
 
 void main()
 {
-    float r = 0.6 / 32;
+    float r = 0.32 / 32;
 
     vec3 head = get_position(0);
     vec3 dir = normalize(head - get_position(1));
@@ -44,30 +44,39 @@ void main()
     float dist;
     query_sdf(head, closest, dist);
 
-    if (dist != 0)
+    if (any(greaterThan(abs(head), vec3(1.2))))
     {
-        const float l_thr = 0.04;
-        const float h_thr = 0.05;
+        dir = normalize(-head);
+    }
+    else if (dist > 0.01)
+    {
+        const float bot = 0.01;
+        const float mid = 0.03;
+        const float top = 0.4;
 
         vec3 to_surface = normalize(head - closest);
 
-        if (dist < l_thr)
+        if (dist < mid)
         {
-            dir = mix(to_surface, dir, clamp(pow(dist, 1) / l_thr, 0.0, 1.0));
+            float norm = (dist - bot) / (mid - bot);
+            float f = pow(norm, 1.8);
+            dir = mix(to_surface, dir, clamp(f, 0.0, 1.0));
             dir = normalize(dir);
         }
-        else if (dist > h_thr)
+        else
         {
-            dir = mix(dir, -to_surface, clamp(pow((dist - h_thr) / 0.4, 1.0), 0.5, 1.0));
+            float norm = (dist - mid) / (top - mid);
+            float f = pow(norm, 1.5);
+            dir = mix(dir, -to_surface, clamp(f, 0.0, 1.0));
             dir = normalize(dir);
         }
     }
     else
     {
-        dir = normalize(-head);
+        dir = normalize(get_position(1) - head);
     }
 
-    vec3 next_pos = head + r * dir + 0.001*(rand_1_3(dist * dir.x + dir.y - dir.z) * 2 - 1);
+    vec3 next_pos = head + r * dir + 0.00*(rand_1_3(dist * dir.x + dir.y - dir.z) * 2 - 1);
 
     for (int i = 0; i < line_size; ++i)
     {
