@@ -130,6 +130,7 @@ Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded, Mana
 	if (not is_linked(program))
 		return {fmt::format("Compilation failed! Linking Error:\n{}", get_log(program))};
 
+	program.vertex_layout_name = loaded.layout_name;
 	set_attribute_mapping(program);
 	set_uniform_mapping(program);
 	set_uniform_block_mapping(program);

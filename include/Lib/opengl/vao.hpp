@@ -28,7 +28,7 @@ struct VertexArray : OpenGLObject
 	struct Desc
 	{
 		Geometry::Primitive const & geometry;
-		span<AttributeMapping const> attribute_mappings;
+		Geometry::Layout const & vertex_layout;
 		GLenum usage = GL_STATIC_DRAW;
 	};
 
@@ -37,9 +37,9 @@ struct VertexArray : OpenGLObject
 		glCreateVertexArrays(1, &id);
 
 		usize buffer_size = 0;
-		for (auto const & attribute: desc.attribute_mappings)
+		for (auto const & [key, layout]: desc.vertex_layout)
 		{
-			auto const geo_attribute = desc.geometry.attributes.find(attribute.key);
+			auto const geo_attribute = desc.geometry.attributes.find(key);
 			if (geo_attribute == desc.geometry.attributes.end())
 				continue;
 
@@ -53,13 +53,13 @@ struct VertexArray : OpenGLObject
 
 		auto buffer_bind_idx = 0;
 		GLintptr buffer_offset = 0;
-		for (auto const & attribute: desc.attribute_mappings)
+		for (auto const & [key, layout]: desc.vertex_layout)
 		{
-			auto const geo_attribute = desc.geometry.attributes.find(attribute.key);
+			auto const geo_attribute = desc.geometry.attributes.find(key);
 			if (geo_attribute == desc.geometry.attributes.end())
 				continue;
 
-			auto const & [key, data] = *geo_attribute;
+			auto const & [_, data] = *geo_attribute;
 
 			glNamedBufferSubData(
 				vertex_buffer.id,
@@ -73,12 +73,12 @@ struct VertexArray : OpenGLObject
 			);
 			glVertexArrayAttribFormat(
 				id,
-				attribute.location,
+				layout.location,
 				data.type.dimension, to_glenum(data.type), data.type.is_normalized(),
 				0
 			);
-			glEnableVertexArrayAttrib(id, attribute.location);
-			glVertexArrayAttribBinding(id, attribute.location, buffer_bind_idx);
+			glEnableVertexArrayAttrib(id, layout.location);
+			glVertexArrayAttribBinding(id, layout.location, buffer_bind_idx);
 
 			buffer_bind_idx++;
 			buffer_offset += static_cast<GLintptr>(data.buffer.size);

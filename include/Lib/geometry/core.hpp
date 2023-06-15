@@ -148,7 +148,7 @@ struct Layout
 {
 	Type type;
 	u8 group_idx;
-	u8 binding_idx;
+	u8 location;
 };
 
 struct Data

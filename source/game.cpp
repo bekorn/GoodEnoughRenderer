@@ -143,10 +143,12 @@ void Game::init()
 	};
 
 	// load all the meshes to the gpu
-	auto & attribute_mappings = assets.programs.get(GLTF::pbrMetallicRoughness_program_name).attribute_mappings;
+	auto & gltf_vertex_layout = assets.vertex_layouts.get(
+		assets.programs.get(GLTF::pbrMetallicRoughness_program_name).vertex_layout_name
+	);
 	for (auto & [_, mesh]: assets.meshes)
 		for (auto & drawable: mesh.drawables)
-			drawable.load(attribute_mappings);
+			drawable.load(gltf_vertex_layout);
 
 	// fallback to default envmap
 	if (not assets.texture_cubemaps.contains(settings.envmap_diffuse, settings.envmap_specular))
@@ -204,7 +206,7 @@ void Game::init()
 
 		lines_vao.init(GL::VertexArray::Desc{
 			.geometry = lines_geo,
-			.attribute_mappings = assets.programs.get("lines_draw"_name).attribute_mappings,
+			.vertex_layout = assets.vertex_layouts.get(assets.programs.get("lines_draw"_name).vertex_layout_name),
 			.usage = GL::GL_DYNAMIC_COPY,
 		});
 	}

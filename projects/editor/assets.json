@@ -19,10 +19,20 @@
         },
       ],
     },
+    {
+      "name": "gizmo",
+      "groups": [
+        {
+          "position": "f32x3",
+          "color": "u8normx3",
+        }
+      ]
+    }
   ],
   "glsl_program": [
     {
       "name": "gizmo",
+      "layout": "gizmo",
       "stages": ["glsl/program/gizmo.vert-frag.glsl"]
     },
     // Volume Window

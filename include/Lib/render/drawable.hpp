@@ -19,13 +19,11 @@ struct Drawable
 		return vertex_array.id != 0;
 	}
 
-	// TODO(bekorn): a drawable can be used by multiple shader programs,
-	//  should load all the attributes that might be required but nothing more
-	void load(span<GL::AttributeMapping const> attribute_mappings)
+	void load(Geometry::Layout const & vertex_layout)
 	{
 		vertex_array.init(GL::VertexArray::Desc{
 			.geometry = primitive,
-			.attribute_mappings = attribute_mappings,
+			.vertex_layout = vertex_layout,
 		});
 	}
 

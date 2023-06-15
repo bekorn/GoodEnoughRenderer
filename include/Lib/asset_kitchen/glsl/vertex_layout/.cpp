@@ -49,7 +49,7 @@ std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const &
 			if (layout.try_emplace(
 				get_key(name.GetString()),
 				Geometry::Attribute::Layout{
-					.type = get_type(type.GetString()), .group_idx = group_idx, .binding_idx = binding_idx
+					.type = get_type(type.GetString()), .group_idx = group_idx, .location = binding_idx
 				}
 			).second == false)
 				fmt::print(stderr, "\t!! failed to emplace vertex layout. name={}\n", name.GetString());

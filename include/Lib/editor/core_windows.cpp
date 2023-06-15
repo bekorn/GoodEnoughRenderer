@@ -30,10 +30,12 @@ void GameWindow::init(Context const & ctx)
 	border.init(ctx, *this);
 
 	// Load gizmo meshes
-	auto & attribute_mappings = ctx.editor_assets.programs.get("gizmo"_name).attribute_mappings;
+	auto & vertex_layout = ctx.editor_assets.vertex_layouts.get(
+		ctx.editor_assets.programs.get("gizmo"_name).vertex_layout_name
+	);
 	for (auto & [_, mesh]: ctx.editor_assets.meshes)
 		for (auto & drawable: mesh.drawables)
-			drawable.load(attribute_mappings);
+			drawable.load(vertex_layout);
 }
 
 void GameWindow::update(Context & ctx)
@@ -969,8 +971,9 @@ void MeshWindow::update(Context & ctx)
 			if (Button("Load all drawables"))
 			{
 				auto & program = ctx.game.assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
+				auto & vertex_layout = ctx.game.assets.vertex_layouts.get(program.vertex_layout_name);
 				for (auto & drawable: mesh.drawables)
-					drawable.load(program.attribute_mappings);
+					drawable.load(vertex_layout);
 			}
 		}
 	}

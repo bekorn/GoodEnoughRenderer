@@ -35,6 +35,14 @@
         },
       ],
     },
+    {
+      "name": "sdf_lines",
+      "groups": [
+        {
+          "position": "f32x3"
+        },
+      ]
+    }
   ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},
@@ -78,6 +86,7 @@
     /// SDF Lines
     {
       "name": "lines_draw",
+      "layout": "sdf_lines",
       "stages": ["glsl/program/sdf_lines/draw.vert-frag.glsl"],
       "include_paths": [
         "glsl/program/sdf_lines/config.glsl",

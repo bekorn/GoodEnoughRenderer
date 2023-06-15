@@ -575,6 +575,7 @@ void Convert(
 		auto & mesh = meshes.generate(loaded_mesh.name).data;
 
 		// Create Drawables
+		mesh.drawables.reserve(loaded_mesh.primitives.size());
 		for (auto & loaded_primitive : loaded_mesh.primitives)
 		{
 			//	TODO(bekorn): have a default material

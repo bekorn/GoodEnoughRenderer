@@ -36,6 +36,7 @@ struct ShaderStage : OpenGLObject
 
 struct ShaderProgram : OpenGLObject
 {
+	Name vertex_layout_name;
 	vector<AttributeMapping> attribute_mappings;
 	vector<UniformMapping> uniform_mappings;
 	vector<UniformBlockMapping> uniform_block_mappings;
