@@ -12,7 +12,7 @@
 
 namespace GLSL::Program
 {
-Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded);
+Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded, Managed<Geometry::Layout> const & vertex_layouts);
 
 std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir);
 }

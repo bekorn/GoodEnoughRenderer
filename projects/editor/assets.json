@@ -5,6 +5,21 @@
   "texture": [
     {"name": "border_map", "path": "textures/border_contrast.png"},
   ],
+  "glsl_vertex_layout": [
+    {
+      "name": "gltf",
+      "groups": [
+        {
+          "normal": "f32x3",
+          "color": "u8normx3",
+          "texcoord": "f32x2",
+        },
+        {
+          "position": "f32x3"
+        },
+      ],
+    },
+  ],
   "glsl_program": [
     {
       "name": "gizmo",
@@ -18,6 +33,7 @@
     // Border
     {
       "name": "jump_flood_init",
+      "layout": "gltf",
       "stages": ["glsl/program/border/jump_flood_init.vert-frag.glsl"]
     },
     {

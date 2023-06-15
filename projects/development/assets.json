@@ -26,13 +26,13 @@
       "name": "gltf",
       "groups": [
         {
-          "position": "f32x3"
-        },
-        {
           "normal": "f32x3",
           "color": "u8normx3",
           "texcoord": "f32x2",
-        }
+        },
+        {
+          "position": "f32x3"
+        },
       ],
     },
   ],
@@ -102,6 +102,7 @@
     // SDF 3D
     {
       "name": "voxelizer",
+      "layout": "gltf",
       "stages": ["glsl/program/sdf_volume/voxelizer.vert-geom-frag.glsl"]
     },
     {

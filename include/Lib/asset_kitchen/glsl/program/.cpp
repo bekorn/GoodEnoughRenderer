@@ -10,6 +10,8 @@ LoadedData Load(Desc const & desc)
 {
 	LoadedData loaded;
 
+	loaded.layout_name = desc.layout_name;
+
 	loaded.stages.reserve(desc.stages.size());
 	for (auto const & [stage, path]: desc.stages)
 		loaded.stages.emplace_back(LoadedData::Stage{
@@ -39,14 +41,44 @@ const char * to_string(GL::GLenum stage)
 	default: assert_case_not_handled();
 	}
 }
+
+const char * to_string(Geometry::Attribute::Key const & key)
+{
+	auto const & name = key.name;
+	if (holds_alternative<std::string>(name))
+		return get<std::string>(name).data();
+
+	using enum Geometry::Attribute::Key::Common;
+	switch (get<Geometry::Attribute::Key::Common>(name))
+	{
+		case POSITION: return "position";
+		case NORMAL: return "normal";
+		case TANGENT: return "tangent";
+		case TEXCOORD: return "texcoord";
+		case COLOR: return "color";
+		case JOINTS: return "joints";
+		case WEIGHTS: return "weights";
+	}
+	assert_enum_out_of_range();
 }
 
-Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded)
+std::string generate_vertex_layout(Geometry::Layout const & layout)
+{
+	std::string buffer;
+	fmt::format_to(back_inserter(buffer), "{}", "#ifdef ONLY_VERT\n");
+	for (auto & [k, l] : layout)
+		fmt::format_to(back_inserter(buffer), "layout(location = {}) in vec{} {};\n", l.location, l.type.dimension, to_string(k));
+	fmt::format_to(back_inserter(buffer), "{}", "#endif\n\0");
+	return buffer;
+}
+}
+
+Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded, Managed<Geometry::Layout> const & vertex_layouts)
 {
 	using namespace Helpers;
 
-	vector<const char*> sources; // = { language_config, stage_define, loaded.includes, "#line 1", stage_source }
-	sources.resize(1 + 1 + loaded.includes.size() + 1 + 1);
+	vector<const char*> sources; // = { language_config, stage_define, loaded.includes, vertex_layout, "#line 1", stage_source }
+	sources.resize(1 + 1 + loaded.includes.size() + 1 + 1 + 1);
 
 	sources[0] = GL::GLSL_LANGUAGE_CONFIG.data();
 
@@ -55,6 +87,10 @@ Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded)
 
 	sources[sources.size() - 2] = "#line 1\n";
 
+	std::string vertex_layout;
+	if (not loaded.layout_name.string.empty())
+		vertex_layout = generate_vertex_layout(vertex_layouts.get(loaded.layout_name));
+	sources[sources.size() - 3] = vertex_layout.data();
 
 	/// Compile stages
 	vector<GL::ShaderStage> stages;
@@ -119,6 +155,9 @@ std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const &
 
 	auto name = o.FindMember("name")->value.GetString();
 	GLSL::Program::Desc desc;
+
+	if (auto member = o.FindMember("layout"); member != o.MemberEnd())
+		desc.layout_name = member->value.GetString();
 
 	for (auto & item : o.FindMember("stages")->value.GetArray())
 	{

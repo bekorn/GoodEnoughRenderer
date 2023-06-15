@@ -112,7 +112,7 @@ void Assets::load_glsl_program(Name const & name)
 {
 	auto const loaded_data = GLSL::Program::Load(descriptions.glsl.get(name));
 
-	if (auto expected = GLSL::Program::Convert(loaded_data))
+	if (auto expected = GLSL::Program::Convert(loaded_data, vertex_layouts))
 	{
 		programs.generate(name, expected.into_result());
 	}
@@ -187,7 +187,7 @@ bool Assets::reload_glsl_program(Name const & name)
 {
 	auto const loaded_data = GLSL::Program::Load(descriptions.glsl.get(name));
 
-	if (auto expected = GLSL::Program::Convert(loaded_data))
+	if (auto expected = GLSL::Program::Convert(loaded_data, vertex_layouts))
 	{
 		auto new_program = expected.into_result();
 

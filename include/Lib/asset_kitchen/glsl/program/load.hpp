@@ -2,12 +2,14 @@
 #pragma message("-- read ASSET/PROGRAM/load.Hpp --")
 
 #include "Lib/core/core.hpp"
+#include "Lib/core/named.hpp"
 #include "Lib/opengl/core.hpp"
 
 namespace GLSL::Program
 {
 struct Desc
 {
+	Name layout_name;
 	struct Stage
 	{
 		GL::GLenum stage;
@@ -21,6 +23,7 @@ struct Desc
 
 struct LoadedData
 {
+	Name layout_name;
 	struct Stage
 	{
 		GL::GLenum type;

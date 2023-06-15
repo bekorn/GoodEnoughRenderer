@@ -5,11 +5,9 @@
 #ifdef ONLY_VERT ///////////////////////////////////////////////////////////////////////////////////////////////////////
 uniform mat4 TransformM;
 
-in vec3 pos;
-
 void main()
 {
-    gl_Position = TransformM * vec4(pos, 1);
+    gl_Position = TransformM * vec4(position, 1);
 }
 #endif
 
