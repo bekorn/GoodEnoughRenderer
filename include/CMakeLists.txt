@@ -50,6 +50,7 @@ target_link_libraries(opengl PUBLIC
 list(APPEND LIBS asset_kitchen)
 add_library(asset_kitchen STATIC)
 target_sources(asset_kitchen PRIVATE
+    Lib/asset_kitchen/glsl/vertex_layout/.cpp
     Lib/asset_kitchen/glsl/program/.cpp
     Lib/asset_kitchen/glsl/uniform_block/.cpp
     Lib/asset_kitchen/gltf/.cpp

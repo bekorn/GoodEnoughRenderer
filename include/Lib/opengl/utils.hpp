@@ -20,8 +20,6 @@ u32 gl_component_type_size(GLenum type);
 
 GLenum to_glenum(Geometry::Attribute::Type::Value type);
 
-Geometry::Attribute::Type to_attribute_type(GLenum type, bool is_normalized);
-
 
 // shortcuts
 // (using <original-function>; prevents name hiding)

@@ -362,7 +362,7 @@ namespace Helpers
 		return key;
 	}
 
-	Geometry::Attribute::Type IntoAttributeType(u32 type, bool is_normalized)
+	Geometry::Attribute::Type IntoAttributeType(u32 type, u8 dimension, bool is_normalized)
 	{
 		// see spec section 3.6.2.2. Accessor Data Types
 		using enum Geometry::Attribute::Type::Value;
@@ -370,21 +370,21 @@ namespace Helpers
 		if (is_normalized)
 			switch (type)
 			{
-			case 5120: return I8NORM;
-			case 5121: return U8NORM;
-			case 5122: return I16NORM;
-			case 5123: return U16NORM;
-			case 5125: return U32NORM;
+			case 5120: return {I8NORM, dimension};
+			case 5121: return {U8NORM, dimension};
+			case 5122: return {I16NORM, dimension};
+			case 5123: return {U16NORM, dimension};
+			case 5125: return {U32NORM, dimension};
 			}
 		else
 			switch (type)
 			{
-			case 5120: return I8;
-			case 5121: return U8;
-			case 5122: return I16;
-			case 5123: return U16;
-			case 5125: return U32;
-			case 5126: return F32;
+			case 5120: return {I8, dimension};
+			case 5121: return {U8, dimension};
+			case 5122: return {I16, dimension};
+			case 5123: return {U16, dimension};
+			case 5125: return {U32, dimension};
+			case 5126: return {F32, dimension};
 			}
 
 		// above values are all the alloved ones therefore,
@@ -485,11 +485,10 @@ void Convert(
 				auto & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
 				auto data = Geometry::Attribute::Data{
-					.type = IntoAttributeType(accessor.vector_data_type, accessor.normalized),
-					.dimension = static_cast<u8>(accessor.vector_dimension),
+					.type = IntoAttributeType(accessor.vector_data_type, accessor.vector_dimension, accessor.normalized),
 				};
 
-				u32 data_buffer_stride = data.type.size() * data.dimension;
+				u32 data_buffer_stride = data.type.size() * data.type.dimension;
 				data.buffer = ByteBuffer(data_buffer_stride * accessor.count);
 
 				if (buffer_view.stride.has_value())
@@ -526,7 +525,7 @@ void Convert(
 				auto & accessor = loaded.accessors[loaded_primitive.indices_accessor_index.value()];
 				auto & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
-				auto index_type = IntoAttributeType(accessor.vector_data_type, accessor.normalized);
+				auto index_type = IntoAttributeType(accessor.vector_data_type, accessor.vector_dimension, accessor.normalized);
 
 				// buffers other than vertex attributes are always tightly packed
 				// see spec section 3.6.2.1. Overview, paragraph 2

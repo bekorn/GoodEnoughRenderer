@@ -1,5 +1,6 @@
 #include "assets.hpp"
 #include "descriptions.hpp"
+#include "glsl/vertex_layout/convert.hpp"
 #include "glsl/program/convert.hpp"
 #include "glsl/uniform_block/convert.hpp"
 #include "gltf/convert.hpp"
@@ -20,6 +21,14 @@ void Descriptions::init(std::filesystem::path const & project_root)
 		Document document;
 		document.Parse(File::LoadAsString(asset_descriptions_path).c_str());
 		assert(document.IsObject(), "assets.json is invalid");
+
+
+		if (auto const member = document.FindMember("glsl_vertex_layout"); member != document.MemberEnd())
+			for (auto const & item: member->value.GetArray())
+			{
+				auto [name, desc] = GLSL::VertexLayout::Parse(item.GetObject(), project_root);
+				vertex_layout.generate(name, desc);
+			}
 
 		if (auto const member = document.FindMember("glsl_uniform_block"); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
@@ -63,6 +72,40 @@ void Descriptions::init(std::filesystem::path const & project_root)
 				envmap.generate(name, desc);
 			}
 	}
+}
+
+void Assets::init()
+{
+	for (auto const & [name, _] : descriptions.vertex_layout)
+		load_glsl_vertex_layout(name);
+
+	for (auto const & [name, _] : descriptions.uniform_block)
+		load_glsl_uniform_block(name);
+	// TODO(bekorn): currently some uniform buffers are populated outside of render functions
+	//  therefore can't be stopped with should_game_render. However there might be a way to gracefully resolve this.
+	if (not program_errors.empty())
+		std::exit(1);
+
+	for (auto const & [name, _] : descriptions.glsl)
+		load_glsl_program(name);
+
+	for (auto const & [name, _] : descriptions.gltf)
+		load_gltf(name);
+
+	for (auto const & [name, _] : descriptions.texture)
+		load_texture(name);
+
+	for (auto const & [name, _] : descriptions.cubemap)
+		load_cubemap(name);
+
+	for (auto const & [name, _] : descriptions.envmap)
+		load_envmap(name);
+}
+
+void Assets::load_glsl_vertex_layout(Name const & name)
+{
+	auto const layout_data = GLSL::VertexLayout::Load(descriptions.vertex_layout.get(name));
+	vertex_layouts.generate(name, move(layout_data));
 }
 
 void Assets::load_glsl_program(Name const & name)

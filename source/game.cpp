@@ -182,7 +182,7 @@ void Game::init()
 		}
 		lines_geo.attributes.try_emplace(
 			Geometry::Attribute::Key{Geometry::Attribute::Key::POSITION, 0},
-			Geometry::Attribute::Data{Geometry::Attribute::Type::F32, 3, move(positions)}
+			Geometry::Attribute::Data{{Geometry::Attribute::Type::F32, 3}, move(positions)}
 		);
 
 		auto const element_count = line_count * (line_length - 1) * 2;
@@ -220,9 +220,13 @@ void Game::init()
 		auto const element_count_of_one = (2 * ring_res + (ring_count-1/*in between*/) * ring_res * 2)/*triangles*/ * 3;
 		auto const element_count = line_count * element_count_of_one;
 
+		Geometry::Layout tubes_layout;
+		for (auto & [key, data] : lines_geo.attributes)
+			tubes_layout.try_emplace(key, data.type);
+
 		tubes_vao.init(GL::VertexArray::EmptyDesc{
 			.vertex_count = vertex_count,
-			.vertex_attributes = lines_geo.attributes,
+			.vertex_layout = tubes_layout,
 			.element_count = element_count,
 			.attribute_mappings = assets.programs.get("lines_draw"_name).attribute_mappings,
 			.usage = GL::GL_DYNAMIC_COPY,

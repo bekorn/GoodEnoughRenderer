@@ -32,6 +32,7 @@ void debug_callback(
 	if (false
 		|| id == 131185 // notification, logs where the buffer is stored (e.g. VIDEO MEMORY, SYSTEM MEMORY)
 		|| id == 131220 // warning, logged "sometimes" when clearing an integer (e.g. RG16UI) framebuffer attachment
+		|| id == 131076 // usage warning, logged when a vertex attribute is enabled but not used by the program
 	)
 		return;
 
@@ -247,34 +248,5 @@ GLenum to_glenum(Geometry::Attribute::Type::Value type)
 	case U32NORM: return GL_UNSIGNED_INT;
 	}
 	assert_enum_out_of_range();
-}
-
-Geometry::Attribute::Type to_attribute_type(GLenum type, bool is_normalized)
-{
-	using enum Geometry::Attribute::Type::Value;
-	if (is_normalized)
-		switch (type)
-		{
-		case GL_BYTE: return I8NORM;
-		case GL_SHORT: return I16NORM;
-		case GL_INT: return I32NORM;
-		case GL_UNSIGNED_BYTE: return U8NORM;
-		case GL_UNSIGNED_SHORT: return U16NORM;
-		case GL_UNSIGNED_INT: return U32NORM;
-		case GL_FLOAT: assert_failure("GL_FLOAT con not be normalized");
-		default: assert_case_not_handled();
-		}
-	else
-		switch (type)
-		{
-		case GL_BYTE: return I8;
-		case GL_SHORT: return I16;
-		case GL_INT: return I32;
-		case GL_UNSIGNED_BYTE: return U8;
-		case GL_UNSIGNED_SHORT: return U16;
-		case GL_UNSIGNED_INT: return U32;
-		case GL_FLOAT: return F32;
-		default: assert_case_not_handled();
-		}
 }
 }

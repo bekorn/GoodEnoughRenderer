@@ -16,6 +16,7 @@ struct Assets
 	Descriptions const & descriptions;
 
 	// GL resources
+	Managed<Geometry::Layout> vertex_layouts;
 	Managed<GL::UniformBlock> uniform_blocks;
 	Managed<GL::ShaderProgram> programs;
 	Managed<GL::Texture2D> textures;
@@ -39,31 +40,9 @@ struct Assets
 	COPY(Assets, delete)
 	MOVE(Assets, delete)
 
-	void init()
-	{
-		for (auto const & [name, _] : descriptions.uniform_block)
-			load_glsl_uniform_block(name);
-		// TODO(bekorn): currently some uniform buffers are populated outside of render functions
-		//  therefore can't be stopped with should_game_render. However there might be a way to gracefully resolve this.
-		if (not program_errors.empty())
-			std::exit(1);
+	void init();
 
-		for (auto const & [name, _] : descriptions.glsl)
-			load_glsl_program(name);
-
-		for (auto const & [name, _] : descriptions.gltf)
-			load_gltf(name);
-
-		for (auto const & [name, _] : descriptions.texture)
-			load_texture(name);
-
-		for (auto const & [name, _] : descriptions.cubemap)
-			load_cubemap(name);
-
-		for (auto const & [name, _] : descriptions.envmap)
-			load_envmap(name);
-	}
-
+	void load_glsl_vertex_layout(Name const & name);
 	void load_glsl_program(Name const & name);
 	void load_glsl_uniform_block(Name const & name);
 	void load_gltf(Name const & name);

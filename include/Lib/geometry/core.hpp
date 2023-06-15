@@ -67,9 +67,10 @@ struct Type
 	};
 
 	Value value;
+	u8 dimension;
 
-	Type(Value value) :
-		value(value)
+	Type(Value value, u8 dimension) :
+		value(value), dimension(dimension)
 	{}
 
 	operator Value() const
@@ -95,6 +96,9 @@ struct Type
 		}
 		assert_enum_out_of_range();
 	}
+
+	u8 vector_size() const
+	{ return size() * dimension; }
 
 	bool is_normalized() const
 	{
@@ -140,14 +144,21 @@ struct Type
 	}
 };
 
+struct Layout
+{
+	Type type;
+	u8 group_idx;
+	u8 binding_idx;
+};
+
 struct Data
 {
 	Type type;
-	u8 dimension;
-
 	ByteBuffer buffer;
 };
 }
+
+using Layout = std::unordered_map<Attribute::Key, Attribute::Layout, Attribute::Key::Hasher>;
 
 using Attributes = std::unordered_map<Attribute::Key, Attribute::Data, Attribute::Key::Hasher>;
 

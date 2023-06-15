@@ -995,8 +995,8 @@ void MeshWindow::update(Context & ctx)
 		for (auto const & [key, data]: primitive.attributes)
 		{
 			TableNextColumn(), TextFMT("{}", key);
-			TableNextColumn(), TextFMT("{}x{}", data.type, data.dimension);
-			TableNextColumn(), TextFMT("{}", data.buffer.size / (data.type.size() * data.dimension));
+			TableNextColumn(), TextFMT("{}x{}", data.type, data.type.dimension);
+			TableNextColumn(), TextFMT("{}", data.buffer.size / (data.type.size() * data.type.dimension));
 		}
 		EndTable();
 	}
