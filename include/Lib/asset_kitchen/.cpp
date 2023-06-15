@@ -198,7 +198,6 @@ bool Assets::reload_glsl_program(Name const & name)
 			{
 				auto & program = programs.get(name);
 				auto & interface = initial_program_interfaces.generate(name).data;
-				interface.attribute_mappings = program.attribute_mappings;
 				interface.uniform_mappings = program.uniform_mappings;
 				interface.uniform_block_mappings = program.uniform_block_mappings;
 				interface.storage_block_mappings = program.storage_block_mappings;

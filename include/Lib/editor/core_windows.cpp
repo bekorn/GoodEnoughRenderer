@@ -422,12 +422,12 @@ void ProgramWindow::update(Context & ctx)
 		Text("Pick a program");
 		return;
 	}
-	auto named_program = assets->programs.get_named(selected_name);
+	auto & program = assets->programs.get(selected_name);
 
-	SameLine(), Text("(id: %d)", named_program.data.id);
+	SameLine(), Text("(id: %d)", program.id);
 
 	if (Button("Reload"))
-		if (not assets->reload_glsl_program(named_program.name))
+		if (not assets->reload_glsl_program(selected_name))
 			ctx.state.should_game_render = false;
 
 	if (auto iter = assets->program_errors.find(selected_name); iter != assets->program_errors.end())
@@ -438,22 +438,30 @@ void ProgramWindow::update(Context & ctx)
 		return;
 	}
 
-	if (BeginTable("attribute_mappings", 4, ImGuiTableFlags_BordersInnerH))
+	if (auto iter = assets->vertex_layouts.find(program.vertex_layout_name); iter != assets->vertex_layouts.end())
 	{
-		TableSetupColumn("Attribute");
-		TableSetupColumn("Per Patch", ImGuiTableColumnFlags_WidthFixed);
-		TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100);
-		TableSetupColumn("Location", ImGuiTableColumnFlags_WidthFixed);
-		TableHeadersRow();
-
-		for (auto const & attribute: named_program.data.attribute_mappings)
+		if (BeginTable("vertex_layout", 4, ImGuiTableFlags_BordersInnerH))
 		{
-			TableNextColumn(), TextFMT("{}", attribute.key);
-			TableNextColumn(), TextFMT("{}", attribute.per_patch ? "true" : "false");
-			TableNextColumn(), TextFMT("{}", GL::glsl_uniform_type_to_string(attribute.glsl_type));
-			TableNextColumn(), TextFMT("{}", attribute.location);
+			TableSetupColumn("Attribute");
+			TableSetupColumn("Per Patch", ImGuiTableColumnFlags_WidthFixed);
+			TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100);
+			TableSetupColumn("Location", ImGuiTableColumnFlags_WidthFixed);
+			TableHeadersRow();
+
+			auto & vertex_layout = iter->second;
+			for (auto const & [key, layout]: vertex_layout)
+			{
+				TableNextColumn(), TextFMT("{}", key);
+				TableNextColumn(), TextFMT("{}", "<TODO>");
+				TableNextColumn(), TextFMT("{}x{}", layout.type.value_to_string(), layout.type.dimension);
+				TableNextColumn(), TextFMT("{}", layout.location);
+			}
+			EndTable();
 		}
-		EndTable();
+	}
+	else
+	{
+		TextFMT("{}", "does not have a vertex layout");
 	}
 
 	if (BeginTable("uniform_mappings", 3, ImGuiTableFlags_BordersInnerH))
@@ -463,7 +471,7 @@ void ProgramWindow::update(Context & ctx)
 		TableSetupColumn("Location", ImGuiTableColumnFlags_WidthFixed);
 		TableHeadersRow();
 
-		for (auto const & uniform: named_program.data.uniform_mappings)
+		for (auto const & uniform: program.uniform_mappings)
 		{
 			TableNextColumn(), TextFMT("{}", uniform.key);
 			TableNextColumn(), TextFMT("{}", GL::glsl_uniform_type_to_string(uniform.glsl_type));
@@ -478,7 +486,7 @@ void ProgramWindow::update(Context & ctx)
 		TableSetupColumn("Variables");
 		TableHeadersRow();
 
-		for (auto const & uniform_block: named_program.data.uniform_block_mappings)
+		for (auto const & uniform_block: program.uniform_block_mappings)
 		{
 			TableNextColumn();
 			if (BeginTable("uniform_block", 3, ImGuiTableFlags_BordersInnerH))
@@ -520,7 +528,7 @@ void ProgramWindow::update(Context & ctx)
 		TableSetupColumn("Variables");
 		TableHeadersRow();
 
-		for (auto const & storage_block: named_program.data.storage_block_mappings)
+		for (auto const & storage_block: program.storage_block_mappings)
 		{
 			TableNextColumn();
 			if (BeginTable("storage_block", 3, ImGuiTableFlags_BordersInnerH))
@@ -999,7 +1007,7 @@ void MeshWindow::update(Context & ctx)
 		{
 			TableNextColumn(), TextFMT("{}", key);
 			TableNextColumn(), TextFMT("{}x{}", data.type, data.type.dimension);
-			TableNextColumn(), TextFMT("{}", data.buffer.size / (data.type.size() * data.type.dimension));
+			TableNextColumn(), TextFMT("{}", data.buffer.size / data.type.vector_size());
 		}
 		EndTable();
 	}

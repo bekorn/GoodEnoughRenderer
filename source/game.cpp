@@ -230,7 +230,6 @@ void Game::init()
 			.vertex_count = vertex_count,
 			.vertex_layout = tubes_layout,
 			.element_count = element_count,
-			.attribute_mappings = assets.programs.get("lines_draw"_name).attribute_mappings,
 			.usage = GL::GL_DYNAMIC_COPY,
 		});
 
@@ -310,7 +309,7 @@ void Game::update(GLFW::Window const & window, Render::FrameInfo const & frame_i
 	assets.scene_tree.update_transforms();
 
 	if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_R))
-		lines_vao.update(lines_geo, assets.programs.get("lines_draw").attribute_mappings);
+		lines_vao.update(lines_geo, assets.vertex_layouts.get(assets.programs.get("lines_draw").vertex_layout_name));
 	if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE))
 		settings.is_lines_active = not settings.is_lines_active;
 }

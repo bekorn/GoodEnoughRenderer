@@ -123,56 +123,6 @@ inline std::string get_log(GL::ShaderProgram const & program)
 
 // https://www.khronos.org/opengl/wiki/Program_Introspection#Interface_query
 
-inline void set_attribute_mapping(GL::ShaderProgram & program)
-{
-	using namespace GL;
-
-	auto const interface = GL_PROGRAM_INPUT;
-
-	array const query_props{
-		GL_LOCATION,
-		GL_TYPE,
-		GL_IS_PER_PATCH,
-	};
-	array<i32, query_props.size()> query_results;
-
-	i32 max_name_size;
-	glGetProgramInterfaceiv(program.id, interface, GL_MAX_NAME_LENGTH, &max_name_size);
-	std::string name_buffer(max_name_size, 0);
-
-	i32 resource_size;
-	glGetProgramInterfaceiv(program.id, interface, GL_ACTIVE_RESOURCES, &resource_size);
-
-	program.attribute_mappings.reserve(resource_size);
-	for (auto i = 0; i < resource_size; ++i)
-	{
-		glGetProgramResourceiv(
-			program.id, interface, i,
-			query_props.size(), query_props.data(),
-			query_props.size(), nullptr, query_results.data()
-		);
-
-		i32 name_size;
-		glGetProgramResourceName(
-			program.id, interface, i,
-			name_buffer.size(), &name_size, name_buffer.data()
-		);
-
-		// skip opengl provided attributes like gl_InstanceID, gl_GlobalInvocationID, etc.
-		if (query_results[0] == -1)
-			continue;
-
-		program.attribute_mappings.emplace_back(
-			GL::AttributeMapping{
-				.location = static_cast<u32>(query_results[0]),
-				.glsl_type = static_cast<GLenum>(query_results[1]),
-				.per_patch = static_cast<bool>(query_results[2]),
-				.key = IntoAttributeKey(std::string_view(name_buffer.data(), name_size)),
-			}
-		);
-	}
-}
-
 inline void set_uniform_mapping(GL::ShaderProgram & program)
 {
 	using namespace GL;
