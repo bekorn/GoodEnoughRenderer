@@ -10,7 +10,7 @@ out VS vs;
 
 void main()
 {
-    vs.color = color;
+    vs.color = color.rgb;
 
     gl_Position = transform * vec4(position, 1);
 }

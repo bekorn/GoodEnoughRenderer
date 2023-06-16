@@ -145,7 +145,7 @@ void Assets::load_glsl_uniform_block(Name const & name)
 void Assets::load_gltf(Name const & name)
 {
 	auto const gltf_data = GLTF::Load(descriptions.gltf.get(name));
-	GLTF::Convert(gltf_data, textures, materials, primitives, meshes, scene_tree);
+	GLTF::Convert(gltf_data, textures, materials, primitives, meshes, scene_tree, vertex_layouts);
 }
 
 void Assets::load_texture(const Name & name)

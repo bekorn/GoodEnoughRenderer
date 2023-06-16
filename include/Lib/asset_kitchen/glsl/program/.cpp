@@ -42,14 +42,14 @@ const char * to_string(GL::GLenum stage)
 	}
 }
 
-const char * to_string(Geometry::Attribute::Key const & key)
+const char * to_string(Geometry::Key const & key)
 {
 	auto const & name = key.name;
 	if (holds_alternative<std::string>(name))
 		return get<std::string>(name).data();
 
-	using enum Geometry::Attribute::Key::Common;
-	switch (get<Geometry::Attribute::Key::Common>(name))
+	using enum Geometry::Key::Common;
+	switch (get<Geometry::Key::Common>(name))
 	{
 		case POSITION: return "position";
 		case NORMAL: return "normal";
@@ -66,8 +66,12 @@ std::string generate_vertex_layout(Geometry::Layout const & layout)
 {
 	std::string buffer;
 	fmt::format_to(back_inserter(buffer), "{}", "#ifdef ONLY_VERT\n");
-	for (auto & [k, l] : layout)
-		fmt::format_to(back_inserter(buffer), "layout(location = {}) in vec{} {};\n", l.location, l.type.dimension, to_string(k));
+	for (auto & attr : layout)
+		if (attr.is_used())
+			fmt::format_to(
+				back_inserter(buffer), "layout(location = {}) in vec{} {};\n",
+				attr.location, attr.type.dimension, to_string(attr.key)
+			);
 	fmt::format_to(back_inserter(buffer), "{}", "#endif\n\0");
 	return buffer;
 }

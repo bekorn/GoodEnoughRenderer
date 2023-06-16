@@ -20,7 +20,8 @@ void Convert(
 	Managed<unique_one<Render::IMaterial>> & materials,
 	Managed<Geometry::Primitive> & primitives,
 	Managed<Render::Mesh> & meshes,
-	::Scene::Tree & scene_tree
+	::Scene::Tree & scene_tree,
+	Managed<Geometry::Layout> const & vertex_layouts
 );
 
 std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir);

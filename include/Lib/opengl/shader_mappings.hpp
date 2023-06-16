@@ -13,7 +13,7 @@ struct AttributeMapping
 	u32 location;
 	GLenum glsl_type; // just for debug purposes
 	bool per_patch;
-	Geometry::Attribute::Key key;
+	Geometry::Key key;
 };
 
 inline bool operator==(AttributeMapping const & l, AttributeMapping const & r)

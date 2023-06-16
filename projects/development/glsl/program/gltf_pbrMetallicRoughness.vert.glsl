@@ -7,7 +7,6 @@ out Vertex
     vec3 object_position;
     vec3 world_position;
     vec3 normal;
-    vec3 color;
     vec2 texcoord;
 } vertex;
 
@@ -18,7 +17,6 @@ void main()
     vertex.camera_position = vec3(TransformV * vec4(position, 1));
 
     vertex.normal = vec3(TransformM * vec4(normal, 0));
-    vertex.color = color;
     vertex.texcoord = texcoord;
 
     gl_Position = TransformMVP * vec4(position, 1);

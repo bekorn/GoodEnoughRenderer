@@ -4,7 +4,6 @@ in Vertex
     vec3 object_position;
     vec3 world_position;
     vec3 normal;
-    vec3 color;
     vec2 texcoord;
 } vertex;
 

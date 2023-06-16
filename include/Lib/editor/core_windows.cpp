@@ -30,12 +30,9 @@ void GameWindow::init(Context const & ctx)
 	border.init(ctx, *this);
 
 	// Load gizmo meshes
-	auto & vertex_layout = ctx.editor_assets.vertex_layouts.get(
-		ctx.editor_assets.programs.get("gizmo"_name).vertex_layout_name
-	);
 	for (auto & [_, mesh]: ctx.editor_assets.meshes)
 		for (auto & drawable: mesh.drawables)
-			drawable.load(vertex_layout);
+			drawable.load();
 }
 
 void GameWindow::update(Context & ctx)
@@ -449,12 +446,13 @@ void ProgramWindow::update(Context & ctx)
 			TableHeadersRow();
 
 			auto & vertex_layout = iter->second;
-			for (auto const & [key, layout]: vertex_layout)
+			for (auto const & attrib: vertex_layout)
 			{
-				TableNextColumn(), TextFMT("{}", key);
-				TableNextColumn(), TextFMT("{}", "<TODO>");
-				TableNextColumn(), TextFMT("{}x{}", layout.type.value_to_string(), layout.type.dimension);
-				TableNextColumn(), TextFMT("{}", layout.location);
+				if (not attrib.is_used()) continue;
+				TableNextColumn(), TextFMT("{}", attrib.key);
+				TableNextColumn(), TextFMT("{}", attrib.is_per_patch);
+				TableNextColumn(), TextFMT("{}x{}", attrib.type.value_to_string(), attrib.type.dimension);
+				TableNextColumn(), TextFMT("{}", attrib.location);
 			}
 			EndTable();
 		}
@@ -977,12 +975,8 @@ void MeshWindow::update(Context & ctx)
 		else
 		{
 			if (Button("Load all drawables"))
-			{
-				auto & program = ctx.game.assets.programs.get(GLTF::pbrMetallicRoughness_program_name);
-				auto & vertex_layout = ctx.game.assets.vertex_layouts.get(program.vertex_layout_name);
 				for (auto & drawable: mesh.drawables)
-					drawable.load(vertex_layout);
-			}
+					drawable.load();
 		}
 	}
 
@@ -1003,11 +997,16 @@ void MeshWindow::update(Context & ctx)
 		TableSetupColumn("Key"), TableSetupColumn("Data"), TableSetupColumn("Size");
 		TableHeadersRow();
 
-		for (auto const & [key, data]: primitive.attributes)
+		for (auto i = 0 ; i < Geometry::ATTRIBUTE_COUNT; ++i)
 		{
-			TableNextColumn(), TextFMT("{}", key);
-			TableNextColumn(), TextFMT("{}x{}", data.type, data.type.dimension);
-			TableNextColumn(), TextFMT("{}", data.buffer.size / data.type.vector_size());
+			auto const & attrib = primitive.layout->attributes[i];
+			auto const & buffer = primitive.data.buffers[i];
+
+			if (not attrib.is_used()) continue;
+
+			TableNextColumn(), TextFMT("{}", attrib.key);
+			TableNextColumn(), TextFMT("{}x{}", attrib.type, attrib.type.dimension);
+			TableNextColumn(), TextFMT("{}", buffer.size / attrib.type.vector_size());
 		}
 		EndTable();
 	}

@@ -6,8 +6,6 @@
 
 namespace Geometry
 {
-namespace Attribute
-{
 struct Key
 {
 	enum Common : u8
@@ -67,14 +65,9 @@ struct Type
 	};
 
 	Value value;
-	u8 dimension;
+	u8 dimension = 0;
 
-	Type(Value value, u8 dimension) :
-		value(value), dimension(dimension)
-	{}
-
-	operator Value() const
-	{ return value; }
+	bool operator==(Type const & other) const = default;
 
 	u8 size() const
 	{
@@ -144,53 +137,82 @@ struct Type
 	}
 };
 
+constexpr auto const ATTRIBUTE_COUNT = 16;
+
+struct Attribute
+{
+	Key key;
+	Type type;
+
+	u8 location;
+	bool is_per_patch;
+
+	u8 group;
+
+	bool is_used() const
+	{ return type.dimension != 0; }
+};
+
 struct Layout
 {
-	Type type;
-	u8 group_idx;
-	u8 location;
+	array<Attribute, ATTRIBUTE_COUNT> attributes;
+
+	decltype(auto) operator[](usize idx) { return attributes[idx]; }
+	decltype(auto) begin() const { return attributes.begin(); }
+	decltype(auto) end() const { return attributes.end(); }
+};
+
+struct LayoutMask
+{
+	array<bool, ATTRIBUTE_COUNT> is_active;
 };
 
 struct Data
 {
-	Type type;
-	ByteBuffer buffer;
+	array<ByteBuffer, ATTRIBUTE_COUNT> buffers;
+
+	decltype(auto) operator[](usize idx) { return buffers[idx]; }
+	decltype(auto) begin() const { return buffers.begin(); }
+	decltype(auto) end() const { return buffers.end(); }
 };
-}
-
-using Layout = std::unordered_map<Attribute::Key, Attribute::Layout, Attribute::Key::Hasher>;
-
-using Attributes = std::unordered_map<Attribute::Key, Attribute::Data, Attribute::Key::Hasher>;
 
 struct Primitive
 {
-	Attributes attributes;
+	const Geometry::Layout * layout;
+	Geometry::Data data;
 	vector<u32> indices;
 
 	CTOR(Primitive, default);
 	COPY(Primitive, delete);
 	MOVE(Primitive, default);
+
+	ByteBuffer & get_buffer(Geometry::Key const & key)
+	{
+		auto idx = std::ranges::find(layout->attributes, key, &Attribute::key) - layout->attributes.begin();
+		assert(idx < ATTRIBUTE_COUNT);
+		return data.buffers[idx];
+	}
 };
 }
 
 template<>
-struct fmt::formatter<Geometry::Attribute::Key>
+struct fmt::formatter<Geometry::Key>
 {
 	constexpr auto parse(format_parse_context & ctx) -> decltype(ctx.begin())
 	{ return ctx.end(); }
 
 	template<typename FormatContext>
-	auto format(Geometry::Attribute::Key key, FormatContext & ctx) const
+	auto format(Geometry::Key key, FormatContext & ctx) const
 	{ return fmt::format_to(ctx.out(), "{}:{}", key.name_to_string(), key.layer); }
 };
 
 template<>
-struct fmt::formatter<Geometry::Attribute::Type>
+struct fmt::formatter<Geometry::Type>
 {
 	constexpr auto parse(format_parse_context & ctx) -> decltype(ctx.begin())
 	{ return ctx.end(); }
 
 	template<typename FormatContext>
-	auto format(Geometry::Attribute::Type type, FormatContext & ctx) const
+	auto format(Geometry::Type type, FormatContext & ctx) const
 	{ return fmt::format_to(ctx.out(), "{}", type.value_to_string()); }
 };

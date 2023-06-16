@@ -188,6 +188,9 @@ LoadedData Load(Desc const & desc)
 		);
 	}
 
+	// Pass layout name
+	loaded.layout_name = desc.layout_name;
+
 	// Parse materials
 	NameGenerator material_name_generator{.prefix = desc.name + ":material:"};
 	for (auto const & item: document["materials"].GetArray())
@@ -317,9 +320,9 @@ LoadedData Load(Desc const & desc)
 namespace Helpers
 {
 	// Pattern: String into Geometry::Attribute::Key
-	Geometry::Attribute::Key IntoAttributeKey(std::string_view name)
+	Geometry::Key IntoAttributeKey(std::string_view name)
 	{
-		using namespace Geometry::Attribute;
+		using namespace Geometry;
 
 		static auto const IntoCommon = [](std::string_view attribute_name) -> optional<Key::Common>
 		{
@@ -362,10 +365,10 @@ namespace Helpers
 		return key;
 	}
 
-	Geometry::Attribute::Type IntoAttributeType(u32 type, u8 dimension, bool is_normalized)
+	Geometry::Type IntoAttributeType(u32 type, u8 dimension, bool is_normalized)
 	{
 		// see spec section 3.6.2.2. Accessor Data Types
-		using enum Geometry::Attribute::Type::Value;
+		using enum Geometry::Type::Value;
 
 		if (is_normalized)
 			switch (type)
@@ -398,7 +401,8 @@ void Convert(
 	Managed<unique_one<Render::IMaterial>> & materials,
 	Managed<Geometry::Primitive> & primitives,
 	Managed<Render::Mesh> & meshes,
-	::Scene::Tree & scene_tree
+	::Scene::Tree & scene_tree,
+	Managed<Geometry::Layout> const & vertex_layouts
 )
 {
 	using namespace Helpers;
@@ -473,23 +477,42 @@ void Convert(
 	}
 
 	// Convert primitives
+	// TODO(bekorn): the layout is same for the whole gltf file, it should be more granular, per material perhaps
+	auto & layout = vertex_layouts.get(loaded.layout_name);
+	vector<Geometry::Key> loaded_attrib_keys;
+	loaded_attrib_keys.reserve(Geometry::ATTRIBUTE_COUNT);
 	for (auto & loaded_mesh: loaded.meshes)
 		for (auto & loaded_primitive: loaded_mesh.primitives)
 		{
 			auto & primitive = primitives.generate(Name(loaded_primitive.name)).data;
 
-			primitive.attributes.reserve(loaded_primitive.attributes.size());
-			for (auto & attribute: loaded_primitive.attributes)
+			primitive.layout = &layout;
+
+			assert(loaded_primitive.attributes.size() < Geometry::ATTRIBUTE_COUNT, "Primitive has too many attributes");
+			loaded_attrib_keys.clear();
+			for (auto & attrib: loaded_primitive.attributes)
+				loaded_attrib_keys.emplace_back(IntoAttributeKey(attrib.name));
+
+			for (auto i = 0; i < Geometry::ATTRIBUTE_COUNT; ++i)
 			{
-				auto & accessor = loaded.accessors[attribute.accessor_index];
+				auto & layout_attrib = primitive.layout->attributes[i];
+				if (not layout_attrib.is_used()) continue;
+
+				auto attrib_key_iter = std::ranges::find(loaded_attrib_keys, layout_attrib.key);
+				assert(attrib_key_iter != loaded_attrib_keys.end(), "Primitive is missing a layout attribute");
+
+				auto attrib_idx = attrib_key_iter - loaded_attrib_keys.begin();
+				auto & attrib = loaded_primitive.attributes[attrib_idx];
+				auto & accessor = loaded.accessors[attrib.accessor_index];
 				auto & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
-				auto data = Geometry::Attribute::Data{
-					.type = IntoAttributeType(accessor.vector_data_type, accessor.vector_dimension, accessor.normalized),
-				};
+				auto type = IntoAttributeType(accessor.vector_data_type, accessor.vector_dimension, accessor.normalized);
+				assert(type == layout_attrib.type, "Primitive attribute is in a different type");
 
-				u32 data_buffer_stride = data.type.size() * data.type.dimension;
-				data.buffer = ByteBuffer(data_buffer_stride * accessor.count);
+				auto attrib_location = layout_attrib.location; // also i
+				auto & buffer = primitive.data.buffers[attrib_location];
+				u32 buffer_stride = layout_attrib.type.vector_size();
+				buffer = ByteBuffer(buffer_stride * accessor.count);
 
 				if (buffer_view.stride.has_value())
 				{
@@ -499,25 +522,23 @@ void Convert(
 						.span_as<byte>(buffer_view.offset + accessor.byte_offset, source_stride * accessor.count);
 
 					auto source_ptr = source.data();
-					auto data_ptr = data.buffer.begin();
-					auto data_end = data.buffer.end();
-					while (data_ptr != data_end)
+					auto buffer_ptr = buffer.begin();
+					auto buffer_end = buffer.end();
+					while (buffer_ptr != buffer_end)
 					{
-						std::memcpy(data_ptr, source_ptr, data_buffer_stride);
+						std::memcpy(buffer_ptr, source_ptr, buffer_stride);
 						source_ptr += source_stride;
-						data_ptr += data_buffer_stride;
+						buffer_ptr += buffer_stride;
 					}
 				}
 				else
 				{
 					// contiguous access (tightly packed data)
 					auto source = loaded.buffers[buffer_view.buffer_index]
-						.span_as<byte>(buffer_view.offset + accessor.byte_offset, data.buffer.size);
+						.span_as<byte>(buffer_view.offset + accessor.byte_offset, buffer.size);
 
-					std::memcpy(data.buffer.begin(), source.data(), data.buffer.size);
+					std::memcpy(buffer.begin(), source.data(), buffer.size);
 				}
-
-				primitive.attributes.emplace(IntoAttributeKey(attribute.name), move(data));
 			}
 
 			if (loaded_primitive.indices_accessor_index.has_value())
@@ -529,7 +550,7 @@ void Convert(
 
 				// buffers other than vertex attributes are always tightly packed
 				// see spec section 3.6.2.1. Overview, paragraph 2
-				if (index_type == Geometry::Attribute::Type::U8)
+				if (index_type.value == Geometry::Type::U8)
 				{
 					auto source = loaded.buffers[buffer_view.buffer_index]
 						.span_as<u8>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
@@ -538,7 +559,7 @@ void Convert(
 					for (auto index: source)
 						primitive.indices.emplace_back(index);
 				}
-				else if (index_type == Geometry::Attribute::Type::U16)
+				else if (index_type.value == Geometry::Type::U16)
 				{
 					auto source = loaded.buffers[buffer_view.buffer_index]
 						.span_as<u16>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
@@ -547,7 +568,7 @@ void Convert(
 					for (auto index: source)
 						primitive.indices.emplace_back(index);
 				}
-				else if (index_type == Geometry::Attribute::Type::U32)
+				else if (index_type.value == Geometry::Type::U32)
 				{
 					auto source = loaded.buffers[buffer_view.buffer_index]
 						.span_as<u32>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
@@ -641,7 +662,11 @@ std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const &
 	auto name = o.FindMember("name")->value.GetString();
 	return {
 		name,
-		{.name = name, .path = root_dir / o.FindMember("path")->value.GetString()}
+		{
+			.name = name,
+			.path = root_dir / o.FindMember("path")->value.GetString(),
+			.layout_name = o.FindMember("layout")->value.GetString(),
+		},
 	};
 }
 }

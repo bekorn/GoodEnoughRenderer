@@ -19,11 +19,10 @@ struct Drawable
 		return vertex_array.id != 0;
 	}
 
-	void load(Geometry::Layout const & vertex_layout)
+	void load()
 	{
 		vertex_array.init(GL::VertexArray::Desc{
-			.geometry = primitive,
-			.vertex_layout = vertex_layout,
+			.primitive = primitive
 		});
 	}
 

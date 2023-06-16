@@ -1,6 +1,6 @@
 {
   "gltf": [
-    {"name": "AxisGizmo", "path": "model/axis gizmo/axis gizmo.gltf"},
+    {"name": "AxisGizmo", "path": "model/axis gizmo/axis gizmo.gltf", "layout": "gizmo",},
   ],
   "texture": [
     {"name": "border_map", "path": "textures/border_contrast.png"},
@@ -11,7 +11,6 @@
       "groups": [
         {
           "normal": "f32x3",
-          "color": "u8normx3",
           "texcoord": "f32x2",
         },
         {
@@ -24,7 +23,7 @@
       "groups": [
         {
           "position": "f32x3",
-          "color": "u8normx3",
+          "color": "u16normx4", // TODO(bekorn): axis gizmo has this type of colors, change it to u8normx3
         }
       ]
     }

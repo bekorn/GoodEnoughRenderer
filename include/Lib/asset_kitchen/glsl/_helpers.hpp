@@ -23,9 +23,9 @@ inline std::string_view IntoString(GL::GLenum shader_stage)
 }
 
 // Pattern: String into Geometry::Attribute::Key
-inline Geometry::Attribute::Key IntoAttributeKey(std::string_view name)
+inline Geometry::Key IntoAttributeKey(std::string_view name)
 {
-	using namespace Geometry::Attribute;
+	using namespace Geometry;
 
 	static auto const IntoCommon = [](std::string_view attribute_name) -> optional<Key::Common>
 	{

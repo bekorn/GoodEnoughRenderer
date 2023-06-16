@@ -143,12 +143,9 @@ void Game::init()
 	};
 
 	// load all the meshes to the gpu
-	auto & gltf_vertex_layout = assets.vertex_layouts.get(
-		assets.programs.get(GLTF::pbrMetallicRoughness_program_name).vertex_layout_name
-	);
 	for (auto & [_, mesh]: assets.meshes)
 		for (auto & drawable: mesh.drawables)
-			drawable.load(gltf_vertex_layout);
+			drawable.load();
 
 	// fallback to default envmap
 	if (not assets.texture_cubemaps.contains(settings.envmap_diffuse, settings.envmap_specular))
@@ -169,9 +166,12 @@ void Game::init()
 
 	// init lines_vao
 	{
+		lines_geo.layout = &assets.vertex_layouts.get(assets.programs.get("lines_draw").vertex_layout_name);
+
 		auto const vertex_count = line_count * line_length;
 
-		ByteBuffer positions(vertex_count * sizeof(f32x3));
+		auto & positions = lines_geo.get_buffer({Geometry::Key::POSITION, 0});
+		positions = ByteBuffer(vertex_count * sizeof(f32x3));
 		for (i32 i = 0; auto & p : positions.span_as<f32x3>())
 		{
 			i32 line_idx = i / line_length;
@@ -182,10 +182,6 @@ void Game::init()
 
 			i++;
 		}
-		lines_geo.attributes.try_emplace(
-			Geometry::Attribute::Key{Geometry::Attribute::Key::POSITION, 0},
-			Geometry::Attribute::Data{{Geometry::Attribute::Type::F32, 3}, move(positions)}
-		);
 
 		auto const element_count = line_count * (line_length - 1) * 2;
 		lines_geo.indices.resize(element_count);
@@ -205,8 +201,7 @@ void Game::init()
 		}
 
 		lines_vao.init(GL::VertexArray::Desc{
-			.geometry = lines_geo,
-			.vertex_layout = assets.vertex_layouts.get(assets.programs.get("lines_draw"_name).vertex_layout_name),
+			.primitive = lines_geo,
 			.usage = GL::GL_DYNAMIC_COPY,
 		});
 	}
@@ -222,13 +217,9 @@ void Game::init()
 		auto const element_count_of_one = (2 * ring_res + (ring_count-1/*in between*/) * ring_res * 2)/*triangles*/ * 3;
 		auto const element_count = line_count * element_count_of_one;
 
-		Geometry::Layout tubes_layout;
-		for (auto & [key, data] : lines_geo.attributes)
-			tubes_layout.try_emplace(key, data.type);
-
 		tubes_vao.init(GL::VertexArray::EmptyDesc{
 			.vertex_count = vertex_count,
-			.vertex_layout = tubes_layout,
+			.layout = *lines_geo.layout,
 			.element_count = element_count,
 			.usage = GL::GL_DYNAMIC_COPY,
 		});
@@ -309,7 +300,7 @@ void Game::update(GLFW::Window const & window, Render::FrameInfo const & frame_i
 	assets.scene_tree.update_transforms();
 
 	if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_R))
-		lines_vao.update(lines_geo, assets.vertex_layouts.get(assets.programs.get("lines_draw").vertex_layout_name));
+		lines_vao.update(lines_geo);
 	if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_SPACE))
 		settings.is_lines_active = not settings.is_lines_active;
 }

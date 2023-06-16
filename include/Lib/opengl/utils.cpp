@@ -228,9 +228,9 @@ u32 gl_component_type_size(GLenum type)
 	}
 }
 
-GLenum to_glenum(Geometry::Attribute::Type::Value type)
+GLenum to_glenum(Geometry::Type::Value type)
 {
-	using enum Geometry::Attribute::Type::Value;
+	using enum Geometry::Type::Value;
 	switch (type)
 	{
 	case F32: return GL_FLOAT;

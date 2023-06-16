@@ -27,7 +27,6 @@
       "groups": [
         {
           "normal": "f32x3",
-          "color": "u8normx3",
           "texcoord": "f32x2",
         },
         {
