@@ -3,11 +3,11 @@
 #include <core/core.hpp>
 #include <opengl/framebuffer.hpp>
 #include <opengl/texture_2d.hpp>
-#include "Lib/render/frame_info.hpp"
-#include "Lib/render/game_base.hpp"
+#include <render/frame_info.hpp>
+#include <render/game_base.hpp>
+#include <render/glfw.hpp>
+#include <render/imgui.hpp>
 #include <asset_kitchen/assets.hpp>
-#include "Lib/render/glfw.hpp"
-#include "Lib/render/imgui.hpp"
 
 namespace Editor
 {

@@ -7,9 +7,9 @@
 #include <opengl/texture_2d.hpp>
 #include <opengl/texture_cubemap.hpp>
 #include <opengl/texture_3d.hpp>
-#include "Lib/render/mesh.hpp"
-#include "Lib/render/material.hpp"
-#include "Lib/render/scene.hpp"
+#include <render/mesh.hpp>
+#include <render/material.hpp>
+#include <render/scene.hpp>
 
 struct Assets
 {

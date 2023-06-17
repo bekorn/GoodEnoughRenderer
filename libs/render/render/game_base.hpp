@@ -2,8 +2,8 @@
 
 #include "camera.hpp"
 
+#include <render/glfw.hpp>
 #include <asset_kitchen/assets.hpp>
-#include "Lib/render/glfw.hpp"
 
 namespace Render
 {

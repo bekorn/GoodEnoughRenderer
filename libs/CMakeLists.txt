@@ -54,6 +54,20 @@ target_link_libraries(OpenGL PUBLIC
     glbinding::glbinding-aux)
 
 
+# Render
+list(APPEND LIBS Render)
+add_library(Render INTERFACE)
+target_include_directories(Render INTERFACE render/)
+target_precompile_headers(Render INTERFACE render/render/.pchpp)
+target_link_libraries(Render INTERFACE
+    Core
+    OpenGL)
+
+target_link_libraries(Render INTERFACE
+    glfw
+    imgui::imgui)
+
+
 # AssetKitchen
 list(APPEND LIBS AssetKitchen)
 add_library(AssetKitchen STATIC)
@@ -68,11 +82,11 @@ target_sources(AssetKitchen PRIVATE
     asset_kitchen/asset_kitchen/envmap/.cpp
     asset_kitchen/asset_kitchen/.cpp
     )
-target_include_directories(AssetKitchen PRIVATE ../include/) # !!! this is here for the render, scene
 target_link_libraries(AssetKitchen PUBLIC
     Core
     FileIO
-    OpenGL)
+    OpenGL
+    Render)
 target_include_directories(AssetKitchen PUBLIC
     ${STB_INCLUDE_DIRS})
 

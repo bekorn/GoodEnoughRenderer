@@ -4,7 +4,7 @@
 
 #include <core/core.hpp>
 #include <core/utils.hpp>
-#include "Lib/render/mesh.hpp"
+#include <render/mesh.hpp>
 
 namespace Scene
 {

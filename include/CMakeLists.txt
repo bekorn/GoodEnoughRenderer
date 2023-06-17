@@ -23,13 +23,10 @@ target_include_directories(editor PUBLIC
 target_link_libraries(editor PRIVATE
     Core
     OpenGL
+    Render
     AssetKitchen)
 target_precompile_headers(editor PUBLIC
-    Lib/render/.pchpp
     Lib/editor/.pchpp)
-target_link_libraries(editor PUBLIC
-    glfw
-    imgui::imgui)
 
 # export libs to parent scope
 set(LIBS ${LIBS} PARENT_SCOPE)

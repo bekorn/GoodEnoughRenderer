@@ -2,10 +2,10 @@
 #include <opengl/core.hpp>
 #include <opengl/globals.hpp>
 #include <opengl/use_dedicated_device_by_default.hpp>
-#include "Lib/render/glfw.hpp"
-#include "Lib/render/imgui.hpp"
+#include <render/glfw.hpp>
+#include <render/imgui.hpp>
+#include <render/frame_info.hpp>
 #include <asset_kitchen/assets.hpp>
-#include "Lib/render/frame_info.hpp"
 #include "Lib/editor/core.hpp"
 #include "Lib/editor/core_windows.hpp"
 #include "Lib/editor/envmap_baker.hpp"
