@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core.hpp"
-#include "Lib/geometry/core.hpp"
+#include <geometry/core.hpp>
 
 namespace GL
 {

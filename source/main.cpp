@@ -1,7 +1,7 @@
 #include <core/core.hpp>
-#include "Lib/opengl/core.hpp"
-#include "Lib/opengl/globals.hpp"
-#include "Lib/opengl/use_dedicated_device_by_default.hpp"
+#include <opengl/core.hpp>
+#include <opengl/globals.hpp>
+#include <opengl/use_dedicated_device_by_default.hpp>
 #include "Lib/glfw/core.hpp"
 #include "Lib/imgui/core.hpp"
 #include "Lib/asset_kitchen/assets.hpp"

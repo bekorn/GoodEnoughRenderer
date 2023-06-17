@@ -7,7 +7,7 @@
 #include <core/named.hpp>
 #include <file_io/core.hpp>
 #include <file_io/json_utils.hpp>
-#include "Lib/opengl/texture_2d.hpp"
+#include <opengl/texture_2d.hpp>
 #include "Lib/render/material.hpp"
 #include "Lib/render/mesh.hpp"
 #include "Lib/scene/core.hpp"

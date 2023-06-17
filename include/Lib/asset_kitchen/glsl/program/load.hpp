@@ -3,7 +3,7 @@
 
 #include <core/core.hpp>
 #include <core/named.hpp>
-#include "Lib/opengl/core.hpp"
+#include <opengl/core.hpp>
 
 namespace GLSL::Program
 {

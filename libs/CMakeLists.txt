@@ -39,6 +39,22 @@ target_include_directories(FileIO PRIVATE
     ${STB_INCLUDE_DIRS})
 
 
+# OpenGL
+list(APPEND LIBS OpenGL)
+add_library(OpenGL STATIC)
+target_include_directories(OpenGL PUBLIC opengl/)
+target_precompile_headers(OpenGL PUBLIC opengl/opengl/.pchpp)
+target_sources(OpenGL PRIVATE
+    opengl/opengl/utils.cpp)
+target_include_directories(OpenGL PUBLIC ../include/Lib) # !!! this is here just for the geometry.hpp
+target_link_libraries(OpenGL PUBLIC
+    Core)
+
+target_link_libraries(OpenGL PUBLIC
+    glbinding::glbinding
+    glbinding::glbinding-aux)
+
+
 
 # export libs to parent scope
 set(LIBS ${LIBS} PARENT_SCOPE)

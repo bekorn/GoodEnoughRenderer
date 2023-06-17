@@ -1,8 +1,8 @@
 #pragma once
 
 #include <core/core.hpp>
-#include "Lib/opengl/framebuffer.hpp"
-#include "Lib/opengl/texture_2d.hpp"
+#include <opengl/framebuffer.hpp>
+#include <opengl/texture_2d.hpp>
 #include "Lib/render/frame_info.hpp"
 #include "Lib/render/game_base.hpp"
 #include "Lib/asset_kitchen/assets.hpp"

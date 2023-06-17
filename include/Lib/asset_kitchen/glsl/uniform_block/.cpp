@@ -4,7 +4,7 @@
 #include "convert.hpp"
 #include "../_helpers.hpp"
 
-#include "Lib/opengl/glsl.hpp"
+#include <opengl/glsl.hpp>
 
 namespace GLSL::UniformBlock
 {

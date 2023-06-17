@@ -4,9 +4,9 @@
 
 #include <core/core.hpp>
 #include <core/named.hpp>
-#include "Lib/opengl/texture_2d.hpp"
-#include "Lib/opengl/texture_cubemap.hpp"
-#include "Lib/opengl/texture_3d.hpp"
+#include <opengl/texture_2d.hpp>
+#include <opengl/texture_cubemap.hpp>
+#include <opengl/texture_3d.hpp>
 #include "Lib/render/mesh.hpp"
 #include "Lib/render/material.hpp"
 #include "Lib/scene/core.hpp"

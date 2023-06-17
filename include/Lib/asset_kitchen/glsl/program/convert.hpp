@@ -5,8 +5,8 @@
 #include <core/expected.hpp>
 #include <file_io/core.hpp>
 #include <file_io/json_utils.hpp>
-#include "Lib/opengl/glsl.hpp"
-#include "Lib/opengl/shader.hpp"
+#include <opengl/glsl.hpp>
+#include <opengl/shader.hpp>
 
 #include "load.hpp"
 

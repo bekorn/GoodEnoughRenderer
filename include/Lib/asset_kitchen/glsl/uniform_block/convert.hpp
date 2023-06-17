@@ -6,7 +6,7 @@
 #include <core/expected.hpp>
 #include <file_io/core.hpp>
 #include <file_io/json_utils.hpp>
-#include "Lib/opengl/uniform_block.hpp"
+#include <opengl/uniform_block.hpp>
 
 namespace GLSL::UniformBlock
 {

@@ -2,7 +2,7 @@
 
 // TODO(bekorn): this supposed to be inside glsl/program/.cpp but glsl/uniform_buffer/.cpp also needs it
 
-#include "Lib/opengl/shader.hpp"
+#include <opengl/shader.hpp>
 
 namespace GLSL::Program::Helpers
 {

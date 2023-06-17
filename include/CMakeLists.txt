@@ -10,20 +10,6 @@ find_path(STB_INCLUDE_DIRS "stb.h")
 find_package(fmt CONFIG REQUIRED)
 
 
-# opengl
-list(APPEND LIBS opengl)
-add_library(opengl STATIC)
-target_precompile_headers(opengl PUBLIC Lib/opengl/.pchpp)
-target_sources(opengl PRIVATE
-    Lib/opengl/utils.cpp)
-target_include_directories(opengl PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(opengl PRIVATE
-    Core)
-target_link_libraries(opengl PUBLIC
-    glbinding::glbinding
-    glbinding::glbinding-aux)
-
 # asset_kitchen
 list(APPEND LIBS asset_kitchen)
 add_library(asset_kitchen STATIC)
@@ -42,7 +28,7 @@ target_include_directories(asset_kitchen PUBLIC
 target_link_libraries(asset_kitchen PUBLIC
     Core
     FileIO
-    opengl)
+    OpenGL)
 target_include_directories(asset_kitchen PUBLIC
     ${STB_INCLUDE_DIRS})
 
@@ -58,7 +44,7 @@ target_include_directories(editor PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(editor PRIVATE
     Core
-    opengl
+    OpenGL
     asset_kitchen)
 target_precompile_headers(editor PUBLIC
     Lib/editor/.pchpp

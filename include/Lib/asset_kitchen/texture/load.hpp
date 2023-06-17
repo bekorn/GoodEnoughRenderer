@@ -1,8 +1,8 @@
 #pragma once
 
 #include <core/core.hpp>
-#include "Lib/opengl/core.hpp"
-#include "Lib/opengl/pixel_format.hpp"
+#include <opengl/core.hpp>
+#include <opengl/pixel_format.hpp>
 
 namespace Texture
 {

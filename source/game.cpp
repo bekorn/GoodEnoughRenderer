@@ -2,7 +2,7 @@
 
 #include <core/core.hpp>
 #include <core/named.hpp>
-#include "Lib/opengl/globals.hpp"
+#include <opengl/globals.hpp>
 
 // !!! Temporary
 i32 const line_count_axis = 8;

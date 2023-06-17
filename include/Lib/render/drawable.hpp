@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Lib/opengl/vao.hpp"
+#include <opengl/vao.hpp>
 #include "Lib/geometry/core.hpp"
 
 #include "material.hpp"

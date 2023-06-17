@@ -3,7 +3,7 @@
 #include "utils.hpp"
 
 #include <file_io/core.hpp>
-#include "Lib/opengl/globals.hpp"
+#include <opengl/globals.hpp>
 
 namespace Editor
 {

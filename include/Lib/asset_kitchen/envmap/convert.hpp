@@ -3,7 +3,7 @@
 #include <core/named.hpp>
 #include <file_io/core.hpp>
 #include <file_io/json_utils.hpp>
-#include "Lib/opengl/texture_cubemap.hpp"
+#include <opengl/texture_cubemap.hpp>
 
 namespace Envmap
 {

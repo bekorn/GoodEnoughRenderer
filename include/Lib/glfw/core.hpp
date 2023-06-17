@@ -2,8 +2,8 @@
 
 #include <core/expected.hpp>
 #include <core/meta.hpp>
-#include "Lib/opengl/core.hpp"
-#include "Lib/opengl/utils.hpp"
+#include <opengl/core.hpp>
+#include <opengl/utils.hpp>
 
 namespace GLFW
 {

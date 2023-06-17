@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/core.hpp>
-#include "Lib/opengl/core.hpp"
+#include <opengl/core.hpp>
 
 namespace Envmap
 {
