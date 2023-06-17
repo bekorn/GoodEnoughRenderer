@@ -10,7 +10,7 @@
 #include <opengl/texture_2d.hpp>
 #include "Lib/render/material.hpp"
 #include "Lib/render/mesh.hpp"
-#include "Lib/scene/core.hpp"
+#include "Lib/render/scene.hpp"
 
 namespace GLTF
 {

@@ -46,7 +46,6 @@ target_include_directories(OpenGL PUBLIC opengl/)
 target_precompile_headers(OpenGL PUBLIC opengl/opengl/.pchpp)
 target_sources(OpenGL PRIVATE
     opengl/opengl/utils.cpp)
-target_include_directories(OpenGL PRIVATE ../include/) # !!! this is here just for the geometry
 target_link_libraries(OpenGL PUBLIC
     Core)
 
@@ -69,7 +68,7 @@ target_sources(AssetKitchen PRIVATE
     asset_kitchen/asset_kitchen/envmap/.cpp
     asset_kitchen/asset_kitchen/.cpp
     )
-target_include_directories(AssetKitchen PRIVATE ../include/) # !!! this is here for the geometry, render, scene
+target_include_directories(AssetKitchen PRIVATE ../include/) # !!! this is here for the render, scene
 target_link_libraries(AssetKitchen PUBLIC
     Core
     FileIO

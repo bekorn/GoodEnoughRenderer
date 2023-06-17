@@ -9,7 +9,7 @@
 #include <opengl/texture_3d.hpp>
 #include "Lib/render/mesh.hpp"
 #include "Lib/render/material.hpp"
-#include "Lib/scene/core.hpp"
+#include "Lib/render/scene.hpp"
 
 struct Assets
 {

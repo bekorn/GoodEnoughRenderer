@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/core.hpp>
-#include <Lib/geometry/core.hpp>
+#include <core/geometry.hpp>
 
 #include "core.hpp"
 #include "buffer.hpp"

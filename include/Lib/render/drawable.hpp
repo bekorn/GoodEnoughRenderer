@@ -1,7 +1,7 @@
 #pragma once
 
+#include <core/geometry.hpp>
 #include <opengl/vao.hpp>
-#include "Lib/geometry/core.hpp"
 
 #include "material.hpp"
 
