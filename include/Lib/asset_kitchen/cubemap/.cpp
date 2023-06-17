@@ -1,7 +1,7 @@
 #include "load.hpp"
 #include "convert.hpp"
 
-#include "Lib/file_management/core.hpp"
+#include <file_io/core.hpp>
 
 namespace Cubemap
 {

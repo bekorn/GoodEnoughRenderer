@@ -10,19 +10,6 @@ find_path(STB_INCLUDE_DIRS "stb.h")
 find_package(fmt CONFIG REQUIRED)
 
 
-# file_management
-list(APPEND LIBS file_management)
-add_library(file_management STATIC)
-target_precompile_headers(file_management PUBLIC Lib/file_management/.pchpp)
-target_sources(file_management PRIVATE
-    Lib/file_management/core.cpp)
-target_link_libraries(file_management PRIVATE
-    Core)
-target_link_libraries(file_management PUBLIC
-    rapidjson)
-target_include_directories(file_management PRIVATE
-    ${STB_INCLUDE_DIRS})
-
 # opengl
 list(APPEND LIBS opengl)
 add_library(opengl STATIC)
@@ -52,9 +39,9 @@ target_sources(asset_kitchen PRIVATE
 )
 target_include_directories(asset_kitchen PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(asset_kitchen PRIVATE
+target_link_libraries(asset_kitchen PUBLIC
     Core
-    file_management
+    FileIO
     opengl)
 target_include_directories(asset_kitchen PUBLIC
     ${STB_INCLUDE_DIRS})

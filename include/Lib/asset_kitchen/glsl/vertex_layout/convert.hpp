@@ -4,8 +4,8 @@
 #include "load.hpp"
 
 #include <core/expected.hpp>
-#include "Lib/file_management/core.hpp"
-#include "Lib/file_management/json_utils.hpp"
+#include <file_io/core.hpp>
+#include <file_io/json_utils.hpp>
 #include "Lib/geometry/core.hpp"
 
 namespace GLSL::VertexLayout

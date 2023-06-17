@@ -5,8 +5,8 @@
 
 #include <core/core.hpp>
 #include <core/named.hpp>
-#include "Lib/file_management/core.hpp"
-#include "Lib/file_management/json_utils.hpp"
+#include <file_io/core.hpp>
+#include <file_io/json_utils.hpp>
 #include "Lib/opengl/texture_2d.hpp"
 #include "Lib/render/material.hpp"
 #include "Lib/render/mesh.hpp"
