@@ -68,26 +68,26 @@ target_link_libraries(Render INTERFACE
     imgui::imgui)
 
 
-# AssetKitchen
-list(APPEND LIBS AssetKitchen)
-add_library(AssetKitchen STATIC)
-target_include_directories(AssetKitchen PUBLIC asset_kitchen/)
-target_sources(AssetKitchen PRIVATE
-    asset_kitchen/asset_kitchen/glsl/vertex_layout/.cpp
-    asset_kitchen/asset_kitchen/glsl/program/.cpp
-    asset_kitchen/asset_kitchen/glsl/uniform_block/.cpp
-    asset_kitchen/asset_kitchen/gltf/.cpp
-    asset_kitchen/asset_kitchen/texture/.cpp
-    asset_kitchen/asset_kitchen/cubemap/.cpp
-    asset_kitchen/asset_kitchen/envmap/.cpp
-    asset_kitchen/asset_kitchen/.cpp
+# AssetRecipes
+list(APPEND LIBS AssetRecipes)
+add_library(AssetRecipes STATIC)
+target_include_directories(AssetRecipes PUBLIC asset_recipes/)
+target_sources(AssetRecipes PRIVATE
+    asset_recipes/asset_recipes/glsl/vertex_layout/.cpp
+    asset_recipes/asset_recipes/glsl/program/.cpp
+    asset_recipes/asset_recipes/glsl/uniform_block/.cpp
+    asset_recipes/asset_recipes/gltf/.cpp
+    asset_recipes/asset_recipes/texture/.cpp
+    asset_recipes/asset_recipes/cubemap/.cpp
+    asset_recipes/asset_recipes/envmap/.cpp
+    asset_recipes/asset_recipes/.cpp
     )
-target_link_libraries(AssetKitchen PUBLIC
+target_link_libraries(AssetRecipes PUBLIC
     Core
     FileIO
     OpenGL
     Render)
-target_include_directories(AssetKitchen PUBLIC
+target_include_directories(AssetRecipes PUBLIC
     ${STB_INCLUDE_DIRS})
 
 
@@ -105,7 +105,7 @@ target_link_libraries(Editor PRIVATE
     Core
     OpenGL
     Render
-    AssetKitchen)
+    AssetRecipes)
 
 
 

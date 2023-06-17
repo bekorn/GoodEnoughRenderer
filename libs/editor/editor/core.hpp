@@ -7,7 +7,7 @@
 #include <render/game_base.hpp>
 #include <render/glfw.hpp>
 #include <render/imgui.hpp>
-#include <asset_kitchen/assets.hpp>
+#include <asset_recipes/assets.hpp>
 
 namespace Editor
 {

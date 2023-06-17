@@ -50,6 +50,7 @@ endif ()
 
 add_subdirectory(libs)
 add_subdirectory(apps/laboratory)
+add_subdirectory(apps/asset_kitchen)
 
 list(APPEND AllTargets ${APPS} ${LIBS})
 

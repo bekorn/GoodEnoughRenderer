@@ -5,7 +5,7 @@
 #include <render/glfw.hpp>
 #include <render/imgui.hpp>
 #include <render/frame_info.hpp>
-#include <asset_kitchen/assets.hpp>
+#include <asset_recipes/assets.hpp>
 #include <editor/core.hpp>
 #include <editor/core_windows.hpp>
 #include <editor/envmap_baker.hpp>

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(Laboratory)
 
+string(APPEND CMAKE_RUNTIME_OUTPUT_DIRECTORY "/Laboratory")
+
 set(APPS ${APPS} Laboratory PARENT_SCOPE)
 add_executable(Laboratory main.cpp game.cpp editor_windows.cpp)
 target_precompile_headers(Laboratory PUBLIC .pchpp)
