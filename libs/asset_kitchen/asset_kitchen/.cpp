@@ -205,6 +205,7 @@ bool Assets::reload_glsl_program(Name const & name)
 
 			auto & interface = initial_program_interfaces.get(name);
 
+			/*
 			// check if the new program's interface are a subset of the old, prevent shader interface additions on runtime
 			char const * missmatch = nullptr;
 			if (not IsSubsetOf(interface.attribute_mappings, new_program.attribute_mappings))
@@ -227,6 +228,7 @@ bool Assets::reload_glsl_program(Name const & name)
 				program_errors.get_or_generate(name) = error;
 				return false;
 			}
+			*/
 		}
 
 		programs.get(name) = move(new_program);

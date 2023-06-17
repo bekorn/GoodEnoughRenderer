@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Lib/asset_kitchen/assets.hpp"
+#include <asset_kitchen/assets.hpp>
 #include <opengl/core.hpp>
 #include <opengl/mapped_buffer.hpp>
 #include <opengl/framebuffer.hpp>

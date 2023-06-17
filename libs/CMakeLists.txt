@@ -46,13 +46,36 @@ target_include_directories(OpenGL PUBLIC opengl/)
 target_precompile_headers(OpenGL PUBLIC opengl/opengl/.pchpp)
 target_sources(OpenGL PRIVATE
     opengl/opengl/utils.cpp)
-target_include_directories(OpenGL PUBLIC ../include/Lib) # !!! this is here just for the geometry.hpp
+target_include_directories(OpenGL PRIVATE ../include/) # !!! this is here just for the geometry
 target_link_libraries(OpenGL PUBLIC
     Core)
 
 target_link_libraries(OpenGL PUBLIC
     glbinding::glbinding
     glbinding::glbinding-aux)
+
+
+# AssetKitchen
+list(APPEND LIBS AssetKitchen)
+add_library(AssetKitchen STATIC)
+target_include_directories(AssetKitchen PUBLIC asset_kitchen/)
+target_sources(AssetKitchen PRIVATE
+    asset_kitchen/asset_kitchen/glsl/vertex_layout/.cpp
+    asset_kitchen/asset_kitchen/glsl/program/.cpp
+    asset_kitchen/asset_kitchen/glsl/uniform_block/.cpp
+    asset_kitchen/asset_kitchen/gltf/.cpp
+    asset_kitchen/asset_kitchen/texture/.cpp
+    asset_kitchen/asset_kitchen/cubemap/.cpp
+    asset_kitchen/asset_kitchen/envmap/.cpp
+    asset_kitchen/asset_kitchen/.cpp
+    )
+target_include_directories(AssetKitchen PRIVATE ../include/) # !!! this is here for the geometry, render, scene
+target_link_libraries(AssetKitchen PUBLIC
+    Core
+    FileIO
+    OpenGL)
+target_include_directories(AssetKitchen PUBLIC
+    ${STB_INCLUDE_DIRS})
 
 
 

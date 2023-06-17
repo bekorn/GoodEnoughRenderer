@@ -4,7 +4,7 @@
 
 // TODO(bekorn): this dependency should be reversed, opengl should be contained in itself,
 //  geometry should build on top of opengl (or any other API later on)
-#include "Lib/geometry/core.hpp"
+#include <Lib/geometry/core.hpp>
 
 namespace GL
 {

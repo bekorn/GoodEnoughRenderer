@@ -10,28 +10,6 @@ find_path(STB_INCLUDE_DIRS "stb.h")
 find_package(fmt CONFIG REQUIRED)
 
 
-# asset_kitchen
-list(APPEND LIBS asset_kitchen)
-add_library(asset_kitchen STATIC)
-target_sources(asset_kitchen PRIVATE
-    Lib/asset_kitchen/glsl/vertex_layout/.cpp
-    Lib/asset_kitchen/glsl/program/.cpp
-    Lib/asset_kitchen/glsl/uniform_block/.cpp
-    Lib/asset_kitchen/gltf/.cpp
-    Lib/asset_kitchen/texture/.cpp
-    Lib/asset_kitchen/cubemap/.cpp
-    Lib/asset_kitchen/envmap/.cpp
-    Lib/asset_kitchen/.cpp
-)
-target_include_directories(asset_kitchen PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(asset_kitchen PUBLIC
-    Core
-    FileIO
-    OpenGL)
-target_include_directories(asset_kitchen PUBLIC
-    ${STB_INCLUDE_DIRS})
-
 # editor
 list(APPEND LIBS editor)
 add_library(editor STATIC)
@@ -45,7 +23,7 @@ target_include_directories(editor PUBLIC
 target_link_libraries(editor PRIVATE
     Core
     OpenGL
-    asset_kitchen)
+    AssetKitchen)
 target_precompile_headers(editor PUBLIC
     Lib/editor/.pchpp
     Lib/glfw/.pchpp

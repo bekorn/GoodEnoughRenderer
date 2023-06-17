@@ -5,7 +5,7 @@
 #include <opengl/texture_2d.hpp>
 #include "Lib/render/frame_info.hpp"
 #include "Lib/render/game_base.hpp"
-#include "Lib/asset_kitchen/assets.hpp"
+#include <asset_kitchen/assets.hpp>
 #include "Lib/glfw/core.hpp"
 #include "Lib/imgui/core.hpp"
 

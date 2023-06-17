@@ -2,7 +2,7 @@
 
 #include "camera.hpp"
 
-#include "Lib/asset_kitchen/assets.hpp"
+#include <asset_kitchen/assets.hpp>
 #include "Lib/glfw/core.hpp"
 
 namespace Render
