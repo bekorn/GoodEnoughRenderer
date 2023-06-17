@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Lib/editor/core.hpp"
+#include <editor/core.hpp>
 
 struct GameSettingsWindow : Editor::WindowBase
 {

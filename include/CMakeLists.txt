@@ -10,24 +10,6 @@ find_path(STB_INCLUDE_DIRS "stb.h")
 find_package(fmt CONFIG REQUIRED)
 
 
-# editor
-list(APPEND LIBS editor)
-add_library(editor STATIC)
-target_sources(editor PRIVATE
-    Lib/editor/utils.cpp
-    Lib/editor/core_windows.cpp
-    Lib/editor/envmap_baker.cpp
-)
-target_include_directories(editor PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(editor PRIVATE
-    Core
-    OpenGL
-    Render
-    AssetKitchen)
-target_precompile_headers(editor PUBLIC
-    Lib/editor/.pchpp)
-
 # export libs to parent scope
 set(LIBS ${LIBS} PARENT_SCOPE)
 

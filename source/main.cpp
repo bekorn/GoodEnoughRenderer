@@ -6,9 +6,9 @@
 #include <render/imgui.hpp>
 #include <render/frame_info.hpp>
 #include <asset_kitchen/assets.hpp>
-#include "Lib/editor/core.hpp"
-#include "Lib/editor/core_windows.hpp"
-#include "Lib/editor/envmap_baker.hpp"
+#include <editor/core.hpp>
+#include <editor/core_windows.hpp>
+#include <editor/envmap_baker.hpp>
 
 #include "game.hpp"
 #include "editor_windows.hpp"

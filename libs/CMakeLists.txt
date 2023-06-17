@@ -91,6 +91,23 @@ target_include_directories(AssetKitchen PUBLIC
     ${STB_INCLUDE_DIRS})
 
 
+# Editor
+list(APPEND LIBS Editor)
+add_library(Editor STATIC)
+target_include_directories(Editor PUBLIC editor/)
+target_precompile_headers(Editor PUBLIC editor/editor/.pchpp)
+target_sources(Editor PRIVATE
+    editor/editor/utils.cpp
+    editor/editor/core_windows.cpp
+    editor/editor/envmap_baker.cpp
+    )
+target_link_libraries(Editor PRIVATE
+    Core
+    OpenGL
+    Render
+    AssetKitchen)
+
+
 
 # export libs to parent scope
 set(LIBS ${LIBS} PARENT_SCOPE)
