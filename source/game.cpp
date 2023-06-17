@@ -1,7 +1,7 @@
 #include "game.hpp"
 
-#include "Lib/core/core.hpp"
-#include "Lib/core/named.hpp"
+#include <core/core.hpp>
+#include <core/named.hpp>
 #include "Lib/opengl/globals.hpp"
 
 // !!! Temporary

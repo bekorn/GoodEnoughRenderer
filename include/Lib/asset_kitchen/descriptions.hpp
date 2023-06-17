@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Lib/core/core.hpp"
-#include "Lib/core/named.hpp"
+#include <core/core.hpp>
+#include <core/named.hpp>
 
 #include "glsl/vertex_layout/load.hpp"
 #include "glsl/program/load.hpp"

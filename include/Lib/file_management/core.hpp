@@ -1,7 +1,7 @@
 #pragma once
 #pragma message("-- read FILE/core.Hpp --")
 
-#include "Lib/core/core.hpp"
+#include <core/core.hpp>
 
 namespace File
 {

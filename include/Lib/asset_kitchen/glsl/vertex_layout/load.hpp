@@ -1,7 +1,7 @@
 #pragma once
 #pragma message("-- read ASSET/LAYOUT/load.Hpp --")
 
-#include "Lib/core/core.hpp"
+#include <core/core.hpp>
 #include "Lib/geometry/core.hpp"
 
 namespace GLSL::VertexLayout

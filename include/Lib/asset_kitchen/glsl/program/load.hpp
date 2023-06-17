@@ -1,8 +1,8 @@
 #pragma once
 #pragma message("-- read ASSET/PROGRAM/load.Hpp --")
 
-#include "Lib/core/core.hpp"
-#include "Lib/core/named.hpp"
+#include <core/core.hpp>
+#include <core/named.hpp>
 #include "Lib/opengl/core.hpp"
 
 namespace GLSL::Program

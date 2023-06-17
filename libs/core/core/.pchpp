@@ -10,23 +10,23 @@
 //#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_INLINE
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
+#include "glm/glm.hpp"
 // extensions (http://glm.g-truc.net/glm.pdf)
-#include <glm/gtc/type_precision.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/range.hpp>
-#include <glm/gtx/component_wise.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
-#include <glm/gtx/euler_angles.hpp>
-#include <glm/gtx/string_cast.hpp>
+#include "glm/gtc/type_precision.hpp"
+#include "glm/gtc/quaternion.hpp"
+#include "glm/gtx/range.hpp"
+#include "glm/gtx/component_wise.hpp"
+#include "glm/gtx/transform.hpp"
+#include "glm/gtx/matrix_decompose.hpp"
+#include "glm/gtx/euler_angles.hpp"
+#include "glm/gtx/string_cast.hpp"
 
 // TODO(bekorn): fmtlib is not enough to remove std::*stream completely because it does not support parsing,
 //  there is an fmt-like lib: https://github.com/eliaskosunen/scnlib but, benchmarks show increase in compile times
 // fmt
-#include <fmt/core.h>
-#include <fmt/std.h>
-#include <fmt/chrono.h>
+#include "fmt/core.h"
+#include "fmt/std.h"
+#include "fmt/chrono.h"
 
 // std classes
 #include <memory>

@@ -1,7 +1,7 @@
 #pragma once
 #pragma message("-- read ASSET/BLOCK/load.Hpp --")
 
-#include "Lib/core/core.hpp"
+#include <core/core.hpp>
 
 namespace GLSL::UniformBlock
 {

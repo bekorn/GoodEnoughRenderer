@@ -1,4 +1,4 @@
-#include "Lib/core/core.hpp"
+#include <core/core.hpp>
 #include "Lib/opengl/core.hpp"
 #include "Lib/opengl/globals.hpp"
 #include "Lib/opengl/use_dedicated_device_by_default.hpp"

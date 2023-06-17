@@ -2,8 +2,8 @@
 
 #include "descriptions.hpp"
 
-#include "Lib/core/core.hpp"
-#include "Lib/core/named.hpp"
+#include <core/core.hpp>
+#include <core/named.hpp>
 #include "Lib/opengl/texture_2d.hpp"
 #include "Lib/opengl/texture_cubemap.hpp"
 #include "Lib/opengl/texture_3d.hpp"

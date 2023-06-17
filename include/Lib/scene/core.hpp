@@ -2,8 +2,8 @@
 
 #include <queue>
 
-#include "Lib/core/core.hpp"
-#include "Lib/core/utils.hpp"
+#include <core/core.hpp>
+#include <core/utils.hpp>
 #include "Lib/render/mesh.hpp"
 
 namespace Scene

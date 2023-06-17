@@ -1,8 +1,8 @@
 #pragma once
 #pragma message("-- read ASSET/PROGRAM/convert.Hpp --")
 
-#include "Lib/core/core.hpp"
-#include "Lib/core/expected.hpp"
+#include <core/core.hpp>
+#include <core/expected.hpp>
 #include "Lib/file_management/core.hpp"
 #include "Lib/file_management/json_utils.hpp"
 #include "Lib/opengl/glsl.hpp"

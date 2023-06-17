@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Lib/core/core.hpp"
+#include <core/core.hpp>
 #include "Lib/opengl/framebuffer.hpp"
 #include "Lib/opengl/texture_2d.hpp"
 #include "Lib/render/frame_info.hpp"

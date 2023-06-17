@@ -48,6 +48,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 endif ()
 
 
+add_subdirectory(libs)
 add_subdirectory(include)
 add_subdirectory(source)
 

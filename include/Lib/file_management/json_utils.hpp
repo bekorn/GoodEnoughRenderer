@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Lib/core/core.hpp"
+#include <core/core.hpp>
 
 namespace File::JSON
 {
