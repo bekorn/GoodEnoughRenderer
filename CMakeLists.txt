@@ -49,10 +49,9 @@ endif ()
 
 
 add_subdirectory(libs)
-add_subdirectory(include)
-add_subdirectory(source)
+add_subdirectory(apps/laboratory)
 
-list(APPEND AllTargets App ${LIBS})
+list(APPEND AllTargets ${APPS} ${LIBS})
 
 # this only works like this, /MD flag prints wanings on builds and
 # set_property(GLOBAL PROPERTY MSVC_RUNTIME_LIBRARY MultiThreadedDLL) has no effect

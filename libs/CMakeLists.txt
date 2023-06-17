@@ -111,5 +111,3 @@ target_link_libraries(Editor PRIVATE
 
 # export libs to parent scope
 set(LIBS ${LIBS} PARENT_SCOPE)
-
-
