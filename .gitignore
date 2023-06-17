@@ -1,4 +1,3 @@
 vcpkg/
 build/
-projects/*/model/
-projects/*/capture/
+editor_assets/

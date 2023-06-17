@@ -10,7 +10,9 @@
       <file path="$PROJECT_DIR$/../../Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt" />
       <file path="$PROJECT_DIR$/../../Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um" />
       <file path="$PROJECT_DIR$/../../Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt" />
+      <file path="$PROJECT_DIR$/apps/laboratory/assets" />
       <file path="$PROJECT_DIR$/build" />
+      <file path="$PROJECT_DIR$/editor_assets" />
       <file path="$PROJECT_DIR$/projects" />
       <file path="$PROJECT_DIR$/test_assets" />
       <file path="$PROJECT_DIR$/vcpkg" />

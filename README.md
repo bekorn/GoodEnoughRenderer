@@ -65,10 +65,10 @@ cmake --build --preset=Debug
 
 <details><summary>Run</summary>
 
-Provide paths to the `projects/editor` and `projects/development` folders as the command line arguments.
+To run the Laboratory app, provide the paths to the `editor_assets` and `apps/laboratory/assets` folders as the command line arguments.
 (I prefer absolute paths to prevent any _current working directory_ differences between compilers).
 
-GLTF assets are excluded from git because of their size (except `projects/editor/models`). To load your own, edit the `projects/development/assets.json`.
+GLTF assets are excluded from git because of their size (except `editor_assets/models`). To load your own, edit the `apps/laboratory/assets/assets.json`.
 HDRIs and Envmaps are also excluded for the same reason. You can load an HDRI and use the Envmap Baker in the editor.
 
 You can download the assets I used from [here](https://drive.google.com/drive/folders/1LU5GHVmfd7sNY9ECnvMjL3NwSL50dnun).
