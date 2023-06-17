@@ -3,7 +3,7 @@
 #include "camera.hpp"
 
 #include <asset_kitchen/assets.hpp>
-#include "Lib/glfw/core.hpp"
+#include "Lib/render/glfw.hpp"
 
 namespace Render
 {

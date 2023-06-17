@@ -2,8 +2,8 @@
 #include <opengl/core.hpp>
 #include <opengl/globals.hpp>
 #include <opengl/use_dedicated_device_by_default.hpp>
-#include "Lib/glfw/core.hpp"
-#include "Lib/imgui/core.hpp"
+#include "Lib/render/glfw.hpp"
+#include "Lib/render/imgui.hpp"
 #include <asset_kitchen/assets.hpp>
 #include "Lib/render/frame_info.hpp"
 #include "Lib/editor/core.hpp"

@@ -25,9 +25,8 @@ target_link_libraries(editor PRIVATE
     OpenGL
     AssetKitchen)
 target_precompile_headers(editor PUBLIC
-    Lib/editor/.pchpp
-    Lib/glfw/.pchpp
-    Lib/imgui/.pchpp)
+    Lib/render/.pchpp
+    Lib/editor/.pchpp)
 target_link_libraries(editor PUBLIC
     glfw
     imgui::imgui)

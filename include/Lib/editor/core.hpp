@@ -6,8 +6,8 @@
 #include "Lib/render/frame_info.hpp"
 #include "Lib/render/game_base.hpp"
 #include <asset_kitchen/assets.hpp>
-#include "Lib/glfw/core.hpp"
-#include "Lib/imgui/core.hpp"
+#include "Lib/render/glfw.hpp"
+#include "Lib/render/imgui.hpp"
 
 namespace Editor
 {

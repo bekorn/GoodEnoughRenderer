@@ -4,7 +4,7 @@
 #include <opengl/core.hpp>
 #include <opengl/mapped_buffer.hpp>
 #include <opengl/framebuffer.hpp>
-#include "Lib/glfw/core.hpp"
+#include "Lib/render/glfw.hpp"
 #include "Lib/render/frame_info.hpp"
 #include "Lib/render/game_base.hpp"
 
