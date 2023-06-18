@@ -451,7 +451,7 @@ void ProgramWindow::update(Context & ctx)
 				if (not attrib.is_used()) continue;
 				TableNextColumn(), TextFMT("{}", attrib.key);
 				TableNextColumn(), TextFMT("{}", attrib.is_per_patch);
-				TableNextColumn(), TextFMT("{}x{}", attrib.type.value_to_string(), attrib.type.dimension);
+				TableNextColumn(), TextFMT("{}", attrib.vec);
 				TableNextColumn(), TextFMT("{}", attrib.location);
 			}
 			EndTable();
@@ -1005,8 +1005,8 @@ void MeshWindow::update(Context & ctx)
 			if (not attrib.is_used()) continue;
 
 			TableNextColumn(), TextFMT("{}", attrib.key);
-			TableNextColumn(), TextFMT("{}x{}", attrib.type, attrib.type.dimension);
-			TableNextColumn(), TextFMT("{}", buffer.size / attrib.type.vector_size());
+			TableNextColumn(), TextFMT("{}", attrib.vec);
+			TableNextColumn(), TextFMT("{}", buffer.size / attrib.vec.size());
 		}
 		EndTable();
 	}

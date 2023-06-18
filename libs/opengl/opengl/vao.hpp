@@ -62,12 +62,12 @@ struct VertexArray : OpenGLObject
 			glVertexArrayVertexBuffer(
 				id,
 				buffer_bind_idx,
-				vertex_buffer.id, buffer_offset, attrib.type.vector_size()
+				vertex_buffer.id, buffer_offset, attrib.vec.size()
 			);
 			glVertexArrayAttribFormat(
 				id,
 				attrib.location,
-				attrib.type.dimension, to_glenum(attrib.type.value), attrib.type.is_normalized(),
+				attrib.vec.dimension, to_glenum(attrib.vec.type), attrib.vec.type.is_normalized(),
 				0
 			);
 			glEnableVertexArrayAttrib(id, attrib.location);
@@ -103,7 +103,7 @@ struct VertexArray : OpenGLObject
 		usize vertex_buffer_size = 0;
 		for (auto const & attrib: desc.layout)
 			if (attrib.is_used())
-				vertex_buffer_size += desc.vertex_count * attrib.type.vector_size();
+				vertex_buffer_size += desc.vertex_count * attrib.vec.size();
 
 		vertex_buffer.init(Buffer::EmptyDesc{
 			.usage = desc.usage,
@@ -119,19 +119,19 @@ struct VertexArray : OpenGLObject
 			glVertexArrayVertexBuffer(
 				id,
 				buffer_bind_idx,
-				vertex_buffer.id, buffer_offset, attrib.type.vector_size()
+				vertex_buffer.id, buffer_offset, attrib.vec.size()
 			);
 			glVertexArrayAttribFormat(
 				id,
 				attrib.location,
-				attrib.type.dimension, to_glenum(attrib.type.value), attrib.type.is_normalized(),
+				attrib.vec.dimension, to_glenum(attrib.vec.type), attrib.vec.type.is_normalized(),
 				0
 			);
 			glEnableVertexArrayAttrib(id, attrib.location);
 			glVertexArrayAttribBinding(id, attrib.location, buffer_bind_idx);
 
 			buffer_bind_idx++;
-			buffer_offset += static_cast<GLintptr>(desc.vertex_count * attrib.type.vector_size());
+			buffer_offset += static_cast<GLintptr>(desc.vertex_count * attrib.vec.size());
 		}
 
 		/// Element Buffer

@@ -365,7 +365,7 @@ namespace Helpers
 		return key;
 	}
 
-	Geometry::Type IntoAttributeType(u32 type, u8 dimension, bool is_normalized)
+	Geometry::Type IntoAttributeType(u32 type, bool is_normalized)
 	{
 		// see spec section 3.6.2.2. Accessor Data Types
 		using enum Geometry::Type::Value;
@@ -373,21 +373,21 @@ namespace Helpers
 		if (is_normalized)
 			switch (type)
 			{
-			case 5120: return {I8NORM, dimension};
-			case 5121: return {U8NORM, dimension};
-			case 5122: return {I16NORM, dimension};
-			case 5123: return {U16NORM, dimension};
-			case 5125: return {U32NORM, dimension};
+			case 5120: return {I8NORM};
+			case 5121: return {U8NORM};
+			case 5122: return {I16NORM};
+			case 5123: return {U16NORM};
+			case 5125: return {U32NORM};
 			}
 		else
 			switch (type)
 			{
-			case 5120: return {I8, dimension};
-			case 5121: return {U8, dimension};
-			case 5122: return {I16, dimension};
-			case 5123: return {U16, dimension};
-			case 5125: return {U32, dimension};
-			case 5126: return {F32, dimension};
+			case 5120: return {I8};
+			case 5121: return {U8};
+			case 5122: return {I16};
+			case 5123: return {U16};
+			case 5125: return {U32};
+			case 5126: return {F32};
 			}
 
 		// above values are all the alloved ones therefore,
@@ -506,12 +506,15 @@ void Convert(
 				auto & accessor = loaded.accessors[attrib.accessor_index];
 				auto & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
-				auto type = IntoAttributeType(accessor.vector_data_type, accessor.vector_dimension, accessor.normalized);
-				assert(type == layout_attrib.type, "Primitive attribute is in a different type");
+				Geometry::Vector vec(
+					IntoAttributeType(accessor.vector_data_type, accessor.normalized),
+					accessor.vector_dimension
+				);
+				assert(vec == layout_attrib.vec, "Primitive attribute is in a different format");
 
 				auto attrib_location = layout_attrib.location; // also i
 				auto & buffer = primitive.data.buffers[attrib_location];
-				u32 buffer_stride = layout_attrib.type.vector_size();
+				u32 buffer_stride = layout_attrib.vec.size();
 				buffer = ByteBuffer(buffer_stride * accessor.count);
 
 				if (buffer_view.stride.has_value())
@@ -546,11 +549,11 @@ void Convert(
 				auto & accessor = loaded.accessors[loaded_primitive.indices_accessor_index.value()];
 				auto & buffer_view = loaded.buffer_views[accessor.buffer_view_index];
 
-				auto index_type = IntoAttributeType(accessor.vector_data_type, accessor.vector_dimension, accessor.normalized);
+				auto index_type = IntoAttributeType(accessor.vector_data_type, accessor.normalized);
 
 				// buffers other than vertex attributes are always tightly packed
 				// see spec section 3.6.2.1. Overview, paragraph 2
-				if (index_type.value == Geometry::Type::U8)
+				if (index_type == Geometry::Type::U8)
 				{
 					auto source = loaded.buffers[buffer_view.buffer_index]
 						.span_as<u8>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
@@ -559,7 +562,7 @@ void Convert(
 					for (auto index: source)
 						primitive.indices.emplace_back(index);
 				}
-				else if (index_type.value == Geometry::Type::U16)
+				else if (index_type == Geometry::Type::U16)
 				{
 					auto source = loaded.buffers[buffer_view.buffer_index]
 						.span_as<u16>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
@@ -568,7 +571,7 @@ void Convert(
 					for (auto index: source)
 						primitive.indices.emplace_back(index);
 				}
-				else if (index_type.value == Geometry::Type::U32)
+				else if (index_type == Geometry::Type::U32)
 				{
 					auto source = loaded.buffers[buffer_view.buffer_index]
 						.span_as<u32>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());

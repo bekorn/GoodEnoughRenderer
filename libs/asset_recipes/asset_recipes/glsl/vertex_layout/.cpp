@@ -13,7 +13,7 @@ Geometry::Key get_key(const char * name)
 	if (0 == strcmp(name, "weights")) return {WEIGHTS, 0};
 	return {name, 0};
 }
-Geometry::Type get_type(const char * name)
+Geometry::Vector get_type(const char * name)
 {
 	using enum Geometry::Type::Value;
 	if (0 == strcmp(name, "f32")) return {F32, 1};
@@ -28,7 +28,7 @@ Geometry::Type get_type(const char * name)
 	if (0 == strcmp(name, "u16normx2")) return {U16NORM, 2};
 	if (0 == strcmp(name, "u16normx3")) return {U16NORM, 3};
 	if (0 == strcmp(name, "u16normx4")) return {U16NORM, 4};
-	assert_failure("unknown vertex attribute type");
+	assert_failure("unknown vertex attribute");
 }
 
 namespace GLSL::VertexLayout
@@ -53,7 +53,7 @@ std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const &
 			fmt::print("\tAttribute {} is {}\n", name.GetString(), type.GetString());
 			layout[location] = Geometry::Attribute{
 				.key = get_key(name.GetString()),
-				.type = get_type(type.GetString()),
+				.vec = get_type(type.GetString()),
 
 				.location = location,
 				.is_per_patch = false,

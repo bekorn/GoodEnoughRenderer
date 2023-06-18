@@ -70,7 +70,7 @@ std::string generate_vertex_layout(Geometry::Layout const & layout)
 		if (attr.is_used())
 			fmt::format_to(
 				back_inserter(buffer), "layout(location = {}) in vec{} {};\n",
-				attr.location, attr.type.dimension, to_string(attr.key)
+				attr.location, attr.vec.dimension, to_string(attr.key)
 			);
 	fmt::format_to(back_inserter(buffer), "{}", "#endif\n\0");
 	return buffer;
