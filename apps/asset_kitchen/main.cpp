@@ -1,4 +1,5 @@
 #include "book.hpp"
+#include "chef.hpp"
 
 int main(int argc, char * argv[])
 {
@@ -7,20 +8,21 @@ int main(int argc, char * argv[])
 		fmt::print(stderr, "First parameter must be the asset directory");
 		return 1;
 	}
-	auto assets_root = std::filesystem::path(argv[1]);
-	if (not std::filesystem::exists(assets_root))
+	auto assets_dir = std::filesystem::path(argv[1]);
+	if (not std::filesystem::exists(assets_dir))
 	{
-		fmt::print(stderr, "\"{}\" does not exist", assets_root);
+		fmt::print(stderr, "\"{}\" does not exist", assets_dir);
 		return 1;
 	}
 
-	Book book(assets_root);
+	Book book(assets_dir);
 
+	fmt::print("Ready to serve some assets to {}!\n", book.served_dir);
 
-	auto served_root = std::filesystem::path(assets_root).concat("__served");
-	std::filesystem::create_directory(served_root);
+	Chef chef;
 
-	fmt::print("Ready to serve some assets to {}!\n", assets_root, served_root);
+	for (auto & [name, gltf]: book.gltf)
+		chef.prepare_gltf(book, gltf);
 
 	return 0;
 }

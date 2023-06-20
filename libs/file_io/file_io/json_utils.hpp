@@ -48,6 +48,15 @@ inline std::string GetString(JSONObj obj, Key key, std::string const & def_value
 		return def_value;
 }
 
+inline optional<std::string> GetOptionalString(JSONObj obj, Key key)
+{
+	auto member = obj.FindMember(key.data());
+	if (member != obj.MemberEnd())
+		return member->value.GetString();
+	else
+		return nullopt;
+}
+
 inline bool GetBool(JSONObj obj, Key key, bool def_value)
 {
 	auto member = obj.FindMember(key.data());

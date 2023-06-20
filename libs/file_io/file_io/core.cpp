@@ -43,7 +43,7 @@ ByteBuffer LoadAsBytes(std::filesystem::path const & path, usize file_size)
 std::string LoadAsString(std::filesystem::path const & path)
 {
 	assert(std::filesystem::exists(path));
-	std::basic_ifstream<char> file(path, std::ios::in | std::ios::binary | std::ios::ate);
+	std::basic_ifstream<char> file(path, std::ios::in | std::ios::ate);
 
 	usize file_size = file.tellg();
 	std::string buffer(file_size, '\0');
@@ -52,6 +52,22 @@ std::string LoadAsString(std::filesystem::path const & path)
 	file.read(buffer.data(), file_size);
 
 	return buffer;
+}
+void WriteString(std::filesystem::path const & path, std::string_view sv)
+{
+	std::basic_ofstream<char> file(path, std::ios::out);
+	if (file.fail())
+	{
+		fmt::print(stderr, "File::WriteString failed to open. path: {}\n", path);
+		return;
+	}
+
+	file.write(sv.data(), sv.size()), file.close();
+	if (file.bad())
+	{
+		fmt::print(stderr, "File::WriteString failed to write. path: {}\n", path);
+		return;
+	}
 }
 
 Image LoadImage(std::filesystem::path const & path, bool should_flip_vertically)
@@ -84,7 +100,6 @@ Image LoadImage(std::filesystem::path const & path, bool should_flip_vertically)
 
 	return image;
 }
-
 void WriteImage(std::filesystem::path const & path, Image const & image, bool should_flip_vertically)
 {
 	auto p = path.string();

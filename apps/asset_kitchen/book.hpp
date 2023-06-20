@@ -6,17 +6,20 @@
 #include <asset_recipes/glsl/vertex_layout/load.hpp>
 
 #include "recipes/attrib_layout.hpp"
+#include "recipes/gltf.hpp"
 
 struct Book
 {
-	std::filesystem::path const root;
+	std::filesystem::path const assets_dir;
+	std::filesystem::path const served_dir;
 
 	Managed<Geometry::Layout> attrib_layouts;
+	Managed<GLTF::Desc> gltf;
 
-	Book(std::filesystem::path const & root) :
-		root(root)
+	Book(std::filesystem::path const & assets_dir) :
+		assets_dir(assets_dir), served_dir(std::filesystem::path(assets_dir).concat("__served"))
 	{
-		auto json_path = root / "assets.json";
+		auto json_path = assets_dir / "assets.json";
 		assert(exists(json_path), "assets.json is absent");
 
 		using namespace rapidjson;
@@ -26,12 +29,18 @@ struct Book
 		document.Parse(File::LoadAsString(json_path).c_str());
 		assert(not document.HasParseError(), "assets.json is invalid");
 
-
 		if (auto const member = document.FindMember(AttribLayout::NAME); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
 				auto [name, desc] = AttribLayout::Parse(item.GetObject());
 				attrib_layouts.generate(name, desc);
+			}
+
+		if (auto const member = document.FindMember(GLTF::NAME); member != document.MemberEnd())
+			for (auto const & item: member->value.GetArray())
+			{
+				auto [name, desc] = GLTF::Parse(item.GetObject(), assets_dir);
+				gltf.generate(name, desc);
 			}
 	}
 };

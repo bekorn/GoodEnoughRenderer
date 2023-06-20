@@ -141,7 +141,7 @@ struct LoadedData
 	vector<Texture> textures;
 
 	vector<Mesh> meshes;
-	Name layout_name;
+	optional<Name> layout_name;
 	vector<Material> materials;
 
 	vector<Node> nodes;
@@ -154,7 +154,7 @@ struct Desc
 {
 	std::string name;
 	std::filesystem::path path;
-	Name layout_name;
+	optional<Name> layout_name;
 };
 
 LoadedData Load(Desc const & desc);

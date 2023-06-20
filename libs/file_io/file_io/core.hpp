@@ -10,6 +10,7 @@ ByteBuffer LoadAsBytes(std::filesystem::path const & path);
 ByteBuffer LoadAsBytes(std::filesystem::path const & path, usize file_size);
 
 std::string LoadAsString(std::filesystem::path const & path);
+void WriteString(std::filesystem::path const & path, std::string_view sv);
 
 struct Image
 {
@@ -19,7 +20,6 @@ struct Image
 	bool is_format_f32; // otherwise format is u8
 };
 Image LoadImage(std::filesystem::path const & path, bool should_flip_vertically);
-
 void WriteImage(std::filesystem::path const & path, Image const & image, bool should_flip_vertically);
 
 optional<std::error_code> ClearFolder(std::filesystem::path const & path);

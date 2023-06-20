@@ -478,7 +478,8 @@ void Convert(
 
 	// Convert primitives
 	// TODO(bekorn): the layout is same for the whole gltf file, it should be more granular, per material perhaps
-	auto & layout = vertex_layouts.get(loaded.layout_name);
+	assert(loaded.layout_name.has_value(), "Default layout not supported yet");
+	auto & layout = vertex_layouts.get(loaded.layout_name.value());
 	vector<Geometry::Key> loaded_attrib_keys;
 	loaded_attrib_keys.reserve(Geometry::ATTRIBUTE_COUNT);
 	for (auto & loaded_mesh: loaded.meshes)
@@ -667,9 +668,9 @@ std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const &
 		name,
 		{
 			.name = name,
-			.path = root_dir / o.FindMember("path")->value.GetString(),
-			.layout_name = o.FindMember("layout")->value.GetString(),
-		},
+			.path = root_dir / o["path"].GetString(),
+			.layout_name = File::JSON::GetOptionalString(o, "layout"),
+		}
 	};
 }
 }
