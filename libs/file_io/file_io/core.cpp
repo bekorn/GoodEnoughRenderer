@@ -15,7 +15,7 @@
 
 namespace File
 {
-ByteBuffer LoadAsBytes(std::filesystem::path const & path)
+ByteBuffer LoadAsBytes(Path const & path)
 {
 	assert(std::filesystem::exists(path));
 	std::basic_ifstream<byte> file(path, std::ios::in | std::ios::binary | std::ios::ate);
@@ -29,7 +29,7 @@ ByteBuffer LoadAsBytes(std::filesystem::path const & path)
 	return buffer;
 }
 
-ByteBuffer LoadAsBytes(std::filesystem::path const & path, usize file_size)
+ByteBuffer LoadAsBytes(Path const & path, usize file_size)
 {
 	assert(std::filesystem::exists(path));
 	std::basic_ifstream<byte> file(path, std::ios::in | std::ios::binary);
@@ -39,8 +39,24 @@ ByteBuffer LoadAsBytes(std::filesystem::path const & path, usize file_size)
 
 	return buffer;
 }
+void WriteBytes(Path const & path, ByteBuffer const & buffer)
+{
+	std::basic_ofstream<byte> file(path, std::ios::out | std::ios::binary);
+	if (file.fail())
+	{
+		fmt::print(stderr, "File::WriteBytes failed to open. path: {}\n", path);
+		return;
+	}
 
-std::string LoadAsString(std::filesystem::path const & path)
+	file.write(buffer.data.get(), buffer.size), file.close();
+	if (file.bad())
+	{
+		fmt::print(stderr, "File::WriteBytes failed to write. path: {}\n", path);
+		return;
+	}
+}
+
+std::string LoadAsString(Path const & path)
 {
 	assert(std::filesystem::exists(path));
 	std::basic_ifstream<char> file(path, std::ios::in | std::ios::ate);
@@ -53,7 +69,7 @@ std::string LoadAsString(std::filesystem::path const & path)
 
 	return buffer;
 }
-void WriteString(std::filesystem::path const & path, std::string_view sv)
+void WriteString(Path const & path, std::string_view sv)
 {
 	std::basic_ofstream<char> file(path, std::ios::out);
 	if (file.fail())
@@ -70,7 +86,7 @@ void WriteString(std::filesystem::path const & path, std::string_view sv)
 	}
 }
 
-Image LoadImage(std::filesystem::path const & path, bool should_flip_vertically)
+Image LoadImage(Path const & path, bool should_flip_vertically)
 {
 	auto const file_data = LoadAsBytes(path);
 
@@ -100,7 +116,7 @@ Image LoadImage(std::filesystem::path const & path, bool should_flip_vertically)
 
 	return image;
 }
-void WriteImage(std::filesystem::path const & path, Image const & image, bool should_flip_vertically)
+void WriteImage(Path const & path, Image const & image, bool should_flip_vertically)
 {
 	auto p = path.string();
 
@@ -125,7 +141,7 @@ void WriteImage(std::filesystem::path const & path, Image const & image, bool sh
 		fmt::print(stderr, "File::WriteImage failed. path {}, error: {}\n", path, stbi_failure_reason());
 }
 
-optional<std::error_code> ClearFolder(std::filesystem::path const & path)
+optional<std::error_code> ClearFolder(Path const & path)
 {
 	std::error_code ec;
 	for (auto & item : std::filesystem::directory_iterator(path))

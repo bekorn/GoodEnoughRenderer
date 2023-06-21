@@ -133,22 +133,22 @@ struct Type
 		assert_enum_out_of_range();
 	}
 
-	static Type from_string(const char * str)
+	static Type from_string(std::string_view sv)
 	{
 		using enum Type::Value;
-		if (0 == strcmp(str, "F32")) return {F32};
-		if (0 == strcmp(str, "I8")) return {I8};
-		if (0 == strcmp(str, "I16")) return {I16};
-		if (0 == strcmp(str, "I32")) return {I32};
-		if (0 == strcmp(str, "I8NORM")) return {I8NORM};
-		if (0 == strcmp(str, "I16NORM")) return {I16NORM};
-		if (0 == strcmp(str, "I32NORM")) return {I32NORM};
-		if (0 == strcmp(str, "U8")) return {U8};
-		if (0 == strcmp(str, "U16")) return {U16};
-		if (0 == strcmp(str, "U32")) return {U32};
-		if (0 == strcmp(str, "U8NORM")) return {U8NORM};
-		if (0 == strcmp(str, "U16NORM")) return {U16NORM};
-		if (0 == strcmp(str, "U32NORM")) return {U32NORM};
+		if (sv == "F32") return {F32};
+		if (sv == "I8") return {I8};
+		if (sv == "I16") return {I16};
+		if (sv == "I32") return {I32};
+		if (sv == "I8NORM") return {I8NORM};
+		if (sv == "I16NORM") return {I16NORM};
+		if (sv == "I32NORM") return {I32NORM};
+		if (sv == "U8") return {U8};
+		if (sv == "U16") return {U16};
+		if (sv == "U32") return {U32};
+		if (sv == "U8NORM") return {U8NORM};
+		if (sv == "U16NORM") return {U16NORM};
+		if (sv == "U32NORM") return {U32NORM};
 		assert_enum_out_of_range();
 	}
 };

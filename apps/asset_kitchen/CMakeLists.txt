@@ -9,4 +9,6 @@ add_executable(AssetKitchen main.cpp)
 target_sources(AssetKitchen PRIVATE
     recipes/attrib_layout.cpp
     )
-target_link_libraries(AssetKitchen PRIVATE ${LIBS})
+target_link_libraries(AssetKitchen PRIVATE
+    AssetRecipes
+    )

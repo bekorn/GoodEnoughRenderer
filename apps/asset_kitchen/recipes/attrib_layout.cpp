@@ -1,16 +1,16 @@
 #include "attrib_layout.hpp"
 
-Geometry::Key get_key(const char * name)
+Geometry::Key get_key(std::string_view name)
 {
 	using enum Geometry::Key::Common;
-	if (0 == strcmp(name, "position")) return {POSITION, 0};
-	if (0 == strcmp(name, "normal")) return {NORMAL, 0};
-	if (0 == strcmp(name, "tangent")) return {TANGENT, 0};
-	if (0 == strcmp(name, "texcoord")) return {TEXCOORD, 0};
-	if (0 == strcmp(name, "color")) return {COLOR, 0};
-	if (0 == strcmp(name, "joints")) return {JOINTS, 0};
-	if (0 == strcmp(name, "weights")) return {WEIGHTS, 0};
-	return {name, 0};
+	if (name == "position") return {POSITION, 0};
+	if (name == "normal") return {NORMAL, 0};
+	if (name == "tangent") return {TANGENT, 0};
+	if (name == "texcoord") return {TEXCOORD, 0};
+	if (name == "color") return {COLOR, 0};
+	if (name == "joints") return {JOINTS, 0};
+	if (name == "weights") return {WEIGHTS, 0};
+	return {std::string(name), 0};
 }
 
 namespace AttribLayout

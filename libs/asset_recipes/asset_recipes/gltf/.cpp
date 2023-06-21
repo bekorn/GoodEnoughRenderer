@@ -36,14 +36,12 @@ LoadedData Load(Desc const & desc)
 	{
 		auto const & buffer_view = item.GetObject();
 
-		loaded.buffer_views.push_back(
-			{
-				.buffer_index = GetU32(buffer_view, "buffer"),
-				.offset = GetU32(buffer_view, "byteOffset", 0),
-				.length = GetU32(buffer_view, "byteLength"),
-				.stride = GetOptionalU32(buffer_view, "byteStride"),
-			}
-		);
+		loaded.buffer_views.push_back({
+			.buffer_index = GetU32(buffer_view, "buffer"),
+			.offset = GetU32(buffer_view, "byteOffset", 0),
+			.length = GetU32(buffer_view, "byteLength"),
+			.stride = GetOptionalU32(buffer_view, "byteStride"),
+		});
 	}
 
 	// Parse images
@@ -161,31 +159,23 @@ LoadedData Load(Desc const & desc)
 			vector<Attribute> attributes;
 			attributes.reserve(primitive["attributes"].MemberCount());
 			for (auto const & attribute: primitive["attributes"].GetObject())
-			{
-				attributes.push_back(
-					{
-						.name = attribute.name.GetString(),
-						.accessor_index = attribute.value.GetUint(),
-					}
-				);
-			}
+				attributes.push_back({
+					.name = attribute.name.GetString(),
+					.accessor_index = attribute.value.GetUint(),
+				});
 
-			primitives.push_back(
-				{
-					.name = primitive_name_generator.get(primitive, "name"),
-					.attributes = attributes,
-					.indices_accessor_index = GetOptionalU32(primitive, "indices"),
-					.material_index = GetOptionalU32(primitive, "material"),
-				}
-			);
+			primitives.push_back({
+				.name = primitive_name_generator.get(primitive, "name"),
+				.attributes = attributes,
+				.indices_accessor_index = GetOptionalU32(primitive, "indices"),
+				.material_index = GetOptionalU32(primitive, "material"),
+			});
 		}
 
-		loaded.meshes.push_back(
-			{
-				.name = mesh_name_generator.get(mesh, "name"),
-				.primitives = primitives,
-			}
-		);
+		loaded.meshes.push_back({
+			.name = mesh_name_generator.get(mesh, "name"),
+			.primitives = primitives,
+		});
 	}
 
 	// Pass layout name
