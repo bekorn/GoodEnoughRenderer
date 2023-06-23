@@ -23,7 +23,7 @@
       "groups": [
         {
           "position": "f32x3",
-          "color": "u16normx4", // TODO(bekorn): axis gizmo has this type of colors, change it to u8normx3
+          "color": "u8normx3", // TODO(bekorn): axis gizmo has this type of colors, change it to u8normx3
         }
       ]
     }

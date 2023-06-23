@@ -20,6 +20,16 @@ Geometry::Vector get_type(std::string_view name)
 	if (name == "f32x2") return {F32, 2};
 	if (name == "f32x3") return {F32, 3};
 	if (name == "f32x4") return {F32, 4};
+
+	if (name == "u8") return {U8, 1};
+	if (name == "u8x2") return {U8, 2};
+	if (name == "u8x3") return {U8, 3};
+	if (name == "u8x4") return {U8, 4};
+	if (name == "u16") return {U16, 1};
+	if (name == "u16x2") return {U16, 2};
+	if (name == "u16x3") return {U16, 3};
+	if (name == "u16x4") return {U16, 4};
+
 	if (name == "u8norm") return {U8NORM, 1};
 	if (name == "u8normx2") return {U8NORM, 2};
 	if (name == "u8normx3") return {U8NORM, 3};
@@ -28,6 +38,25 @@ Geometry::Vector get_type(std::string_view name)
 	if (name == "u16normx2") return {U16NORM, 2};
 	if (name == "u16normx3") return {U16NORM, 3};
 	if (name == "u16normx4") return {U16NORM, 4};
+
+	if (name == "i8") return {I8, 1};
+	if (name == "i8x2") return {I8, 2};
+	if (name == "i8x3") return {I8, 3};
+	if (name == "i8x4") return {I8, 4};
+	if (name == "i16") return {I16, 1};
+	if (name == "i16x2") return {I16, 2};
+	if (name == "i16x3") return {I16, 3};
+	if (name == "i16x4") return {I16, 4};
+
+	if (name == "i8norm") return {I8NORM, 1};
+	if (name == "i8normx2") return {I8NORM, 2};
+	if (name == "i8normx3") return {I8NORM, 3};
+	if (name == "i8normx4") return {I8NORM, 4};
+	if (name == "i16norm") return {I16NORM, 1};
+	if (name == "i16normx2") return {I16NORM, 2};
+	if (name == "i16normx3") return {I16NORM, 3};
+	if (name == "i16normx4") return {I16NORM, 4};
+
 	assert_failure("unknown vertex attribute");
 }
 

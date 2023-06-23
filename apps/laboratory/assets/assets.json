@@ -26,8 +26,8 @@
       "name": "gltf",
       "groups": [
         {
-          "normal": "f32x3",
-          "texcoord": "f32x2",
+          "normal": "i8normx3",
+          "texcoord": "u16normx2",
         },
         {
           "position": "f32x3"

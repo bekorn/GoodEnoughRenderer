@@ -309,80 +309,122 @@ LoadedData Load(Desc const & desc)
 
 namespace Helpers
 {
-	// Pattern: String into Geometry::Attribute::Key
-	Geometry::Key IntoAttributeKey(std::string_view name)
+// Pattern: String into Geometry::Attribute::Key
+Geometry::Key IntoAttributeKey(std::string_view name)
+{
+	using namespace Geometry;
+
+	static auto const IntoCommon = [](std::string_view attribute_name) -> optional<Key::Common>
 	{
-		using namespace Geometry;
+		using enum Key::Common;
+		if (attribute_name == "POSITION") return POSITION;
+		if (attribute_name == "NORMAL") return NORMAL;
+		if (attribute_name == "TANGENT") return TANGENT;
+		if (attribute_name == "TEXCOORD") return TEXCOORD;
+		if (attribute_name == "COLOR") return COLOR;
+		return nullopt;
+	};
 
-		static auto const IntoCommon = [](std::string_view attribute_name) -> optional<Key::Common>
-		{
-			using enum Key::Common;
-			if (attribute_name == "POSITION") return POSITION;
-			if (attribute_name == "NORMAL") return NORMAL;
-			if (attribute_name == "TANGENT") return TANGENT;
-			if (attribute_name == "TEXCOORD") return TEXCOORD;
-			if (attribute_name == "COLOR") return COLOR;
-			return nullopt;
-		};
+	static std::regex const attribute_pattern("(_)?(.*?)(_\\d+)?");
 
-		static std::regex const attribute_pattern("(_)?(.*?)(_\\d+)?");
+	std::cmatch match;
+	regex_match(
+		name.data(), name.data() + name.size(),
+		match, attribute_pattern
+	);
 
-		std::cmatch match;
-		regex_match(
-			name.data(), name.data() + name.size(),
-			match, attribute_pattern
-		);
+	Key key;
 
-		Key key;
-
-		if (match[1].matched) // is custom
-		{
+	if (match[1].matched) // is custom
+	{
+		key.name = match[2].str();
+	}
+	else
+	{
+		auto common_name = IntoCommon(std::string_view(match[2].first, match[2].second));
+		if (common_name.has_value())
+			key.name = common_name.value();
+		else
 			key.name = match[2].str();
-		}
-		else
+	}
+
+	key.layer = 0;
+	if (match[3].matched) // has a layer
+		std::from_chars(match[3].first + 1, match[3].second, key.layer);
+
+	return key;
+}
+
+Geometry::Type IntoAttributeType(u32 type, bool is_normalized)
+{
+	// see spec section 3.6.2.2. Accessor Data Types
+	using enum Geometry::Type::Value;
+
+	if (is_normalized)
+		switch (type)
 		{
-			auto common_name = IntoCommon(std::string_view(match[2].first, match[2].second));
-			if (common_name.has_value())
-				key.name = common_name.value();
-			else
-				key.name = match[2].str();
+		case 5120: return {I8NORM};
+		case 5121: return {U8NORM};
+		case 5122: return {I16NORM};
+		case 5123: return {U16NORM};
+		case 5125: return {U32NORM};
+		}
+	else
+		switch (type)
+		{
+		case 5120: return {I8};
+		case 5121: return {U8};
+		case 5122: return {I16};
+		case 5123: return {U16};
+		case 5125: return {U32};
+		case 5126: return {F32};
 		}
 
-		key.layer = 0;
-		if (match[3].matched) // has a layer
-			std::from_chars(match[3].first + 1, match[3].second, key.layer);
+	// above values are all the alloved ones therefore,
+	assert_enum_out_of_range();
+}
 
-		return key;
-	}
-
-	Geometry::Type IntoAttributeType(u32 type, bool is_normalized)
+f64 ConvertToF64(byte * src, Geometry::Type const & type)
+{
+	using enum Geometry::Type::Value;
+	switch(type)
 	{
-		// see spec section 3.6.2.2. Accessor Data Types
-		using enum Geometry::Type::Value;
-
-		if (is_normalized)
-			switch (type)
-			{
-			case 5120: return {I8NORM};
-			case 5121: return {U8NORM};
-			case 5122: return {I16NORM};
-			case 5123: return {U16NORM};
-			case 5125: return {U32NORM};
-			}
-		else
-			switch (type)
-			{
-			case 5120: return {I8};
-			case 5121: return {U8};
-			case 5122: return {I16};
-			case 5123: return {U16};
-			case 5125: return {U32};
-			case 5126: return {F32};
-			}
-
-		// above values are all the alloved ones therefore,
-		assert_enum_out_of_range();
+		case F32:		return f64(*reinterpret_cast<f32*>(src));
+		case I8:		return f64(*reinterpret_cast<i8*>(src));
+		case I16:		return f64(*reinterpret_cast<i16*>(src));
+		case I32:		return f64(*reinterpret_cast<i32*>(src));
+		case I8NORM:	return f64(*reinterpret_cast<i8*>(src))  / std::numeric_limits<i8>::max();
+		case I16NORM:	return f64(*reinterpret_cast<i16*>(src)) / std::numeric_limits<i16>::max();
+		case I32NORM:	return f64(*reinterpret_cast<i32*>(src)) / std::numeric_limits<i32>::max();
+		case U8:		return f64(*reinterpret_cast<u8*>(src));
+		case U16:		return f64(*reinterpret_cast<u16*>(src));
+		case U32:		return f64(*reinterpret_cast<u32*>(src));
+		case U8NORM:	return f64(*reinterpret_cast<u8*>(src))  / std::numeric_limits<u8>::max();
+		case U16NORM:	return f64(*reinterpret_cast<u16*>(src)) / std::numeric_limits<u16>::max();
+		case U32NORM:	return f64(*reinterpret_cast<u32*>(src)) / std::numeric_limits<u32>::max();
 	}
+}
+
+void ConvertFromF64(f64 src, Geometry::Type const & type, byte * dst)
+{
+	using enum Geometry::Type::Value;
+	switch(type)
+	{
+		case F32:		*reinterpret_cast<f32*>(dst) = src; break;
+		case I8:		*reinterpret_cast<i8*>(dst)  = src; break;
+		case I16:		*reinterpret_cast<i16*>(dst) = src; break;
+		case I32:		*reinterpret_cast<i32*>(dst) = src; break;
+		case I8NORM:	*reinterpret_cast<i8*>(dst)  = src * std::numeric_limits<i8>::max();  break;
+		case I16NORM:	*reinterpret_cast<i16*>(dst) = src * std::numeric_limits<i16>::max(); break;
+		case I32NORM:	*reinterpret_cast<i32*>(dst) = src * std::numeric_limits<i32>::max(); break;
+		case U8:		*reinterpret_cast<u8*>(dst)  = src; break;
+		case U16:		*reinterpret_cast<u16*>(dst) = src; break;
+		case U32:		*reinterpret_cast<u32*>(dst) = src; break;
+		case U8NORM:	*reinterpret_cast<u8*>(dst)  = src * std::numeric_limits<u8>::max();  break;
+		case U16NORM:	*reinterpret_cast<u16*>(dst) = src * std::numeric_limits<u16>::max(); break;
+		case U32NORM:	*reinterpret_cast<u32*>(dst) = src * std::numeric_limits<u32>::max(); break;
+	}
+}
 }
 
 void Convert(
@@ -501,11 +543,9 @@ void Convert(
 					IntoAttributeType(accessor.vector_data_type, accessor.normalized),
 					accessor.vector_dimension
 				);
-				assert(vec == layout_attrib.vec, "Primitive attribute is in a different format");
-
 				auto attrib_location = layout_attrib.location; // also i
 				auto & buffer = primitive.data.buffers[attrib_location];
-				u32 buffer_stride = layout_attrib.vec.size();
+				u32 buffer_stride = vec.size();
 				buffer = ByteBuffer(buffer_stride * accessor.count);
 
 				if (buffer_view.stride.has_value())
@@ -532,6 +572,50 @@ void Convert(
 						.span_as<byte>(buffer_view.offset + accessor.byte_offset, buffer.size);
 
 					std::memcpy(buffer.begin(), source.data(), buffer.size);
+				}
+
+				// Convert data if it doesn't match with the layout
+				if (vec != layout_attrib.vec)
+				{
+					fmt::print(
+						"!! mesh[{}]:prim[{}] {} is {}, expected {}; ",
+						loaded_mesh.name, &loaded_primitive - loaded_mesh.primitives.data(),
+						layout_attrib.key, vec, layout_attrib.vec
+					);
+
+					auto & converted_vec = layout_attrib.vec;
+					ByteBuffer converted_buffer(converted_vec.size() * accessor.count);
+
+					auto src_ptr = buffer.data_as<byte>();
+					auto src_size = vec.type.size();
+					auto dst_ptr = converted_buffer.data_as<byte>();
+					auto dst_size = converted_vec.type.size();
+
+					auto copy_count = glm::min(vec.dimension, converted_vec.dimension);
+					auto fill_count = glm::max(0, converted_vec.dimension - vec.dimension);
+					f64 fill_vec[] = {0, 0, 0, 0}; // TODO(bekorn): read from attrib layout
+					auto skip_count = glm::max(0, vec.dimension - converted_vec.dimension);
+
+					for (auto _ = 0; _ < accessor.count; ++_)
+					{
+						for (auto _ = 0; _ < copy_count; ++_)
+						{
+							f64 value = ConvertToF64(src_ptr, vec.type);
+							src_ptr += src_size;
+
+							ConvertFromF64(value, converted_vec.type, dst_ptr);
+							dst_ptr += dst_size;
+						}
+						for (auto i = 0; i < fill_count; ++i)
+						{
+							ConvertFromF64(fill_vec[i], converted_vec.type, dst_ptr);
+							dst_ptr += dst_size;
+						}
+						src_ptr += src_size * skip_count;
+					}
+
+					fmt::print("\tsize reduced by {} kb\n", (buffer.size - converted_buffer.size) / 1024);
+					buffer = move(converted_buffer);
 				}
 			}
 
