@@ -21,7 +21,7 @@ void Convert(
 	Managed<Geometry::Primitive> & primitives,
 	Managed<Render::Mesh> & meshes,
 	::Scene::Tree & scene_tree,
-	Managed<Geometry::Layout> const & vertex_layouts
+	Managed<Geometry::Layout> const & attrib_layouts
 );
 
 std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir);

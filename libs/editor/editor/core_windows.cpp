@@ -435,9 +435,9 @@ void ProgramWindow::update(Context & ctx)
 		return;
 	}
 
-	if (auto iter = assets->vertex_layouts.find(program.vertex_layout_name); iter != assets->vertex_layouts.end())
+	if (auto iter = assets->attrib_layouts.find(program.attrib_layout_name); iter != assets->attrib_layouts.end())
 	{
-		if (BeginTable("vertex_layout", 4, ImGuiTableFlags_BordersInnerH))
+		if (BeginTable("attrib_layout", 4, ImGuiTableFlags_BordersInnerH))
 		{
 			TableSetupColumn("Attribute");
 			TableSetupColumn("Per Patch", ImGuiTableColumnFlags_WidthFixed);
@@ -445,8 +445,8 @@ void ProgramWindow::update(Context & ctx)
 			TableSetupColumn("Location", ImGuiTableColumnFlags_WidthFixed);
 			TableHeadersRow();
 
-			auto & vertex_layout = iter->second;
-			for (auto const & attrib: vertex_layout)
+			auto & attrib_layout = iter->second;
+			for (auto const & attrib: attrib_layout)
 			{
 				if (not attrib.is_used()) continue;
 				TableNextColumn(), TextFMT("{}", attrib.key);

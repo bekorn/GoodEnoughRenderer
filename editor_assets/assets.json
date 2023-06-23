@@ -5,28 +5,22 @@
   "texture": [
     {"name": "border_map", "path": "textures/border_contrast.png"},
   ],
-  "glsl_vertex_layout": [
+  "attrib_layout": [
     {
       "name": "gltf",
-      "groups": [
-        {
-          "normal": "f32x3",
-          "texcoord": "f32x2",
-        },
-        {
-          "position": "f32x3"
-        },
-      ],
+      "attribs": {
+        "position": {"type": "F32",     "size": 3, "per_patch": false, "group": 0},
+        "normal":   {"type": "I8NORM",  "size": 3, "per_patch": false, "group": 0},
+        "texcoord": {"type": "U16NORM", "size": 2, "per_patch": false, "group": 0},
+      }
     },
     {
       "name": "gizmo",
-      "groups": [
-        {
-          "position": "f32x3",
-          "color": "u8normx3", // TODO(bekorn): axis gizmo has this type of colors, change it to u8normx3
-        }
-      ]
-    }
+      "attribs": {
+        "position": {"type": "F32",    "size": 3, "per_patch": false, "group": 0},
+        "color":    {"type": "U8NORM", "size": 3, "per_patch": false, "group": 0},
+      }
+    },
   ],
   "glsl_program": [
     {

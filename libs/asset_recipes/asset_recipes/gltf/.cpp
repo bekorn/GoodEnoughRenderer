@@ -434,7 +434,7 @@ void Convert(
 	Managed<Geometry::Primitive> & primitives,
 	Managed<Render::Mesh> & meshes,
 	::Scene::Tree & scene_tree,
-	Managed<Geometry::Layout> const & vertex_layouts
+	Managed<Geometry::Layout> const & attrib_layouts
 )
 {
 	using namespace Helpers;
@@ -511,7 +511,7 @@ void Convert(
 	// Convert primitives
 	// TODO(bekorn): the layout is same for the whole gltf file, it should be more granular, per material perhaps
 	assert(loaded.layout_name.has_value(), "Default layout not supported yet");
-	auto & layout = vertex_layouts.get(loaded.layout_name.value());
+	auto & layout = attrib_layouts.get(loaded.layout_name.value());
 	vector<Geometry::Key> loaded_attrib_keys;
 	loaded_attrib_keys.reserve(Geometry::ATTRIBUTE_COUNT);
 	for (auto & loaded_mesh: loaded.meshes)

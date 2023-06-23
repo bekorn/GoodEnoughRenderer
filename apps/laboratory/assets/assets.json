@@ -21,27 +21,21 @@
 //      "min_filter": "NEAREST", "mag_filter": "NEAREST",
 //    },
   ],
-  "glsl_vertex_layout": [
+  "attrib_layout": [
     {
       "name": "gltf",
-      "groups": [
-        {
-          "normal": "i8normx3",
-          "texcoord": "u16normx2",
-        },
-        {
-          "position": "f32x3"
-        },
-      ],
+      "attribs": {
+          "position": {"type": "F32",     "size": 3, "per_patch": false, "group": 0},
+          "normal":   {"type": "I8NORM",  "size": 3, "per_patch": false, "group": 0},
+          "texcoord": {"type": "U16NORM", "size": 2, "per_patch": false, "group": 0},
+      },
     },
     {
       "name": "sdf_lines",
-      "groups": [
-        {
-          "position": "f32x3"
-        },
-      ]
-    }
+      "attribs": {
+        "position": {"type": "F32", "size": 3, "per_patch": false, "group": 0},
+      },
+    },
   ],
   "glsl_uniform_block": [
     {"name": "Lights", "path": "glsl/uniform_block/lights.unib.glsl"},

@@ -1,4 +1,4 @@
-#include "attrib_layout.hpp"
+#include "convert.hpp"
 
 Geometry::Key get_key(std::string_view name)
 {
@@ -15,7 +15,7 @@ Geometry::Key get_key(std::string_view name)
 
 namespace AttribLayout
 {
-std::pair<Name, Geometry::Layout> Parse(File::JSON::JSONObj o)
+std::pair<Name, Geometry::Layout> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
 {
 	Geometry::Layout layout;
 	u8 location = 0;

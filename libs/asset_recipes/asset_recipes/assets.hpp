@@ -16,7 +16,7 @@ struct Assets
 	Descriptions const & descriptions;
 
 	// GL resources
-	Managed<Geometry::Layout> vertex_layouts;
+	Managed<Geometry::Layout> attrib_layouts;
 	Managed<GL::UniformBlock> uniform_blocks;
 	Managed<GL::ShaderProgram> programs;
 	Managed<GL::Texture2D> textures;
@@ -42,7 +42,7 @@ struct Assets
 
 	void init();
 
-	void load_glsl_vertex_layout(Name const & name);
+	void load_attrib_layout(Name const & name);
 	void load_glsl_program(Name const & name);
 	void load_glsl_uniform_block(Name const & name);
 	void load_gltf(Name const & name);

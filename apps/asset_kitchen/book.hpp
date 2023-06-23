@@ -3,9 +3,8 @@
 #include <file_io/core.hpp>
 #include <file_io/json_utils.hpp>
 
-#include <asset_recipes/glsl/vertex_layout/load.hpp>
+#include <asset_recipes/attrib_layout/convert.hpp>
 
-#include "recipes/attrib_layout.hpp"
 #include "recipes/gltf.hpp"
 
 struct Book
@@ -29,10 +28,10 @@ struct Book
 		document.Parse(File::LoadAsString(json_path).c_str());
 		assert(not document.HasParseError(), "assets.json is invalid");
 
-		if (auto const member = document.FindMember(AttribLayout::NAME); member != document.MemberEnd())
+		if (auto const member = document.FindMember(AttribLayout::ASSET_NAME); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
-				auto [name, desc] = AttribLayout::Parse(item.GetObject());
+				auto [name, desc] = AttribLayout::Parse(item.GetObject(), assets_dir);
 				attrib_layouts.generate(name, desc);
 			}
 

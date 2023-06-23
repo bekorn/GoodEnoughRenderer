@@ -62,7 +62,7 @@ const char * to_string(Geometry::Key const & key)
 	assert_enum_out_of_range();
 }
 
-std::string generate_vertex_layout(Geometry::Layout const & layout)
+std::string generate_glsl(Geometry::Layout const & layout)
 {
 	std::string buffer;
 	fmt::format_to(back_inserter(buffer), "{}", "#ifdef ONLY_VERT\n");
@@ -77,11 +77,11 @@ std::string generate_vertex_layout(Geometry::Layout const & layout)
 }
 }
 
-Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded, Managed<Geometry::Layout> const & vertex_layouts)
+Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded, Managed<Geometry::Layout> const & attrib_layouts)
 {
 	using namespace Helpers;
 
-	vector<const char*> sources; // = { language_config, stage_define, loaded.includes, vertex_layout, "#line 1", stage_source }
+	vector<const char*> sources; // = { language_config, stage_define, loaded.includes, attrib_layout, "#line 1", stage_source }
 	sources.resize(1 + 1 + loaded.includes.size() + 1 + 1 + 1);
 
 	sources[0] = GL::GLSL_LANGUAGE_CONFIG.data();
@@ -91,10 +91,10 @@ Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded, Mana
 
 	sources[sources.size() - 2] = "#line 1\n";
 
-	std::string vertex_layout;
+	std::string attrib_layout;
 	if (not loaded.layout_name.string.empty())
-		vertex_layout = generate_vertex_layout(vertex_layouts.get(loaded.layout_name));
-	sources[sources.size() - 3] = vertex_layout.data();
+		attrib_layout = generate_glsl(attrib_layouts.get(loaded.layout_name));
+	sources[sources.size() - 3] = attrib_layout.data();
 
 	/// Compile stages
 	vector<GL::ShaderStage> stages;
@@ -134,7 +134,7 @@ Expected<GL::ShaderProgram, std::string> Convert(LoadedData const & loaded, Mana
 	if (not is_linked(program))
 		return {fmt::format("Compilation failed! Linking Error:\n{}", get_log(program))};
 
-	program.vertex_layout_name = loaded.layout_name;
+	program.attrib_layout_name = loaded.layout_name;
 	set_uniform_mapping(program);
 	set_uniform_block_mapping(program);
 	set_storage_block_mapping(program);

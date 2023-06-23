@@ -166,7 +166,7 @@ void Game::init()
 
 	// init lines_vao
 	{
-		lines_geo.layout = &assets.vertex_layouts.get(assets.programs.get("lines_draw").vertex_layout_name);
+		lines_geo.layout = &assets.attrib_layouts.get(assets.programs.get("lines_draw").attrib_layout_name);
 
 		auto const vertex_count = line_count * line_length;
 

@@ -1,6 +1,6 @@
 #include "assets.hpp"
 #include "descriptions.hpp"
-#include "glsl/vertex_layout/convert.hpp"
+#include "attrib_layout/convert.hpp"
 #include "glsl/program/convert.hpp"
 #include "glsl/uniform_block/convert.hpp"
 #include "gltf/convert.hpp"
@@ -23,11 +23,11 @@ void Descriptions::init(std::filesystem::path const & project_root)
 		assert(document.IsObject(), "assets.json is invalid");
 
 
-		if (auto const member = document.FindMember("glsl_vertex_layout"); member != document.MemberEnd())
+		if (auto const member = document.FindMember(AttribLayout::ASSET_NAME); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
-				auto [name, desc] = GLSL::VertexLayout::Parse(item.GetObject(), project_root);
-				vertex_layout.generate(name, desc);
+				auto [name, layout] = AttribLayout::Parse(item.GetObject(), project_root);
+				attrib_layout.generate(name, layout);
 			}
 
 		if (auto const member = document.FindMember("glsl_uniform_block"); member != document.MemberEnd())
@@ -76,8 +76,8 @@ void Descriptions::init(std::filesystem::path const & project_root)
 
 void Assets::init()
 {
-	for (auto const & [name, _] : descriptions.vertex_layout)
-		load_glsl_vertex_layout(name);
+	for (auto const & [name, _] : descriptions.attrib_layout)
+		load_attrib_layout(name);
 
 	for (auto const & [name, _] : descriptions.uniform_block)
 		load_glsl_uniform_block(name);
@@ -102,17 +102,17 @@ void Assets::init()
 		load_envmap(name);
 }
 
-void Assets::load_glsl_vertex_layout(Name const & name)
+void Assets::load_attrib_layout(Name const & name)
 {
-	auto const layout_data = GLSL::VertexLayout::Load(descriptions.vertex_layout.get(name));
-	vertex_layouts.generate(name, move(layout_data));
+	auto layout_data = descriptions.attrib_layout.get(name);
+	attrib_layouts.generate(name, move(layout_data));
 }
 
 void Assets::load_glsl_program(Name const & name)
 {
 	auto const loaded_data = GLSL::Program::Load(descriptions.glsl.get(name));
 
-	if (auto expected = GLSL::Program::Convert(loaded_data, vertex_layouts))
+	if (auto expected = GLSL::Program::Convert(loaded_data, attrib_layouts))
 	{
 		programs.generate(name, expected.into_result());
 	}
@@ -145,7 +145,7 @@ void Assets::load_glsl_uniform_block(Name const & name)
 void Assets::load_gltf(Name const & name)
 {
 	auto const gltf_data = GLTF::Load(descriptions.gltf.get(name));
-	GLTF::Convert(gltf_data, textures, materials, primitives, meshes, scene_tree, vertex_layouts);
+	GLTF::Convert(gltf_data, textures, materials, primitives, meshes, scene_tree, attrib_layouts);
 }
 
 void Assets::load_texture(const Name & name)
@@ -187,7 +187,7 @@ bool Assets::reload_glsl_program(Name const & name)
 {
 	auto const loaded_data = GLSL::Program::Load(descriptions.glsl.get(name));
 
-	if (auto expected = GLSL::Program::Convert(loaded_data, vertex_layouts))
+	if (auto expected = GLSL::Program::Convert(loaded_data, attrib_layouts))
 	{
 		auto new_program = expected.into_result();
 

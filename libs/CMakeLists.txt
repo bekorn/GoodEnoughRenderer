@@ -73,7 +73,7 @@ list(APPEND LIBS AssetRecipes)
 add_library(AssetRecipes STATIC)
 target_include_directories(AssetRecipes PUBLIC asset_recipes/)
 target_sources(AssetRecipes PRIVATE
-    asset_recipes/asset_recipes/glsl/vertex_layout/.cpp
+    asset_recipes/asset_recipes/attrib_layout/.cpp
     asset_recipes/asset_recipes/glsl/program/.cpp
     asset_recipes/asset_recipes/glsl/uniform_block/.cpp
     asset_recipes/asset_recipes/gltf/.cpp

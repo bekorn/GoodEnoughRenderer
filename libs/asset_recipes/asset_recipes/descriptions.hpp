@@ -2,8 +2,8 @@
 
 #include <core/core.hpp>
 #include <core/named.hpp>
+#include <core/geometry.hpp>
 
-#include "glsl/vertex_layout/load.hpp"
 #include "glsl/program/load.hpp"
 #include "glsl/uniform_block/load.hpp"
 #include "gltf/load.hpp"
@@ -15,7 +15,7 @@ struct Descriptions
 {
 	std::filesystem::path root;
 
-	Managed<GLSL::VertexLayout::Desc> vertex_layout;
+	Managed<Geometry::Layout> attrib_layout;
 	Managed<GLSL::Program::Desc> glsl;
 	Managed<GLSL::UniformBlock::Desc> uniform_block;
 	Managed<GLTF::Desc> gltf;

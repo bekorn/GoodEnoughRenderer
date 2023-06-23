@@ -7,7 +7,7 @@ string(APPEND CMAKE_RUNTIME_OUTPUT_DIRECTORY "/AssetKitchen")
 set(APPS ${APPS} AssetKitchen PARENT_SCOPE)
 add_executable(AssetKitchen main.cpp)
 target_sources(AssetKitchen PRIVATE
-    recipes/attrib_layout.cpp
+    recipes/gltf.cpp
     )
 target_link_libraries(AssetKitchen PRIVATE
     AssetRecipes
