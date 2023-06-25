@@ -2,7 +2,7 @@
   "gltf": [
 //    {"name": "Sponza", "path": "model/sponza/Sponza.gltf", "layout": "gltf"},
 //    {"name": "ElectricGuitar", "path": "model/electric_guitar_fender_strat_plus/model.gltf", "layout": "gltf"},
-    {"name": "DamagedHelmet", "path": "model/damaged_helmet/DamagedHelmet.gltf", "layout":  "gltf"},
+    {"name": "DamagedHelmet", "path": "model/damaged_helmet__served/DamagedHelmet.gltf", "layout":  "gltf"},
 //    {"name": "Avocado", "path": "model/avocado/Avocado.gltf", "layout": "gltf"},
 //    {"name": "FlightHelmet", "path": "model/flight_helmet/FlightHelmet.gltf", "layout": "gltf"},
 //    {"name": "OrientationTest", "path": "model/orientation test/OrientationTest.gltf", "layout": "gltf"},
