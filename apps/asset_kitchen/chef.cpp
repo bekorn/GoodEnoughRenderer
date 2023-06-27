@@ -355,32 +355,25 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 
 					// buffers other than vertex attributes are always tightly packed
 					// see spec section 3.6.2.1. Overview, paragraph 2
+					auto const & buffer = loaded_buffers[buffer_view.buffer_index];
+					auto const offset = accessor.byte_offset + buffer_view.offset;
+					auto const size = accessor.count * index_type.size();
+					primitive.indices.reserve(accessor.count);
+
 					if (index_type == Geometry::Type::U8)
 					{
-						auto source = loaded_buffers[buffer_view.buffer_index]
-							.span_as<u8>(accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
-
-						primitive.indices.reserve(source.size());
-						for (auto index: source)
-							primitive.indices.emplace_back(index);
-					} else if (index_type == Geometry::Type::U16)
+						for (auto idx: buffer.span_as<u8>(offset, size))
+							primitive.indices.emplace_back(idx);
+					}
+					else if (index_type == Geometry::Type::U16)
 					{
-						auto source = loaded_buffers[buffer_view.buffer_index]
-							.span_as<u16>(
-								accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
-
-						primitive.indices.reserve(source.size());
-						for (auto index: source)
-							primitive.indices.emplace_back(index);
-					} else if (index_type == Geometry::Type::U32)
+						for (auto idx: buffer.span_as<u16>(offset, size))
+							primitive.indices.emplace_back(idx);
+					}
+					else if (index_type == Geometry::Type::U32)
 					{
-						auto source = loaded_buffers[buffer_view.buffer_index]
-							.span_as<u32>(
-								accessor.byte_offset + buffer_view.offset, accessor.count * index_type.size());
-
-						primitive.indices.reserve(source.size());
-						for (auto index: source)
-							primitive.indices.emplace_back(index);
+						for (auto idx: buffer.span_as<u32>(offset, size))
+							primitive.indices.emplace_back(idx);
 					}
 				} else
 				{
@@ -402,7 +395,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 	{
 		auto & alloc = document.GetAllocator();
 
-		// Buffer
+		/// Buffer
 		{
 			auto total_size = 0;
 			for (const auto & primitives: mesh_to_prim)
@@ -426,7 +419,8 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 			document["buffers"] = buffers;
 		}
 
-		// Rest
+
+		/// Rest
 		//  Each mesh will have 2 buffer views for VertexBuffer + IndexBuffer
 		//  IndexBuffer will have 1 accessors, VertexBuffer will have N for each attribute
 		auto * converted_buffer_ptr = converted_buffer.data_as<byte>();
@@ -465,6 +459,26 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 			}
 			assert_enum_out_of_range();
 		};
+		auto const get_attrib_name = [](Geometry::Key const & key) -> std::string
+		{
+			auto & name = key.name;
+
+			if (holds_alternative<std::string>(name))
+				return get<std::string>(name).data();
+
+			using enum Geometry::Key::Common;
+			switch (get<Geometry::Key::Common>(name))
+			{
+				case POSITION: return "POSITION";
+				case NORMAL: return "NORMAL";
+				case TANGENT: return "TANGENT";
+				case TEXCOORD: return fmt::format("{}_{}", "TEXCOORD", key.layer);
+				case COLOR: return fmt::format("{}_{}", "COLOR", key.layer);
+				case JOINTS: return fmt::format("{}_{}", "JOINTS", key.layer);
+				case WEIGHTS: return fmt::format("{}_{}", "WEIGHTS", key.layer);
+			}
+			assert_enum_out_of_range();
+		};
 
 		for (auto mesh_idx = 0; auto & item: document["meshes"].GetArray())
 		{
@@ -483,7 +497,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 				for (const auto & attrib: loaded_prim.layout->attributes)
 				{
 					if (not attrib.is_used()) continue;
-					Value key(attrib.key.name_to_string(), alloc);
+					auto key = Value(get_attrib_name(attrib.key).c_str(), alloc);
 					attribs.AddMember(key, accessor_idx, alloc);
 					accessor_idx++;
 				}
@@ -563,28 +577,57 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 
 		document["bufferViews"] = converted_buffer_views;
 		document["accessors"] = converted_accessors;
+
+
+		/// Specify KHR_mesh_quantization extension for the extended data types
+		// !!! this extension does not cover all the data types so the served gltf might not be compliant to the spec
+		Value::StringRefType const EXTENSION = "KHR_mesh_quantization";
+
+		if (auto iter = document.FindMember("extensionsUsed"); iter != document.MemberEnd())
+			iter->value.GetArray().PushBack(EXTENSION, alloc);
+		else
+			document.AddMember("extensionsUsed", Value(kArrayType).PushBack(EXTENSION, alloc), alloc);
+
+		if (auto iter = document.FindMember("extensionsRequired"); iter != document.MemberEnd())
+			iter->value.GetArray().PushBack(EXTENSION, alloc);
+		else
+			document.AddMember("extensionsRequired", Value(kArrayType).PushBack(EXTENSION, alloc), alloc);
 	}
 
 
 	/// Write to file
 	{
-		auto served_path = book.served_dir / std::filesystem::relative(desc.path, book.assets_dir);
-		std::filesystem::create_directories(served_path.parent_path());
+		auto const relative_path = std::filesystem::relative(desc.path, book.assets_dir);
+		auto const asset_path = book.assets_dir / relative_path;
+		auto const asset_dir = asset_path.parent_path();
+		auto const served_path = book.served_dir / relative_path;
+		auto const served_dir = served_path.parent_path();
+		std::filesystem::create_directories(served_dir);
 
 		// JSON
-		{
-			// see: https://rapidjson.org/md_doc_stream.html#FileWriteStream
-			StringBuffer buffer;
-			PrettyWriter writer(buffer);
-			document.Accept(writer);
+		// see: https://rapidjson.org/md_doc_stream.html#FileWriteStream
+		StringBuffer buffer;
+		PrettyWriter writer(buffer);
+		document.Accept(writer);
 
-			File::WriteString(served_path, {buffer.GetString(), buffer.GetSize()});
-		}
+		File::WriteString(served_path, {buffer.GetString(), buffer.GetSize()});
 
 		// Binary
+		File::WriteBytes(relative_path.filename().replace_extension("bin"), converted_buffer);
+
+		// Copy the rest
+		for (auto const & dir_entry : std::filesystem::directory_iterator(asset_dir))
 		{
-			served_path.replace_extension("bin");
-			File::WriteBytes(served_path, converted_buffer);
+			if (dir_entry.is_regular_file())
+			{
+				auto extension = dir_entry.path().extension();
+				if (extension == ".gltf" or extension == ".bin")
+					continue;
+			}
+
+			auto dst_path = served_dir / std::filesystem::relative(dir_entry.path(), asset_dir);
+			using enum std::filesystem::copy_options;
+			std::filesystem::copy(dir_entry.path(), dst_path, recursive | skip_existing);
 		}
 	}
 }
