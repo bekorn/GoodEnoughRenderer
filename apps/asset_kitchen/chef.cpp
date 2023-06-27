@@ -579,12 +579,20 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 
 				// Add extras for shortcut
 				{
-					Value formatted_buffers(kArrayType);
-					formatted_buffers.PushBack(vertex_buffer_view_idx, alloc);
-					formatted_buffers.PushBack(index_buffer_view_idx, alloc);
+					Value vertex_buffer(kObjectType);
+					vertex_buffer.AddMember("offset", vertex_buffer_begin, alloc);
+					vertex_buffer.AddMember("count", loaded_prim.vertices.count, alloc);
+
+					Value index_buffer(kObjectType);
+					index_buffer.AddMember("offset", index_buffer_begin, alloc);
+					index_buffer.AddMember("count", loaded_prim.indices.count, alloc);
+
+					Value buffers(kObjectType);
+					buffers.AddMember("vertex", vertex_buffer, alloc);
+					buffers.AddMember("index", index_buffer, alloc);
 
 					Value extras(kObjectType);
-					extras.AddMember("formatted_buffer_views", formatted_buffers, alloc);
+					extras.AddMember("buffers", buffers, alloc);
 
 					prim.AddMember("extras", extras, alloc);
 				}

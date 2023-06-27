@@ -165,15 +165,19 @@ LoadedData Load(Desc const & desc)
 				});
 
 			auto const & extras = primitive["extras"].GetObject();
-			auto const & formatted_buffer_views = extras["formatted_buffer_views"].GetArray();
+			auto const & buffers = extras["buffers"].GetObject();
+			auto const & vertex_buffer = buffers["vertex"].GetObject();
+			auto const & index_buffer = buffers["index"].GetObject();
 
 			primitives.push_back({
 				.name = primitive_name_generator.get(primitive, "name"),
 				.attributes = attributes,
 				.indices_accessor_index = GetOptionalU32(primitive, "indices"),
 				.material_index = GetOptionalU32(primitive, "material"),
-				.vertex_buffer_view = formatted_buffer_views[0].GetUint(),
-				.index_buffer_view = formatted_buffer_views[1].GetUint(),
+				.vertex_buffer_offset = vertex_buffer["offset"].GetUint(),
+				.vertex_count = vertex_buffer["count"].GetUint(),
+				.index_buffer_offset = index_buffer["offset"].GetUint(),
+				.index_count = index_buffer["count"].GetUint(),
 			});
 		}
 
@@ -528,16 +532,13 @@ void Convert(
 
 			primitive.layout = &layout;
 
-			auto & vertex_buffer_view = loaded.buffer_views[loaded_primitive.vertex_buffer_view];
-			auto & vertex_buffer = loaded.buffers[vertex_buffer_view.buffer_index];
-			auto & index_buffer_view = loaded.buffer_views[loaded_primitive.index_buffer_view];
-			auto & index_buffer = loaded.buffers[index_buffer_view.buffer_index];
+			auto * buffer_ptr = loaded.buffers[0].data.get();
 
-			primitive.vertices.init(*primitive.layout, vertex_buffer_view.length / primitive.layout->get_vertex_size());
-			memcpy(primitive.vertices.buffer.begin(), vertex_buffer.begin() + vertex_buffer_view.offset, vertex_buffer_view.length);
+			primitive.vertices.init(*primitive.layout, loaded_primitive.vertex_count);
+			memcpy(primitive.vertices.buffer.begin(), buffer_ptr + loaded_primitive.vertex_buffer_offset, primitive.vertices.buffer.size);
 
-			primitive.indices.init(index_buffer_view.length / sizeof(Geometry::Indices::IndexType));
-			memcpy(primitive.indices.buffer.begin(), index_buffer.begin() + index_buffer_view.offset, index_buffer_view.length);
+			primitive.indices.init(loaded_primitive.index_count);
+			memcpy(primitive.indices.buffer.begin(), buffer_ptr + loaded_primitive.index_buffer_offset, primitive.indices.buffer.size);
 		}
 
 	// Convert meshes

@@ -72,8 +72,8 @@ struct Primitive
 	optional<u32> indices_accessor_index;
 	optional<u32> material_index;
 
-	u32 vertex_buffer_view = u32(-1); // !!! Temporary
-	u32 index_buffer_view = u32(-1); // !!! Temporary
+	u32 vertex_buffer_offset, vertex_count; // !!! Temporary
+	u32 index_buffer_offset, index_count; // !!! Temporary
 };
 
 struct Mesh
