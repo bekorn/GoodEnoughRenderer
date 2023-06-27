@@ -1,3 +1,4 @@
+#include <core/expected.hpp>
 #include "assets.hpp"
 #include "descriptions.hpp"
 #include "attrib_layout/convert.hpp"
@@ -12,65 +13,75 @@ void Descriptions::init(std::filesystem::path const & project_root)
 {
 	root = project_root;
 
-	auto asset_descriptions_path = project_root / "assets.json";
-	if (std::filesystem::exists(asset_descriptions_path))
+	auto served_root = File::Path(root).concat("__served");
+
+	fmt::memory_buffer errbuf;
+	auto errout = std::back_inserter(errbuf);
+
+	using namespace rapidjson;
+	using namespace File::JSON;
+
+	Document document;
+	document.Parse(File::LoadAsString(root / "assets.json").c_str());
+	assert(document.IsObject(), "assets.json is invalid");
+
+
+	if (auto const member = document.FindMember(AttribLayout::ASSET_NAME); member != document.MemberEnd())
+		for (auto const & item: member->value.GetArray())
+		{
+			auto [name, layout] = AttribLayout::Parse(item.GetObject(), root);
+			attrib_layout.generate(name, layout);
+		}
+
+	if (auto const member = document.FindMember("glsl_uniform_block"); member != document.MemberEnd())
+		for (auto const & item: member->value.GetArray())
+		{
+			auto [name, desc] = GLSL::UniformBlock::Parse(item.GetObject(), root);
+			uniform_block.generate(name, desc);
+		}
+
+	if (auto const member = document.FindMember("glsl_program"); member != document.MemberEnd())
+		for (auto const & item: member->value.GetArray())
+		{
+			auto [name, desc] = GLSL::Program::Parse(item.GetObject(), root);
+			glsl.generate(name, desc);
+		}
+
+	if (auto const member = document.FindMember("gltf"); member != document.MemberEnd())
+		for (auto const & item: member->value.GetArray())
+		{
+			auto [name, desc] = GLTF::Parse(item.GetObject(), served_root);
+			if (not exists(desc.path))
+				fmt::format_to(errout, "GLTF({}) is not found at {}\n", name.string, desc.path);
+			gltf.generate(name, desc);
+		}
+
+	if (auto const member = document.FindMember("texture"); member != document.MemberEnd())
+		for (auto const & item: member->value.GetArray())
+		{
+			auto [name, desc] = Texture::Parse(item.GetObject(), root);
+			texture.generate(name, desc);
+		}
+
+	if (auto const member = document.FindMember("cubemap"); member != document.MemberEnd())
+		for (auto const & item: member->value.GetArray())
+		{
+			auto [name, desc] = Cubemap::Parse(item.GetObject(), root);
+			cubemap.generate(name, desc);
+		}
+
+	if (auto const member = document.FindMember("envmap"); member != document.MemberEnd())
+		for (auto const & item: member->value.GetArray())
+		{
+			auto [name, desc] = Envmap::Parse(item.GetObject(), root);
+			envmap.generate(name, desc);
+		}
+
+
+	if (errbuf.size() != 0)
 	{
-		using namespace rapidjson;
-		using namespace File::JSON;
-
-		Document document;
-		document.Parse(File::LoadAsString(asset_descriptions_path).c_str());
-		assert(document.IsObject(), "assets.json is invalid");
-
-
-		if (auto const member = document.FindMember(AttribLayout::ASSET_NAME); member != document.MemberEnd())
-			for (auto const & item: member->value.GetArray())
-			{
-				auto [name, layout] = AttribLayout::Parse(item.GetObject(), project_root);
-				attrib_layout.generate(name, layout);
-			}
-
-		if (auto const member = document.FindMember("glsl_uniform_block"); member != document.MemberEnd())
-			for (auto const & item: member->value.GetArray())
-			{
-				auto [name, desc] = GLSL::UniformBlock::Parse(item.GetObject(), project_root);
-				uniform_block.generate(name, desc);
-			}
-
-		if (auto const member = document.FindMember("glsl_program"); member != document.MemberEnd())
-			for (auto const & item: member->value.GetArray())
-			{
-				auto [name, desc] = GLSL::Program::Parse(item.GetObject(), project_root);
-				glsl.generate(name, desc);
-			}
-
-		if (auto const member = document.FindMember("gltf"); member != document.MemberEnd())
-			for (auto const & item: member->value.GetArray())
-			{
-				auto [name, desc] = GLTF::Parse(item.GetObject(), project_root);
-				gltf.generate(name, desc);
-			}
-
-		if (auto const member = document.FindMember("texture"); member != document.MemberEnd())
-			for (auto const & item: member->value.GetArray())
-			{
-				auto [name, desc] = Texture::Parse(item.GetObject(), project_root);
-				texture.generate(name, desc);
-			}
-
-		if (auto const member = document.FindMember("cubemap"); member != document.MemberEnd())
-			for (auto const & item: member->value.GetArray())
-			{
-				auto [name, desc] = Cubemap::Parse(item.GetObject(), project_root);
-				cubemap.generate(name, desc);
-			}
-
-		if (auto const member = document.FindMember("envmap"); member != document.MemberEnd())
-			for (auto const & item: member->value.GetArray())
-			{
-				auto [name, desc] = Envmap::Parse(item.GetObject(), project_root);
-				envmap.generate(name, desc);
-			}
+		fmt::print(stderr, "[!] Assets at {} had errors:\n{}", root, errbuf.data());
+		std::exit(1);
 	}
 }
 

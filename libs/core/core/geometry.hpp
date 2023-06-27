@@ -188,6 +188,15 @@ struct Layout
 	decltype(auto) begin() const { return attributes.begin(); }
 	decltype(auto) end() const { return attributes.end(); }
 
+	u16 get_vertex_size() const
+	{
+		auto size = 0;
+		for (auto const & attrib: attributes)
+			if (attrib.is_used())
+				size += attrib.vec.size();
+		return size;
+	}
+
 	usize get_idx(Geometry::Key const & key) const
 	{
 		auto idx = std::ranges::find(attributes, key, &Attribute::key) - attributes.begin();
@@ -201,13 +210,17 @@ struct LayoutMask
 	array<bool, ATTRIBUTE_COUNT> is_active;
 };
 
+// TODO(bekorn): rename -> Vertices if this will contain only the vertex buffer
 struct Data
 {
-	array<ByteBuffer, ATTRIBUTE_COUNT> buffers;
+	ByteBuffer buffer;
+	u32 vertex_count;
 
-	decltype(auto) operator[](usize idx) { return buffers[idx]; }
-	decltype(auto) begin() const { return buffers.begin(); }
-	decltype(auto) end() const { return buffers.end(); }
+	void init(Layout const & layout, usize vertex_count)
+	{
+		buffer = ByteBuffer(layout.get_vertex_size() * vertex_count);
+		this->vertex_count = vertex_count;
+	}
 };
 
 struct Primitive
@@ -220,8 +233,22 @@ struct Primitive
 	COPY(Primitive, delete);
 	MOVE(Primitive, default);
 
-	ByteBuffer & get_buffer(Geometry::Key const & key)
-	{ return data.buffers[layout->get_idx(key)]; }
+	span<byte> get_span(Geometry::Key const & key)
+	{
+		usize size, offset = 0;
+		for (auto const & attrib: layout->attributes)
+			if (attrib.key != key)
+			{
+				offset += attrib.vec.size() * data.vertex_count;
+			}
+			else
+			{
+				size = attrib.vec.size() * data.vertex_count;
+				break;
+			}
+
+		return data.buffer.span_as<byte>(offset, size);
+	}
 };
 }
 

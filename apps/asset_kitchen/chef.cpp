@@ -121,6 +121,42 @@ void ConvertFromF64(f64 src, Geometry::Type const & type, byte * dst)
 	}
 }
 
+ByteBuffer ConvertAttrib(ByteBuffer const & src, Geometry::Vector const & src_vec, Geometry::Vector const & dst_vec)
+{
+	auto const vertex_count = src.size / src_vec.size();
+	ByteBuffer dst_buffer(dst_vec.size() * vertex_count);
+
+	auto src_ptr = src.data.get();
+	auto src_size = src_vec.type.size();
+	auto dst_ptr = dst_buffer.data.get();
+	auto dst_size = dst_vec.type.size();
+
+	auto copy_count = glm::min(src_vec.dimension, dst_vec.dimension);
+	auto fill_count = glm::max(0, dst_vec.dimension - src_vec.dimension);
+	f64 fill_vec[] = {0, 0, 0, 0}; // TODO(bekorn): read from attrib layout
+	auto skip_count = glm::max(0, src_vec.dimension - dst_vec.dimension);
+
+	for (auto _ = 0; _ < vertex_count; ++_)
+	{
+		for (auto _ = 0; _ < copy_count; ++_)
+		{
+			f64 value = ConvertToF64(src_ptr, src_vec.type);
+			src_ptr += src_size;
+
+			ConvertFromF64(value, dst_vec.type, dst_ptr);
+			dst_ptr += dst_size;
+		}
+		for (auto i = 0; i < fill_count; ++i)
+		{
+			ConvertFromF64(fill_vec[i], dst_vec.type, dst_ptr);
+			dst_ptr += dst_size;
+		}
+		src_ptr += src_size * skip_count;
+	}
+
+	return dst_buffer;
+}
+
 void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 {
 	using namespace GLTF;
@@ -249,8 +285,12 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 
 				primitive.layout = &layout;
 
-				assert(loaded_primitive.attributes.size() < Geometry::ATTRIBUTE_COUNT,
-					   "Primitive has too many attributes");
+				auto vertex_count = loaded_accessors[loaded_primitive.attributes[0].accessor_index].count;
+				primitive.data.init(*primitive.layout, vertex_count);
+
+				auto vertex_offset = 0;
+
+				assert(loaded_primitive.attributes.size() < Geometry::ATTRIBUTE_COUNT, "Primitive has too many attributes");
 				loaded_attrib_keys.clear();
 				for (auto & attrib: loaded_primitive.attributes)
 					loaded_attrib_keys.emplace_back(IntoAttributeKey(attrib.name));
@@ -267,15 +307,15 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 					auto & attrib = loaded_primitive.attributes[attrib_idx];
 					auto & accessor = loaded_accessors[attrib.accessor_index];
 					auto & buffer_view = loaded_buffer_views[accessor.buffer_view_index];
+					assert(accessor.count == vertex_count, "Attribute has wrong count");
 
-					Geometry::Vector vec(
+					auto vec = Geometry::Vector(
 						IntoAttributeType(accessor.vector_data_type, accessor.normalized),
 						accessor.vector_dimension
 					);
 					auto attrib_location = layout_attrib.location; // also i
-					auto & buffer = primitive.data.buffers[attrib_location];
 					u32 buffer_stride = vec.size();
-					buffer = ByteBuffer(buffer_stride * accessor.count);
+					auto loaded_buffer = ByteBuffer(buffer_stride * accessor.count);
 
 					if (buffer_view.stride.has_value())
 					{
@@ -285,21 +325,22 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 							.span_as<byte>(buffer_view.offset + accessor.byte_offset, source_stride * accessor.count);
 
 						auto source_ptr = source.data();
-						auto buffer_ptr = buffer.begin();
-						auto buffer_end = buffer.end();
+						auto buffer_ptr = loaded_buffer.begin();
+						auto buffer_end = loaded_buffer.end();
 						while (buffer_ptr != buffer_end)
 						{
 							std::memcpy(buffer_ptr, source_ptr, buffer_stride);
 							source_ptr += source_stride;
 							buffer_ptr += buffer_stride;
 						}
-					} else
+					}
+					else
 					{
 						// contiguous access (tightly packed data)
 						auto source = loaded_buffers[buffer_view.buffer_index]
-							.span_as<byte>(buffer_view.offset + accessor.byte_offset, buffer.size);
+							.span_as<byte>(buffer_view.offset + accessor.byte_offset, loaded_buffer.size);
 
-						std::memcpy(buffer.begin(), source.data(), buffer.size);
+						std::memcpy(loaded_buffer.begin(), source.data(), loaded_buffer.size);
 					}
 
 					// Convert data if it doesn't match with the layout
@@ -310,40 +351,12 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 							loaded_mesh.name, &loaded_primitive - loaded_mesh.primitives.data(), i,
 							vec, layout_attrib.vec, desc.layout_name.value().string
 						);
-
-						auto & converted_vec = layout_attrib.vec;
-						ByteBuffer converted_buffer(converted_vec.size() * accessor.count);
-
-						auto src_ptr = buffer.data.get();
-						auto src_size = vec.type.size();
-						auto dst_ptr = converted_buffer.data.get();
-						auto dst_size = converted_vec.type.size();
-
-						auto copy_count = glm::min(vec.dimension, converted_vec.dimension);
-						auto fill_count = glm::max(0, converted_vec.dimension - vec.dimension);
-						f64 fill_vec[] = {0, 0, 0, 0}; // TODO(bekorn): read from attrib layout
-						auto skip_count = glm::max(0, vec.dimension - converted_vec.dimension);
-
-						for (auto _ = 0; _ < accessor.count; ++_)
-						{
-							for (auto _ = 0; _ < copy_count; ++_)
-							{
-								f64 value = ConvertToF64(src_ptr, vec.type);
-								src_ptr += src_size;
-
-								ConvertFromF64(value, converted_vec.type, dst_ptr);
-								dst_ptr += dst_size;
-							}
-							for (auto i = 0; i < fill_count; ++i)
-							{
-								ConvertFromF64(fill_vec[i], converted_vec.type, dst_ptr);
-								dst_ptr += dst_size;
-							}
-							src_ptr += src_size * skip_count;
-						}
-
-						buffer = move(converted_buffer);
+						loaded_buffer = ConvertAttrib(loaded_buffer, vec, layout_attrib.vec);
 					}
+
+					// Copy to vertex_buffer
+					std::memcpy(primitive.data.buffer.data.get() + vertex_offset, loaded_buffer.data.get(), loaded_buffer.size);
+					vertex_offset += loaded_buffer.size;
 				}
 
 				if (loaded_primitive.indices_accessor_index.has_value())
@@ -375,14 +388,11 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 						for (auto idx: buffer.span_as<u32>(offset, size))
 							primitive.indices.emplace_back(idx);
 					}
-				} else
+				}
+				else
 				{
-					// assuming all the attributes have the same count
-					auto & accessor = loaded_accessors[loaded_primitive.attributes[0].accessor_index];
-					auto vertex_count = accessor.count;
-
 					primitive.indices.resize(vertex_count);
-					for (u32 i = 0; i < vertex_count; ++i)
+					for (auto i = 0; i < vertex_count; ++i)
 						primitive.indices[i] = i;
 				}
 			}
@@ -400,12 +410,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 			auto total_size = 0;
 			for (const auto & primitives: mesh_to_prim)
 				for (const auto & prim: primitives)
-				{
-					total_size += prim.indices.size() * sizeof(u32);
-					for (auto i = 0; i < Geometry::ATTRIBUTE_COUNT; ++i)
-						if (prim.layout->attributes[i].is_used())
-							total_size += prim.data.buffers[i].size;
-				}
+					total_size += prim.data.buffer.size + prim.indices.size() * sizeof(u32);
 			converted_buffer = ByteBuffer(total_size);
 
 			Value buffer(kObjectType);
@@ -421,8 +426,9 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 
 
 		/// Rest
-		//  Each mesh will have 2 buffer views for VertexBuffer + IndexBuffer
-		//  IndexBuffer will have 1 accessors, VertexBuffer will have N for each attribute
+		// Each mesh will have 2 buffer views for VertexBuffer + IndexBuffer
+		// IndexBuffer will have 1 accessors, VertexBuffer will have N for each attribute
+		// Each primitive will have "extras/formatted_buffer_views": [vertex_buffer_view_idx, index_buffer_view_idx]
 		auto * converted_buffer_ptr = converted_buffer.data_as<byte>();
 		Value converted_buffer_views(kArrayType);
 		Value converted_accessors(kArrayType);
@@ -504,33 +510,62 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 				prim["attributes"] = attribs;
 				prim["indices"] = accessor_idx;
 
-				// Add accessors and copy to buffer
-				auto const vertex_buffer_view_idx = converted_buffer_views.Size();
-				auto const vertex_buffer_begin = converted_buffer_ptr - converted_buffer.data.get();
-				auto vertex_buffer_size = 0;
-				for (auto ai = 0; ai < Geometry::ATTRIBUTE_COUNT; ++ai)
+				// Add buffer views and copy to buffer
+				u32 vertex_buffer_view_idx, index_buffer_view_idx;
+				usize vertex_buffer_begin, index_buffer_begin;
 				{
-					auto const & attrib = loaded_prim.layout->attributes[ai];
-					auto const & buffer = loaded_prim.data.buffers[ai];
-					if (not attrib.is_used()) continue;
+					// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_bufferview_target
+					auto const TARGET_ARRAY_BUFFER = 34962;
+					auto const TARGET_ELEMENT_ARRAY_BUFFER = 34963;
 
-					Value accessor(kObjectType);
-					accessor.AddMember("bufferView", vertex_buffer_view_idx, alloc);
-					accessor.AddMember("byteOffset", vertex_buffer_size, alloc);
-					accessor.AddMember("componentType", get_component_type(attrib.vec.type), alloc);
-					accessor.AddMember("type", Value(get_type(attrib.vec.dimension), alloc), alloc);
-					accessor.AddMember("count", buffer.size / attrib.vec.size(), alloc);
-					accessor.AddMember("normalized", attrib.vec.type.is_normalized(), alloc);
-					converted_accessors.PushBack(accessor, alloc);
+					vertex_buffer_view_idx = converted_buffer_views.Size();
+					vertex_buffer_begin = converted_buffer_ptr - converted_buffer.data.get();
 
-					vertex_buffer_size += buffer.size;
+					Value vertex_buffer_view(kObjectType);
+					vertex_buffer_view.AddMember("buffer", 0, alloc);
+					vertex_buffer_view.AddMember("byteOffset", vertex_buffer_begin, alloc);
+					vertex_buffer_view.AddMember("byteLength", loaded_prim.data.buffer.size, alloc);
+					vertex_buffer_view.AddMember("target", TARGET_ARRAY_BUFFER, alloc);
+					converted_buffer_views.PushBack(vertex_buffer_view, alloc);
 
-					std::memcpy(converted_buffer_ptr, buffer.data.get(), buffer.size);
-					converted_buffer_ptr += buffer.size;
+					std::memcpy(converted_buffer_ptr, loaded_prim.data.buffer.data.get(), loaded_prim.data.buffer.size);
+					converted_buffer_ptr += loaded_prim.data.buffer.size;
+
+
+					index_buffer_view_idx = vertex_buffer_view_idx + 1;
+					index_buffer_begin = converted_buffer_ptr - converted_buffer.data.get();
+					auto index_buffer_size = loaded_prim.indices.size() * sizeof(u32);
+
+					Value index_buffer_view(kObjectType);
+					index_buffer_view.AddMember("buffer", 0, alloc);
+					index_buffer_view.AddMember("byteOffset", index_buffer_begin, alloc);
+					index_buffer_view.AddMember("byteLength", index_buffer_size, alloc);
+					index_buffer_view.AddMember("target", TARGET_ELEMENT_ARRAY_BUFFER, alloc);
+					converted_buffer_views.PushBack(index_buffer_view, alloc);
+
+					std::memcpy(converted_buffer_ptr, loaded_prim.indices.data(), index_buffer_size);
+					converted_buffer_ptr += index_buffer_size;
 				}
-				auto const index_buffer_view_idx = vertex_buffer_view_idx + 1;
-				auto const index_buffer_begin = converted_buffer_ptr - converted_buffer.data.get();
-				auto const index_buffer_size = loaded_prim.indices.size() * sizeof(u32);
+				// Add accessors
+				auto vertex_buffer_size = 0;
+				{
+					for (auto ai = 0; ai < Geometry::ATTRIBUTE_COUNT; ++ai)
+					{
+						auto const & attrib = loaded_prim.layout->attributes[ai];
+						if (not attrib.is_used()) continue;
+
+						Value accessor(kObjectType);
+						accessor.AddMember("bufferView", vertex_buffer_view_idx, alloc);
+						accessor.AddMember("byteOffset", vertex_buffer_size, alloc);
+						accessor.AddMember("componentType", get_component_type(attrib.vec.type), alloc);
+						accessor.AddMember("type", Value(get_type(attrib.vec.dimension), alloc), alloc);
+						accessor.AddMember("count", loaded_prim.data.vertex_count, alloc);
+						accessor.AddMember("normalized", attrib.vec.type.is_normalized(), alloc);
+						converted_accessors.PushBack(accessor, alloc);
+
+						vertex_buffer_size += loaded_prim.data.vertex_count * attrib.vec.size();
+					}
+				}
 				{
 					Value accessor(kObjectType);
 					accessor.AddMember("bufferView", index_buffer_view_idx, alloc);
@@ -539,38 +574,18 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 					accessor.AddMember("type", Value(get_type(1), alloc), alloc);
 					accessor.AddMember("count", loaded_prim.indices.size(), alloc);
 					converted_accessors.PushBack(accessor, alloc);
-
-					std::memcpy(converted_buffer_ptr, loaded_prim.indices.data(), index_buffer_size);
-					converted_buffer_ptr += index_buffer_size;
 				}
 
-				// Add buffer views
+				// Add extras for shortcut
 				{
-					// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_bufferview_target
-					auto const TARGET_ARRAY_BUFFER = 34962;
-					auto const TARGET_ELEMENT_ARRAY_BUFFER = 34963;
+					Value formatted_buffers(kArrayType);
+					formatted_buffers.PushBack(vertex_buffer_view_idx, alloc);
+					formatted_buffers.PushBack(index_buffer_view_idx, alloc);
 
-					Value vertex_buffer_view(kObjectType);
-					vertex_buffer_view.AddMember("buffer", 0, alloc);
-					vertex_buffer_view.AddMember("byteOffset", vertex_buffer_begin, alloc);
-					vertex_buffer_view.AddMember("byteLength", vertex_buffer_size, alloc);
-					vertex_buffer_view.AddMember("target", TARGET_ARRAY_BUFFER, alloc);
-					converted_buffer_views.PushBack(vertex_buffer_view, alloc);
-
-					Value index_buffer_view(kObjectType);
-					index_buffer_view.AddMember("buffer", 0, alloc);
-					index_buffer_view.AddMember("byteOffset", index_buffer_begin, alloc);
-					index_buffer_view.AddMember("byteLength", index_buffer_size, alloc);
-					index_buffer_view.AddMember("target", TARGET_ELEMENT_ARRAY_BUFFER, alloc);
-					converted_buffer_views.PushBack(index_buffer_view, alloc);
-				}
-
-				// Add extra for shortcut
-				{
 					Value extras(kObjectType);
-					extras.AddMember("vertex_buffer_view", converted_buffer_views.Size() - 2, alloc);
-					extras.AddMember("index_buffer_view", converted_buffer_views.Size() - 1, alloc);
-					mesh.AddMember("extras", extras, alloc);
+					extras.AddMember("formatted_buffer_views", formatted_buffers, alloc);
+
+					prim.AddMember("extras", extras, alloc);
 				}
 			}
 		}
@@ -613,7 +628,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 		File::WriteString(served_path, {buffer.GetString(), buffer.GetSize()});
 
 		// Binary
-		File::WriteBytes(relative_path.filename().replace_extension("bin"), converted_buffer);
+		File::WriteBytes(served_dir / relative_path.filename().replace_extension("bin"), converted_buffer);
 
 		// Copy the rest
 		for (auto const & dir_entry : std::filesystem::directory_iterator(asset_dir))

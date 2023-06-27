@@ -169,10 +169,10 @@ void Game::init()
 		lines_geo.layout = &assets.attrib_layouts.get(assets.programs.get("lines_draw").attrib_layout_name);
 
 		auto const vertex_count = line_count * line_length;
+		lines_geo.data.init(*lines_geo.layout, vertex_count);
 
-		auto & positions = lines_geo.get_buffer({Geometry::Key::POSITION, 0});
-		positions = ByteBuffer(vertex_count * sizeof(f32x3));
-		for (i32 i = 0; auto & p : positions.span_as<f32x3>())
+		auto positions = lines_geo.get_span({Geometry::Key::POSITION, 0});
+		for (i32 i = 0; auto & p : span(reinterpret_cast<f32x3*>(positions.data()), positions.size() / sizeof(f32x3)))
 		{
 			i32 line_idx = i / line_length;
 			i32 local_idx = i % line_length;

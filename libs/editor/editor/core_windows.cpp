@@ -992,21 +992,20 @@ void MeshWindow::update(Context & ctx)
 
 	auto const & primitive = drawable.primitive;
 
-	if (BeginTable("Attributes", 3, ImGuiTableFlags_BordersInnerH))
+	TextFMT("Vertex Count {}", primitive.data.vertex_count);
+
+	if (BeginTable("Attributes", 2, ImGuiTableFlags_BordersInnerH))
 	{
-		TableSetupColumn("Key"), TableSetupColumn("Data"), TableSetupColumn("Size");
+		TableSetupColumn("Key"), TableSetupColumn("Data");
 		TableHeadersRow();
 
 		for (auto i = 0 ; i < Geometry::ATTRIBUTE_COUNT; ++i)
 		{
 			auto const & attrib = primitive.layout->attributes[i];
-			auto const & buffer = primitive.data.buffers[i];
-
 			if (not attrib.is_used()) continue;
 
 			TableNextColumn(), TextFMT("{}", attrib.key);
 			TableNextColumn(), TextFMT("{}", attrib.vec);
-			TableNextColumn(), TextFMT("{}", buffer.size / attrib.vec.size());
 		}
 		EndTable();
 	}

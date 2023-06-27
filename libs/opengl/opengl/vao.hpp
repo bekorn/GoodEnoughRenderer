@@ -35,14 +35,9 @@ struct VertexArray : OpenGLObject
 	{
 		glCreateVertexArrays(1, &id);
 
-		usize buffer_size = 0;
-		for (auto i = 0; i < Geometry::ATTRIBUTE_COUNT; ++i)
-			if (desc.primitive.layout->attributes[i].is_used())
-				buffer_size += desc.primitive.data.buffers[i].size;
-
-		vertex_buffer.init(Buffer::EmptyDesc{
+		vertex_buffer.init(Buffer::Desc{
 			.usage = desc.usage,
-			.size = buffer_size,
+			.data = desc.primitive.data.buffer,
 		});
 
 		auto buffer_bind_idx = 0;
@@ -50,14 +45,7 @@ struct VertexArray : OpenGLObject
 		for (auto i = 0; i < Geometry::ATTRIBUTE_COUNT; i++)
 		{
 			auto const & attrib = desc.primitive.layout->attributes[i];
-			auto const & buffer = desc.primitive.data.buffers[i];
-
 			if (not attrib.is_used()) continue;
-
-			glNamedBufferSubData(
-				vertex_buffer.id,
-				buffer_offset, buffer.size, buffer.begin()
-			);
 
 			glVertexArrayVertexBuffer(
 				id,
@@ -74,7 +62,7 @@ struct VertexArray : OpenGLObject
 			glVertexArrayAttribBinding(id, attrib.location, buffer_bind_idx);
 
 			buffer_bind_idx++;
-			buffer_offset += static_cast<GLintptr>(buffer.size);
+			buffer_offset += static_cast<GLintptr>(attrib.vec.size() * desc.primitive.data.vertex_count);
 		}
 
 		element_buffer.init(Buffer::Desc{
@@ -150,29 +138,18 @@ struct VertexArray : OpenGLObject
 		{ // check assertions
 			assert(element_count == primitive.indices.size(), "Dynamic element buffer is not supported yet");
 
-			usize new_buffer_size = 0;
-			for (auto const & buffer : primitive.data)
-			{
-				new_buffer_size += buffer.size;
-			}
 			i32 current_buffer_size;
 			glGetNamedBufferParameteriv(vertex_buffer.id, GL_BUFFER_SIZE, &current_buffer_size);
-			assert(new_buffer_size == current_buffer_size, "Dynamic vertex buffer is not supported yet");
+			assert(primitive.data.buffer.size == current_buffer_size, "Dynamic vertex buffer is not supported yet");
 		}
 
 		glInvalidateBufferData(vertex_buffer.id);
 		glInvalidateBufferData(element_buffer.id);
 
-		GLintptr buffer_offset = 0;
-		for (auto const & buffer : primitive.data)
-		{
-			glNamedBufferSubData(
-				vertex_buffer.id,
-				buffer_offset, buffer.size, buffer.begin()
-			);
-
-			buffer_offset += static_cast<GLintptr>(buffer.size);
-		}
+		glNamedBufferSubData(
+			vertex_buffer.id,
+			0, primitive.data.buffer.size, primitive.data.buffer.data.get()
+		);
 
 		glNamedBufferSubData(
 			element_buffer.id,
