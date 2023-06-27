@@ -286,7 +286,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 				primitive.layout = &layout;
 
 				auto vertex_count = loaded_accessors[loaded_primitive.attributes[0].accessor_index].count;
-				primitive.data.init(*primitive.layout, vertex_count);
+				primitive.vertices.init(*primitive.layout, vertex_count);
 
 				auto vertex_offset = 0;
 
@@ -355,7 +355,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 					}
 
 					// Copy to vertex_buffer
-					std::memcpy(primitive.data.buffer.data.get() + vertex_offset, loaded_buffer.data.get(), loaded_buffer.size);
+					std::memcpy(primitive.vertices.buffer.data.get() + vertex_offset, loaded_buffer.data.get(), loaded_buffer.size);
 					vertex_offset += loaded_buffer.size;
 				}
 
@@ -371,29 +371,30 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 					auto const & buffer = loaded_buffers[buffer_view.buffer_index];
 					auto const offset = accessor.byte_offset + buffer_view.offset;
 					auto const size = accessor.count * index_type.size();
-					primitive.indices.reserve(accessor.count);
 
+					primitive.indices.init(accessor.count);
+					auto * dst_ptr = primitive.indices.as_span().data();
 					if (index_type == Geometry::Type::U8)
 					{
 						for (auto idx: buffer.span_as<u8>(offset, size))
-							primitive.indices.emplace_back(idx);
+							*dst_ptr++ = idx;
 					}
 					else if (index_type == Geometry::Type::U16)
 					{
 						for (auto idx: buffer.span_as<u16>(offset, size))
-							primitive.indices.emplace_back(idx);
+							*dst_ptr++ = idx;
 					}
 					else if (index_type == Geometry::Type::U32)
 					{
 						for (auto idx: buffer.span_as<u32>(offset, size))
-							primitive.indices.emplace_back(idx);
+							*dst_ptr++ = idx;
 					}
 				}
 				else
 				{
-					primitive.indices.resize(vertex_count);
-					for (auto i = 0; i < vertex_count; ++i)
-						primitive.indices[i] = i;
+					primitive.indices.init(vertex_count);
+					for (auto i = 0; auto & index : primitive.indices.as_span())
+						index = i++;
 				}
 			}
 		}
@@ -410,7 +411,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 			auto total_size = 0;
 			for (const auto & primitives: mesh_to_prim)
 				for (const auto & prim: primitives)
-					total_size += prim.data.buffer.size + prim.indices.size() * sizeof(u32);
+					total_size += prim.vertices.buffer.size + prim.indices.buffer.size;
 			converted_buffer = ByteBuffer(total_size);
 
 			Value buffer(kObjectType);
@@ -524,17 +525,17 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 					Value vertex_buffer_view(kObjectType);
 					vertex_buffer_view.AddMember("buffer", 0, alloc);
 					vertex_buffer_view.AddMember("byteOffset", vertex_buffer_begin, alloc);
-					vertex_buffer_view.AddMember("byteLength", loaded_prim.data.buffer.size, alloc);
+					vertex_buffer_view.AddMember("byteLength", loaded_prim.vertices.buffer.size, alloc);
 					vertex_buffer_view.AddMember("target", TARGET_ARRAY_BUFFER, alloc);
 					converted_buffer_views.PushBack(vertex_buffer_view, alloc);
 
-					std::memcpy(converted_buffer_ptr, loaded_prim.data.buffer.data.get(), loaded_prim.data.buffer.size);
-					converted_buffer_ptr += loaded_prim.data.buffer.size;
+					std::memcpy(converted_buffer_ptr, loaded_prim.vertices.buffer.data.get(), loaded_prim.vertices.buffer.size);
+					converted_buffer_ptr += loaded_prim.vertices.buffer.size;
 
 
 					index_buffer_view_idx = vertex_buffer_view_idx + 1;
 					index_buffer_begin = converted_buffer_ptr - converted_buffer.data.get();
-					auto index_buffer_size = loaded_prim.indices.size() * sizeof(u32);
+					auto index_buffer_size = loaded_prim.indices.buffer.size;
 
 					Value index_buffer_view(kObjectType);
 					index_buffer_view.AddMember("buffer", 0, alloc);
@@ -543,7 +544,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 					index_buffer_view.AddMember("target", TARGET_ELEMENT_ARRAY_BUFFER, alloc);
 					converted_buffer_views.PushBack(index_buffer_view, alloc);
 
-					std::memcpy(converted_buffer_ptr, loaded_prim.indices.data(), index_buffer_size);
+					std::memcpy(converted_buffer_ptr, loaded_prim.indices.buffer.data.get(), index_buffer_size);
 					converted_buffer_ptr += index_buffer_size;
 				}
 				// Add accessors
@@ -559,11 +560,11 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 						accessor.AddMember("byteOffset", vertex_buffer_size, alloc);
 						accessor.AddMember("componentType", get_component_type(attrib.vec.type), alloc);
 						accessor.AddMember("type", Value(get_type(attrib.vec.dimension), alloc), alloc);
-						accessor.AddMember("count", loaded_prim.data.vertex_count, alloc);
+						accessor.AddMember("count", loaded_prim.vertices.count, alloc);
 						accessor.AddMember("normalized", attrib.vec.type.is_normalized(), alloc);
 						converted_accessors.PushBack(accessor, alloc);
 
-						vertex_buffer_size += loaded_prim.data.vertex_count * attrib.vec.size();
+						vertex_buffer_size += loaded_prim.vertices.count * attrib.vec.size();
 					}
 				}
 				{
@@ -572,7 +573,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 					accessor.AddMember("byteOffset", 0, alloc);
 					accessor.AddMember("componentType", get_component_type(Geometry::Type::U32), alloc);
 					accessor.AddMember("type", Value(get_type(1), alloc), alloc);
-					accessor.AddMember("count", loaded_prim.indices.size(), alloc);
+					accessor.AddMember("count", loaded_prim.indices.count, alloc);
 					converted_accessors.PushBack(accessor, alloc);
 				}
 

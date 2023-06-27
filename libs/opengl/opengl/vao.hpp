@@ -37,7 +37,7 @@ struct VertexArray : OpenGLObject
 
 		vertex_buffer.init(Buffer::Desc{
 			.usage = desc.usage,
-			.data = desc.primitive.data.buffer,
+			.data = desc.primitive.vertices.buffer,
 		});
 
 		auto buffer_bind_idx = 0;
@@ -62,17 +62,17 @@ struct VertexArray : OpenGLObject
 			glVertexArrayAttribBinding(id, attrib.location, buffer_bind_idx);
 
 			buffer_bind_idx++;
-			buffer_offset += static_cast<GLintptr>(attrib.vec.size() * desc.primitive.data.vertex_count);
+			buffer_offset += static_cast<GLintptr>(attrib.vec.size() * desc.primitive.vertices.count);
 		}
 
 		element_buffer.init(Buffer::Desc{
 			.usage = desc.usage,
-			.data = span((byte *) desc.primitive.indices.data(), desc.primitive.indices.size() * sizeof(u32)),
+			.data = desc.primitive.indices.buffer,
 		});
 
 		glVertexArrayElementBuffer(id, element_buffer.id);
 
-		element_count = desc.primitive.indices.size();
+		element_count = desc.primitive.indices.count;
 	}
 
 	struct EmptyDesc
@@ -136,11 +136,11 @@ struct VertexArray : OpenGLObject
 	void update(Geometry::Primitive const & primitive)
 	{
 		{ // check assertions
-			assert(element_count == primitive.indices.size(), "Dynamic element buffer is not supported yet");
+			assert(element_count == primitive.indices.count, "Dynamic element buffer is not supported yet");
 
 			i32 current_buffer_size;
 			glGetNamedBufferParameteriv(vertex_buffer.id, GL_BUFFER_SIZE, &current_buffer_size);
-			assert(primitive.data.buffer.size == current_buffer_size, "Dynamic vertex buffer is not supported yet");
+			assert(primitive.vertices.buffer.size == current_buffer_size, "Dynamic vertex buffer is not supported yet");
 		}
 
 		glInvalidateBufferData(vertex_buffer.id);
@@ -148,12 +148,12 @@ struct VertexArray : OpenGLObject
 
 		glNamedBufferSubData(
 			vertex_buffer.id,
-			0, primitive.data.buffer.size, primitive.data.buffer.data.get()
+			0, primitive.vertices.buffer.size, primitive.vertices.buffer.data.get()
 		);
 
 		glNamedBufferSubData(
 			element_buffer.id,
-			0, primitive.indices.size() * sizeof(u32), primitive.indices.data()
+			0, primitive.indices.buffer.size, primitive.indices.buffer.data.get()
 		);
 	}
 };

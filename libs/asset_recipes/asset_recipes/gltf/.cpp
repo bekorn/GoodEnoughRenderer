@@ -533,11 +533,11 @@ void Convert(
 			auto & index_buffer_view = loaded.buffer_views[loaded_primitive.index_buffer_view];
 			auto & index_buffer = loaded.buffers[index_buffer_view.buffer_index];
 
-			primitive.data.init(*primitive.layout, vertex_buffer_view.length / primitive.layout->get_vertex_size());
-			memcpy(primitive.data.buffer.begin(), vertex_buffer.begin() + vertex_buffer_view.offset, vertex_buffer_view.length);
+			primitive.vertices.init(*primitive.layout, vertex_buffer_view.length / primitive.layout->get_vertex_size());
+			memcpy(primitive.vertices.buffer.begin(), vertex_buffer.begin() + vertex_buffer_view.offset, vertex_buffer_view.length);
 
-			primitive.indices.resize(index_buffer_view.length);
-			memcpy(primitive.indices.data(), index_buffer.begin() + index_buffer_view.offset, index_buffer_view.length);
+			primitive.indices.init(index_buffer_view.length / sizeof(Geometry::Indices::IndexType));
+			memcpy(primitive.indices.buffer.begin(), index_buffer.begin() + index_buffer_view.offset, index_buffer_view.length);
 		}
 
 	// Convert meshes

@@ -210,24 +210,39 @@ struct LayoutMask
 	array<bool, ATTRIBUTE_COUNT> is_active;
 };
 
-// TODO(bekorn): rename -> Vertices if this will contain only the vertex buffer
-struct Data
+struct Vertices
 {
 	ByteBuffer buffer;
-	u32 vertex_count;
+	u32 count;
 
 	void init(Layout const & layout, usize vertex_count)
 	{
 		buffer = ByteBuffer(layout.get_vertex_size() * vertex_count);
-		this->vertex_count = vertex_count;
+		count = vertex_count;
 	}
+};
+
+struct Indices
+{
+	using IndexType = u32;
+	ByteBuffer buffer;
+	u32 count;
+
+	void init(usize index_count)
+	{
+		buffer = ByteBuffer(sizeof(IndexType) * index_count);
+		count = index_count;
+	}
+
+	span<IndexType> as_span()
+	{ return buffer.span_as<IndexType>(); }
 };
 
 struct Primitive
 {
 	const Geometry::Layout * layout;
-	Geometry::Data data;
-	vector<u32> indices;
+	Geometry::Vertices vertices;
+	Geometry::Indices indices;
 
 	CTOR(Primitive, default);
 	COPY(Primitive, delete);
@@ -239,15 +254,15 @@ struct Primitive
 		for (auto const & attrib: layout->attributes)
 			if (attrib.key != key)
 			{
-				offset += attrib.vec.size() * data.vertex_count;
+				offset += attrib.vec.size() * vertices.count;
 			}
 			else
 			{
-				size = attrib.vec.size() * data.vertex_count;
+				size = attrib.vec.size() * vertices.count;
 				break;
 			}
 
-		return data.buffer.span_as<byte>(offset, size);
+		return vertices.buffer.span_as<byte>(offset, size);
 	}
 };
 }

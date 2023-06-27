@@ -992,7 +992,7 @@ void MeshWindow::update(Context & ctx)
 
 	auto const & primitive = drawable.primitive;
 
-	TextFMT("Vertex Count {}", primitive.data.vertex_count);
+	TextFMT("Vertex Count {}", primitive.vertices.count);
 
 	if (BeginTable("Attributes", 2, ImGuiTableFlags_BordersInnerH))
 	{

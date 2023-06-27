@@ -169,7 +169,7 @@ void Game::init()
 		lines_geo.layout = &assets.attrib_layouts.get(assets.programs.get("lines_draw").attrib_layout_name);
 
 		auto const vertex_count = line_count * line_length;
-		lines_geo.data.init(*lines_geo.layout, vertex_count);
+		lines_geo.vertices.init(*lines_geo.layout, vertex_count);
 
 		auto positions = lines_geo.get_span({Geometry::Key::POSITION, 0});
 		for (i32 i = 0; auto & p : span(reinterpret_cast<f32x3*>(positions.data()), positions.size() / sizeof(f32x3)))
@@ -184,7 +184,8 @@ void Game::init()
 		}
 
 		auto const element_count = line_count * (line_length - 1) * 2;
-		lines_geo.indices.resize(element_count);
+		lines_geo.indices.init(element_count);
+		auto indices = lines_geo.indices.as_span();
 		for (auto l = 0; l < line_count; l++)
 		{
 			auto vert_base = l * line_length;
@@ -195,8 +196,8 @@ void Game::init()
 				auto vert_idx = vert_base + i;
 				auto elem_idx = elem_base + i * 2;
 
-				lines_geo.indices[elem_idx + 0] = vert_idx + 0;
-				lines_geo.indices[elem_idx + 1] = vert_idx + 1;
+				indices[elem_idx + 0] = vert_idx + 0;
+				indices[elem_idx + 1] = vert_idx + 1;
 			}
 		}
 
