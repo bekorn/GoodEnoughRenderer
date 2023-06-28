@@ -20,28 +20,16 @@ LoadedData Load(Desc const & desc)
 
 	auto const file_dir = desc.path.parent_path();
 
-	// Parse buffers
-	for (auto const & item: document["buffers"].GetArray())
+	// Parse buffer
 	{
-		auto const & buffer = item.GetObject();
+		auto const & buffers = document["buffers"].GetArray();
+		assert(buffers.Size() == 1, "Served GLTF should have only 1 buffer");
+		auto const & buffer = buffers[0].GetObject();
 
 		auto file_size = buffer["byteLength"].GetUint64();
 		auto file_name = buffer["uri"].GetString();
 		// Limitation: only loads separate file binaries
-		loaded.buffers.emplace_back(LoadAsBytes(file_dir / file_name, file_size));
-	}
-
-	// Parse buffer views
-	for (auto const & item: document["bufferViews"].GetArray())
-	{
-		auto const & buffer_view = item.GetObject();
-
-		loaded.buffer_views.push_back({
-			.buffer_index = GetU32(buffer_view, "buffer"),
-			.offset = GetU32(buffer_view, "byteOffset", 0),
-			.length = GetU32(buffer_view, "byteLength"),
-			.stride = GetOptionalU32(buffer_view, "byteStride"),
-		});
+		loaded.buffer = LoadAsBytes(file_dir / file_name, file_size);
 	}
 
 	// Parse images
@@ -115,34 +103,6 @@ LoadedData Load(Desc const & desc)
 		}
 	}
 
-	// Parse accessors
-	for (auto const & item: document["accessors"].GetArray())
-	{
-		auto const get_type_dimension = [](std::string const & type) -> u32
-		{
-			if (type == "SCALAR") return 1;
-			if (type == "VEC2") return 2;
-			if (type == "VEC3") return 3;
-			if (type == "VEC4") return 4;
-			if (type == "MAT2") return 4;
-			if (type == "MAT3") return 9;
-			/*if(type == "MAT4")*/ return 16;
-		};
-
-		auto const & accessor = item.GetObject();
-
-		loaded.accessors.push_back(
-			{
-				.buffer_view_index = accessor["bufferView"].GetUint(),
-				.byte_offset = GetU32(accessor, "byteOffset", 0),
-				.vector_data_type = accessor["componentType"].GetUint(),
-				.vector_dimension = get_type_dimension(accessor["type"].GetString()),
-				.count = accessor["count"].GetUint(),
-				.normalized = GetBool(accessor, "normalized", false),
-			}
-		);
-	}
-
 	// Parse meshes
 	NameGenerator mesh_name_generator{.prefix = desc.name + ":mesh:"};
 	NameGenerator primitive_name_generator{.prefix = desc.name + ":primitive:"};
@@ -156,14 +116,6 @@ LoadedData Load(Desc const & desc)
 		{
 			auto const & primitive = item.GetObject();
 
-			vector<Attribute> attributes;
-			attributes.reserve(primitive["attributes"].MemberCount());
-			for (auto const & attribute: primitive["attributes"].GetObject())
-				attributes.push_back({
-					.name = attribute.name.GetString(),
-					.accessor_index = attribute.value.GetUint(),
-				});
-
 			auto const & extras = primitive["extras"].GetObject();
 			auto const & buffers = extras["buffers"].GetObject();
 			auto const & vertex_buffer = buffers["vertex"].GetObject();
@@ -171,8 +123,6 @@ LoadedData Load(Desc const & desc)
 
 			primitives.push_back({
 				.name = primitive_name_generator.get(primitive, "name"),
-				.attributes = attributes,
-				.indices_accessor_index = GetOptionalU32(primitive, "indices"),
 				.material_index = GetOptionalU32(primitive, "material"),
 				.vertex_buffer_offset = vertex_buffer["offset"].GetUint(),
 				.vertex_count = vertex_buffer["count"].GetUint(),
@@ -316,126 +266,6 @@ LoadedData Load(Desc const & desc)
 	return loaded;
 }
 
-namespace Helpers
-{
-// Pattern: String into Geometry::Attribute::Key
-Geometry::Key IntoAttributeKey(std::string_view name)
-{
-	using namespace Geometry;
-
-	static auto const IntoCommon = [](std::string_view attribute_name) -> optional<Key::Common>
-	{
-		using enum Key::Common;
-		if (attribute_name == "POSITION") return POSITION;
-		if (attribute_name == "NORMAL") return NORMAL;
-		if (attribute_name == "TANGENT") return TANGENT;
-		if (attribute_name == "TEXCOORD") return TEXCOORD;
-		if (attribute_name == "COLOR") return COLOR;
-		return nullopt;
-	};
-
-	static std::regex const attribute_pattern("(_)?(.*?)(_\\d+)?");
-
-	std::cmatch match;
-	regex_match(
-		name.data(), name.data() + name.size(),
-		match, attribute_pattern
-	);
-
-	Key key;
-
-	if (match[1].matched) // is custom
-	{
-		key.name = match[2].str();
-	}
-	else
-	{
-		auto common_name = IntoCommon(std::string_view(match[2].first, match[2].second));
-		if (common_name.has_value())
-			key.name = common_name.value();
-		else
-			key.name = match[2].str();
-	}
-
-	key.layer = 0;
-	if (match[3].matched) // has a layer
-		std::from_chars(match[3].first + 1, match[3].second, key.layer);
-
-	return key;
-}
-
-Geometry::Type IntoAttributeType(u32 type, bool is_normalized)
-{
-	// see spec section 3.6.2.2. Accessor Data Types
-	using enum Geometry::Type::Value;
-
-	if (is_normalized)
-		switch (type)
-		{
-		case 5120: return {I8NORM};
-		case 5121: return {U8NORM};
-		case 5122: return {I16NORM};
-		case 5123: return {U16NORM};
-		case 5125: return {U32NORM};
-		}
-	else
-		switch (type)
-		{
-		case 5120: return {I8};
-		case 5121: return {U8};
-		case 5122: return {I16};
-		case 5123: return {U16};
-		case 5125: return {U32};
-		case 5126: return {F32};
-		}
-
-	// above values are all the alloved ones therefore,
-	assert_enum_out_of_range();
-}
-
-f64 ConvertToF64(byte * src, Geometry::Type const & type)
-{
-	using enum Geometry::Type::Value;
-	switch(type)
-	{
-		case F32:		return f64(*reinterpret_cast<f32*>(src));
-		case I8:		return f64(*reinterpret_cast<i8*>(src));
-		case I16:		return f64(*reinterpret_cast<i16*>(src));
-		case I32:		return f64(*reinterpret_cast<i32*>(src));
-		case I8NORM:	return f64(*reinterpret_cast<i8*>(src))  / std::numeric_limits<i8>::max();
-		case I16NORM:	return f64(*reinterpret_cast<i16*>(src)) / std::numeric_limits<i16>::max();
-		case I32NORM:	return f64(*reinterpret_cast<i32*>(src)) / std::numeric_limits<i32>::max();
-		case U8:		return f64(*reinterpret_cast<u8*>(src));
-		case U16:		return f64(*reinterpret_cast<u16*>(src));
-		case U32:		return f64(*reinterpret_cast<u32*>(src));
-		case U8NORM:	return f64(*reinterpret_cast<u8*>(src))  / std::numeric_limits<u8>::max();
-		case U16NORM:	return f64(*reinterpret_cast<u16*>(src)) / std::numeric_limits<u16>::max();
-		case U32NORM:	return f64(*reinterpret_cast<u32*>(src)) / std::numeric_limits<u32>::max();
-	}
-}
-
-void ConvertFromF64(f64 src, Geometry::Type const & type, byte * dst)
-{
-	using enum Geometry::Type::Value;
-	switch(type)
-	{
-		case F32:		*reinterpret_cast<f32*>(dst) = src; break;
-		case I8:		*reinterpret_cast<i8*>(dst)  = src; break;
-		case I16:		*reinterpret_cast<i16*>(dst) = src; break;
-		case I32:		*reinterpret_cast<i32*>(dst) = src; break;
-		case I8NORM:	*reinterpret_cast<i8*>(dst)  = src * std::numeric_limits<i8>::max();  break;
-		case I16NORM:	*reinterpret_cast<i16*>(dst) = src * std::numeric_limits<i16>::max(); break;
-		case I32NORM:	*reinterpret_cast<i32*>(dst) = src * std::numeric_limits<i32>::max(); break;
-		case U8:		*reinterpret_cast<u8*>(dst)  = src; break;
-		case U16:		*reinterpret_cast<u16*>(dst) = src; break;
-		case U32:		*reinterpret_cast<u32*>(dst) = src; break;
-		case U8NORM:	*reinterpret_cast<u8*>(dst)  = src * std::numeric_limits<u8>::max();  break;
-		case U16NORM:	*reinterpret_cast<u16*>(dst) = src * std::numeric_limits<u16>::max(); break;
-		case U32NORM:	*reinterpret_cast<u32*>(dst) = src * std::numeric_limits<u32>::max(); break;
-	}
-}
-}
-
 void Convert(
 	LoadedData const & loaded,
 	Managed<GL::Texture2D> & textures,
@@ -446,8 +276,6 @@ void Convert(
 	Managed<Geometry::Layout> const & attrib_layouts
 )
 {
-	using namespace Helpers;
-
 	// Convert Textures
 	for (auto & loaded_texture: loaded.textures)
 	{
@@ -526,13 +354,11 @@ void Convert(
 	for (auto & loaded_mesh: loaded.meshes)
 		for (auto & loaded_primitive: loaded_mesh.primitives)
 		{
-			assert(loaded_primitive.attributes.size() < Geometry::ATTRIBUTE_COUNT, "Primitive has too many attributes");
-
 			auto & primitive = primitives.generate(Name(loaded_primitive.name)).data;
 
 			primitive.layout = &layout;
 
-			auto * buffer_ptr = loaded.buffers[0].data.get();
+			auto * buffer_ptr = loaded.buffer.data.get();
 
 			primitive.vertices.init(*primitive.layout, loaded_primitive.vertex_count);
 			memcpy(primitive.vertices.buffer.begin(), buffer_ptr + loaded_primitive.vertex_buffer_offset, primitive.vertices.buffer.size);

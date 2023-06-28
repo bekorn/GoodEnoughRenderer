@@ -10,24 +10,6 @@ namespace GLTF
 
 using ::ByteBuffer;
 
-struct BufferView
-{
-	u32 buffer_index;
-	u32 offset;
-	u32 length;
-	optional<u32> stride;
-};
-
-struct Accessor
-{
-	u32 buffer_view_index;
-	u32 byte_offset;
-	u32 vector_data_type;
-	u32 vector_dimension;
-	u32 count;
-	bool normalized;
-};
-
 struct Image
 {
 	ByteBuffer data;
@@ -58,22 +40,14 @@ struct Texture
 	optional<u32> sampler_index;
 };
 
-struct Attribute
-{
-	std::string name;
-	u32 accessor_index;
-};
-
 // Equivalent of a draw call
 struct Primitive
 {
 	std::string name;
-	vector<Attribute> attributes;
-	optional<u32> indices_accessor_index;
 	optional<u32> material_index;
 
-	u32 vertex_buffer_offset, vertex_count; // !!! Temporary
-	u32 index_buffer_offset, index_count; // !!! Temporary
+	u32 vertex_buffer_offset, vertex_count;
+	u32 index_buffer_offset, index_count;
 };
 
 struct Mesh
@@ -135,9 +109,7 @@ struct Scene
 
 struct LoadedData
 {
-	vector<ByteBuffer> buffers;
-	vector<BufferView> buffer_views;
-	vector<Accessor> accessors;
+	ByteBuffer buffer;
 
 	vector<Image> images;
 	vector<Sampler> samplers;

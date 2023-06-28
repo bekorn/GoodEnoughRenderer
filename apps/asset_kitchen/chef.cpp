@@ -172,7 +172,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 	vector<ByteBuffer> loaded_buffers;
 	vector<BufferView> loaded_buffer_views;
 	vector<Accessor> loaded_accessors;
-	vector<Mesh> loaded_meshes;
+	vector<RawMesh> loaded_meshes;
 	{
 		// Parse buffers
 		auto const file_dir = desc.path.parent_path();
@@ -234,7 +234,7 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 		{
 			auto const & mesh = item.GetObject();
 
-			vector<Primitive> primitives;
+			vector<RawPrimitive> primitives;
 			primitives.reserve(mesh["primitives"].Size());
 			for (auto const & item: mesh["primitives"].GetArray())
 			{
@@ -242,6 +242,8 @@ void Chef::prepare_gltf(Book const & book, GLTF::Desc const & desc)
 
 				vector<Attribute> attributes;
 				attributes.reserve(primitive["attributes"].MemberCount());
+				assert(attributes.size() < Geometry::ATTRIBUTE_COUNT, "Primitive has too many attributes");
+
 				for (auto const & attribute: primitive["attributes"].GetObject())
 					attributes.push_back({
 						.name = attribute.name.GetString(),
