@@ -59,6 +59,14 @@ struct MetricsWindow : WindowBase
 	void update(Context & ctx) override;
 };
 
+struct AttribLayoutWindow : WindowBase
+{
+	const char * get_name()
+	{ return "AttribLayout"; }
+
+	void update(Context & ctx) override;
+};
+
 struct UniformBufferWindow : WindowBase
 {
 	const char * get_name() override
@@ -165,6 +173,7 @@ inline void add_all_core_windows(Context & ctx)
 {
 	ctx.add_window(make_unique_one<GameWindow>());
 	ctx.add_window(make_unique_one<MetricsWindow>());
+	ctx.add_window(make_unique_one<AttribLayoutWindow>());
 	ctx.add_window(make_unique_one<UniformBufferWindow>());
 	ctx.add_window(make_unique_one<ProgramWindow>());
 	ctx.add_window(make_unique_one<TextureWindow>());

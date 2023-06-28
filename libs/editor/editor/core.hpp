@@ -50,6 +50,7 @@ struct State
 	bool has_program_errors;
 
 	// selections
+	Name selected_attrib_layout_name;
 	Name selected_uniform_buffer_name;
 	Name selected_program_name;
 	Name selected_texture_name;

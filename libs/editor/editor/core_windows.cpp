@@ -323,6 +323,51 @@ void MetricsWindow::update(Context & ctx)
 	TextFMT("Frame: {:6}, Time: {:7.2f}", ctx.state.frame_info.idx, ctx.state.frame_info.seconds_since_start);
 }
 
+void AttribLayoutWindow::update(Context & ctx)
+{
+	using namespace ImGui;
+
+	auto & attrib_layouts = ctx.game.assets.attrib_layouts;
+	auto & selected_name = ctx.state.selected_attrib_layout_name;
+
+	if (BeginCombo("Attrib Layout", selected_name.string.data()))
+	{
+		for (auto const & [name, _]: attrib_layouts)
+			if (Selectable(name.string.data()))
+				selected_name = name;
+
+		EndCombo();
+	}
+	if (auto it = attrib_layouts.find(selected_name); it == attrib_layouts.end())
+	{
+		Text("Pick an attrib layout");
+		return;
+	}
+	else
+	{
+		auto & [name, attrib_layout] = *it;
+
+		if (BeginTable("Attribs", 4, ImGuiTableFlags_BordersInnerH))
+		{
+			TableSetupColumn("Key");
+			TableSetupColumn("Vec");
+			TableSetupColumn("Location", ImGuiTableColumnFlags_WidthFixed, 60);
+			TableSetupColumn("Group", ImGuiTableColumnFlags_WidthFixed, 40);
+			TableHeadersRow();
+
+			for (auto const & attrib: attrib_layout.attributes)
+			{
+				if (not attrib.is_used()) continue;
+				TableNextColumn(), TextFMT("{}", attrib.key);
+				TableNextColumn(), TextFMT("{}", attrib.vec);
+				TableNextColumn(), TextFMT("{}", attrib.location);
+				TableNextColumn(), TextFMT("{}", attrib.group);
+			}
+			EndTable();
+		}
+	}
+}
+
 void UniformBufferWindow::update(Context & ctx)
 {
 	using namespace ImGui;
