@@ -23,7 +23,6 @@ struct Assets
 	Managed<GL::TextureCubemap> texture_cubemaps;
 	Managed<GL::Texture3D> volumes;
 	// Render resources
-	Managed<Geometry::Primitive> primitives;
 	Managed<unique_one<Render::IMaterial>> materials;
 	Managed<Render::Mesh> meshes;
 	// Scene resources

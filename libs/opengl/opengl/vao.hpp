@@ -13,6 +13,7 @@ namespace GL
 struct VertexArray : OpenGLObject
 {
 	Buffer vertex_buffer;
+	GLsizei vertex_count;
 	Buffer element_buffer;
 	GLsizei element_count;
 
@@ -39,6 +40,7 @@ struct VertexArray : OpenGLObject
 			.usage = desc.usage,
 			.data = desc.primitive.vertices.buffer,
 		});
+		vertex_count = desc.primitive.vertices.count;
 
 		auto buffer_bind_idx = 0;
 		GLintptr buffer_offset = 0;
@@ -97,6 +99,7 @@ struct VertexArray : OpenGLObject
 			.usage = desc.usage,
 			.size = vertex_buffer_size,
 		});
+		vertex_count = desc.vertex_count;
 
 		auto buffer_bind_idx = 0;
 		GLintptr buffer_offset = 0;
@@ -137,10 +140,7 @@ struct VertexArray : OpenGLObject
 	{
 		{ // check assertions
 			assert(element_count == primitive.indices.count, "Dynamic element buffer is not supported yet");
-
-			i32 current_buffer_size;
-			glGetNamedBufferParameteriv(vertex_buffer.id, GL_BUFFER_SIZE, &current_buffer_size);
-			assert(primitive.vertices.buffer.size == current_buffer_size, "Dynamic vertex buffer is not supported yet");
+			assert(primitive.vertices.count == vertex_count, "Dynamic vertex buffer is not supported yet");
 		}
 
 		glInvalidateBufferData(vertex_buffer.id);

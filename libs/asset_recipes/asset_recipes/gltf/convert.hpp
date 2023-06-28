@@ -18,7 +18,6 @@ void Convert(
 	LoadedData const & loaded,
 	Managed<GL::Texture2D> & textures,
 	Managed<unique_one<Render::IMaterial>> & materials,
-	Managed<Geometry::Primitive> & primitives,
 	Managed<Render::Mesh> & meshes,
 	::Scene::Tree & scene_tree,
 	Managed<Geometry::Layout> const & attrib_layouts

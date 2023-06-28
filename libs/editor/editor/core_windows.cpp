@@ -28,11 +28,6 @@ void GameWindow::init(Context const & ctx)
 
 	// border
 	border.init(ctx, *this);
-
-	// Load gizmo meshes
-	for (auto & [_, mesh]: ctx.editor_assets.meshes)
-		for (auto & drawable: mesh.drawables)
-			drawable.load();
 }
 
 void GameWindow::update(Context & ctx)
@@ -958,26 +953,9 @@ void MeshWindow::update(Context & ctx)
 
 	{
 		auto ids = mesh.drawables | std::views::transform([](auto & d) { return d.vertex_array.id; });
+		// Pattern: using fmt for a ImGui::LabelText
 		_buffer.clear(), fmt::format_to(_buffer_iter, "{}", fmt::join(ids, ","));
 		LabelText("VertexArrays", "%.*s", int(_buffer.size()), _buffer.data());
-
-
-		bool any_vertex_array_loaded = false;
-		for (auto & drawable: mesh.drawables)
-			any_vertex_array_loaded |= drawable.is_loaded();
-
-		if (any_vertex_array_loaded)
-		{
-			if (Button("Unload all drawables"))
-				for (auto & drawable: mesh.drawables)
-					drawable.unload();
-		}
-		else
-		{
-			if (Button("Load all drawables"))
-				for (auto & drawable: mesh.drawables)
-					drawable.load();
-		}
 	}
 
 	{
@@ -990,29 +968,36 @@ void MeshWindow::update(Context & ctx)
 
 	Spacing(), Separator(), Text("Primitive");
 
-	auto const & primitive = drawable.primitive;
+	auto const & vao = drawable.vertex_array;
 
-	TextFMT("Vertex Count {}", primitive.vertices.count);
+	int vertex_buffer_size;
+	glGetNamedBufferParameteriv(vao.vertex_buffer.id, GL::GL_BUFFER_SIZE, &vertex_buffer_size);
+	LabelText("Vertex Count", "%d", vao.vertex_count);
+	LabelText("Element Count", "%d", vao.element_count);
 
-	if (BeginTable("Attributes", 2, ImGuiTableFlags_BordersInnerH))
-	{
-		TableSetupColumn("Key"), TableSetupColumn("Data");
-		TableHeadersRow();
-
-		for (auto i = 0 ; i < Geometry::ATTRIBUTE_COUNT; ++i)
-		{
-			auto const & attrib = primitive.layout->attributes[i];
-			if (not attrib.is_used()) continue;
-
-			TableNextColumn(), TextFMT("{}", attrib.key);
-			TableNextColumn(), TextFMT("{}", attrib.vec);
-		}
-		EndTable();
-	}
-
+	// TODO(bekorn): make a way to access the layout through the material
+// 	auto const & layout = drawable.named_material.shader.layout;
+//	if (BeginTable("Attributes", 2, ImGuiTableFlags_BordersInnerH))
+//	{
+//		TableSetupColumn("Key"), TableSetupColumn("Data");
+//		TableHeadersRow();
+//
+//		for (auto i = 0 ; i < Geometry::ATTRIBUTE_COUNT; ++i)
+//		{
+//			auto const & attrib = layout.attributes[i];
+//			if (not attrib.is_used()) continue;
+//
+//			TableNextColumn(), TextFMT("{}", attrib.key);
+//			TableNextColumn(), TextFMT("{}", attrib.vec);
+//		}
+//		EndTable();
+//	}
 
 	Spacing(), Separator();
 	LabelText("Material", "%s", drawable.named_material.name.string.data());
+	// TODO(bekorn): make the material selectable
+//	if (SameLine(), Button("Select"))
+//		ctx.state.selected_material_name = drawable.named_material.name;
 }
 
 void NodeEditor::update(Context & ctx)

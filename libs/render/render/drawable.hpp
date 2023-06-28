@@ -9,26 +9,15 @@ namespace Render
 {
 struct Drawable
 {
-	Geometry::Primitive const & primitive;
 	Named<unique_one<IMaterial>> const named_material;
-
 	GL::VertexArray vertex_array;
 
-	bool is_loaded() const
-	{
-		return vertex_array.id != 0;
-	}
-
-	void load()
+	Drawable(Named<unique_one<IMaterial>> const & named_material, Geometry::Primitive const & primitive) :
+		named_material(named_material)
 	{
 		vertex_array.init(GL::VertexArray::Desc{
 			.primitive = primitive
 		});
-	}
-
-	void unload()
-	{
-		vertex_array = {};
 	}
 };
 }

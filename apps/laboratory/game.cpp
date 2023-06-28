@@ -142,11 +142,6 @@ void Game::init()
 		.aspect_ratio = f32(framebuffer.resolution.x) / f32(framebuffer.resolution.y),
 	};
 
-	// load all the meshes to the gpu
-	for (auto & [_, mesh]: assets.meshes)
-		for (auto & drawable: mesh.drawables)
-			drawable.load();
-
 	// fallback to default envmap
 	if (not assets.texture_cubemaps.contains(settings.envmap_diffuse, settings.envmap_specular))
 	{

@@ -270,7 +270,6 @@ void Convert(
 	LoadedData const & loaded,
 	Managed<GL::Texture2D> & textures,
 	Managed<unique_one<Render::IMaterial>> & materials,
-	Managed<Geometry::Primitive> & primitives,
 	Managed<Render::Mesh> & meshes,
 	::Scene::Tree & scene_tree,
 	Managed<Geometry::Layout> const & attrib_layouts
@@ -345,29 +344,10 @@ void Convert(
 		}
 	}
 
-	// Convert primitives
+	// Convert meshes
 	// TODO(bekorn): the layout is same for the whole gltf file, it should be more granular, per material perhaps
 	assert(loaded.layout_name.has_value(), "Default layout not supported yet");
 	auto & layout = attrib_layouts.get(loaded.layout_name.value());
-	vector<Geometry::Key> loaded_attrib_keys;
-	loaded_attrib_keys.reserve(Geometry::ATTRIBUTE_COUNT);
-	for (auto & loaded_mesh: loaded.meshes)
-		for (auto & loaded_primitive: loaded_mesh.primitives)
-		{
-			auto & primitive = primitives.generate(Name(loaded_primitive.name)).data;
-
-			primitive.layout = &layout;
-
-			auto * buffer_ptr = loaded.buffer.data.get();
-
-			primitive.vertices.init(*primitive.layout, loaded_primitive.vertex_count);
-			memcpy(primitive.vertices.buffer.begin(), buffer_ptr + loaded_primitive.vertex_buffer_offset, primitive.vertices.buffer.size);
-
-			primitive.indices.init(loaded_primitive.index_count);
-			memcpy(primitive.indices.buffer.begin(), buffer_ptr + loaded_primitive.index_buffer_offset, primitive.indices.buffer.size);
-		}
-
-	// Convert meshes
 	for (auto & loaded_mesh: loaded.meshes)
 	{
 		auto & mesh = meshes.generate(loaded_mesh.name).data;
@@ -382,13 +362,20 @@ void Convert(
 								  : throw std::runtime_error("not implemented");
 
 			auto & material_name = loaded.materials[material_index].name;
+			auto named_material = materials.get_named(material_name);
 
-			mesh.drawables.push_back(
-				{
-					.primitive = primitives.get(loaded_primitive.name),
-					.named_material = materials.get_named(material_name),
-				}
-			);
+			Geometry::Primitive primitive;
+			primitive.layout = &layout;
+
+			auto * buffer_ptr = loaded.buffer.data.get();
+
+			primitive.vertices.init(*primitive.layout, loaded_primitive.vertex_count);
+			memcpy(primitive.vertices.buffer.begin(), buffer_ptr + loaded_primitive.vertex_buffer_offset, primitive.vertices.buffer.size);
+
+			primitive.indices.init(loaded_primitive.index_count);
+			memcpy(primitive.indices.buffer.begin(), buffer_ptr + loaded_primitive.index_buffer_offset, primitive.indices.buffer.size);
+
+			mesh.drawables.emplace_back(named_material, primitive);
 		}
 	}
 
