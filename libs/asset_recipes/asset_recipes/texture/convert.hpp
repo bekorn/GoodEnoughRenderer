@@ -7,6 +7,8 @@
 
 namespace Texture
 {
+inline const char * const ASSET_NAME = "texture";
+
 GL::Texture2D Convert(LoadedData const & loaded);
 std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir);
 }

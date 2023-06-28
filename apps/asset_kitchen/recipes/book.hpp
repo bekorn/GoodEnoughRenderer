@@ -5,7 +5,7 @@
 
 #include <asset_recipes/attrib_layout/convert.hpp>
 
-#include "recipes/gltf.hpp"
+#include "gltf.hpp"
 
 struct Book
 {
@@ -35,7 +35,7 @@ struct Book
 				attrib_layouts.generate(name, desc);
 			}
 
-		if (auto const member = document.FindMember(GLTF::NAME); member != document.MemberEnd())
+		if (auto const member = document.FindMember(GLTF::ASSET_NAME); member != document.MemberEnd())
 			for (auto const & item: member->value.GetArray())
 			{
 				auto [name, desc] = GLTF::Parse(item.GetObject(), assets_dir);

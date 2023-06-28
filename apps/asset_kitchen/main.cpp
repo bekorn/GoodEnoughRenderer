@@ -1,4 +1,3 @@
-#include "book.hpp"
 #include "chef.hpp"
 
 int main(int argc, char * argv[])
@@ -11,18 +10,14 @@ int main(int argc, char * argv[])
 	auto assets_dir = std::filesystem::path(argv[1]);
 	if (not std::filesystem::exists(assets_dir))
 	{
-		fmt::print(stderr, "\"{}\" does not exist", assets_dir);
+		fmt::print(stderr, "{} does not exist", assets_dir);
 		return 1;
 	}
 
 	Book book(assets_dir);
 
-	fmt::print("Ready to serve some assets to {}!\n", book.served_dir);
-
 	Chef chef;
-
-	for (auto & [name, gltf]: book.gltf)
-		chef.prepare_gltf(book, gltf);
+	chef.prepare_all_gltf(book);
 
 	return 0;
 }

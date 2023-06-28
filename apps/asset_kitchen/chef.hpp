@@ -1,10 +1,8 @@
 #pragma once
 
-#include "book.hpp"
-
-#include <asset_recipes/gltf/load.hpp>
+#include "recipes/book.hpp"
 
 struct Chef
 {
-	void prepare_gltf(Book const & book, GLTF::Desc const & desc);
+	void prepare_all_gltf(Book const & book);
 };

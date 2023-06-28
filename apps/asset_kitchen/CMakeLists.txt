@@ -6,6 +6,7 @@ string(APPEND CMAKE_RUNTIME_OUTPUT_DIRECTORY "/AssetKitchen")
 
 set(APPS ${APPS} AssetKitchen PARENT_SCOPE)
 add_executable(AssetKitchen main.cpp)
+target_precompile_headers(AssetKitchen PRIVATE .pchpp)
 target_sources(AssetKitchen PRIVATE
     recipes/gltf.cpp
     chef.cpp

@@ -3,10 +3,10 @@
 #include <asset_recipes/gltf/load.hpp>
 #include <asset_recipes/gltf/convert.hpp>
 
+struct Book;
+
 namespace GLTF
 {
-inline const char * const NAME = "gltf";
-
 struct BufferView
 {
 	u32 buffer_index;
@@ -46,6 +46,5 @@ struct RawMesh
 	vector<RawPrimitive> primitives;
 };
 
-
-optional<std::string> Serve(LoadedData const & loaded_data, std::filesystem::path path);
+void Serve(Book const & book, Desc const & desc);
 };

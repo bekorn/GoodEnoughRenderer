@@ -7,6 +7,8 @@
 
 namespace Cubemap
 {
+inline const char * const ASSET_NAME = "cubemap";
+
 GL::TextureCubemap Convert(LoadedData const & loaded);
 std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir);
 }

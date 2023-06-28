@@ -14,6 +14,8 @@
 
 namespace GLTF
 {
+inline const char * const ASSET_NAME = "gltf";
+
 void Convert(
 	LoadedData const & loaded,
 	Managed<GL::Texture2D> & textures,

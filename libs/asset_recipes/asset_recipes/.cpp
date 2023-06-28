@@ -33,21 +33,21 @@ void Descriptions::init(std::filesystem::path const & project_root)
 			attrib_layout.generate(name, layout);
 		}
 
-	if (auto const member = document.FindMember("glsl_uniform_block"); member != document.MemberEnd())
+	if (auto const member = document.FindMember(GLSL::UniformBlock::ASSET_NAME); member != document.MemberEnd())
 		for (auto const & item: member->value.GetArray())
 		{
 			auto [name, desc] = GLSL::UniformBlock::Parse(item.GetObject(), root);
 			uniform_block.generate(name, desc);
 		}
 
-	if (auto const member = document.FindMember("glsl_program"); member != document.MemberEnd())
+	if (auto const member = document.FindMember(GLSL::Program::ASSET_NAME); member != document.MemberEnd())
 		for (auto const & item: member->value.GetArray())
 		{
 			auto [name, desc] = GLSL::Program::Parse(item.GetObject(), root);
 			glsl.generate(name, desc);
 		}
 
-	if (auto const member = document.FindMember("gltf"); member != document.MemberEnd())
+	if (auto const member = document.FindMember(GLTF::ASSET_NAME); member != document.MemberEnd())
 		for (auto const & item: member->value.GetArray())
 		{
 			auto [name, desc] = GLTF::Parse(item.GetObject(), served_root);
@@ -56,21 +56,21 @@ void Descriptions::init(std::filesystem::path const & project_root)
 			gltf.generate(name, desc);
 		}
 
-	if (auto const member = document.FindMember("texture"); member != document.MemberEnd())
+	if (auto const member = document.FindMember(Texture::ASSET_NAME); member != document.MemberEnd())
 		for (auto const & item: member->value.GetArray())
 		{
 			auto [name, desc] = Texture::Parse(item.GetObject(), root);
 			texture.generate(name, desc);
 		}
 
-	if (auto const member = document.FindMember("cubemap"); member != document.MemberEnd())
+	if (auto const member = document.FindMember(Cubemap::ASSET_NAME); member != document.MemberEnd())
 		for (auto const & item: member->value.GetArray())
 		{
 			auto [name, desc] = Cubemap::Parse(item.GetObject(), root);
 			cubemap.generate(name, desc);
 		}
 
-	if (auto const member = document.FindMember("envmap"); member != document.MemberEnd())
+	if (auto const member = document.FindMember(Envmap::ASSET_NAME); member != document.MemberEnd())
 		for (auto const & item: member->value.GetArray())
 		{
 			auto [name, desc] = Envmap::Parse(item.GetObject(), root);
@@ -80,7 +80,7 @@ void Descriptions::init(std::filesystem::path const & project_root)
 
 	if (errbuf.size() != 0)
 	{
-		fmt::print(stderr, "[!] Assets at {} had errors:\n{}", root, errbuf.data());
+		fmt::print(stderr, "[!] {} had errors:\n{}", root, errbuf.data());
 		std::exit(1);
 	}
 }
