@@ -91,11 +91,17 @@ struct TextureWindow : WindowBase
 	const char * get_name() override
 	{ return "Texture"; }
 
-	GL::Texture2D view;
+
 	bool is_texture_changed = false;
+	i32 texture_levels = 0;
+	f32x2 level_resolution;
+	std::string_view texture_format;
+	u32 size_disk, size_ram, texture_size;
+
 	bool is_level_changed = false;
-	i32 texture_levels = 0, current_level = 0;
-	f32x2 texture_size, view_size;
+	i32 current_level = 0;
+	GL::Texture2D view;
+	f32x2 view_size;
 
 	void update(Context & ctx) override;
 };

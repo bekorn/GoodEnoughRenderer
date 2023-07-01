@@ -610,7 +610,7 @@ void TextureWindow::update(Context & ctx)
 	auto & textures = ctx.game.assets.textures;
 	auto & selected_name = ctx.state.selected_texture_name;
 
-	if (BeginCombo("Texture", selected_name.string.data()))
+	if (BeginCombo("##", selected_name.string.data()))
 	{
 		for (auto & [name, _]: textures)
 			if (Selectable(name.string.data()))
@@ -621,25 +621,76 @@ void TextureWindow::update(Context & ctx)
 	if (auto it = textures.find(selected_name); it != textures.end())
 	{
 		auto & [_, texture] = *it;
-		SameLine(), Text("(id %d)", texture.id);
+		SameLine(), Text("id %d", texture.id);
 
 		if (is_texture_changed)
 		{
+			using namespace GL;
+
 			current_level = 0;
-			GL::glGetTextureParameteriv(texture.id, GL::GL_TEXTURE_IMMUTABLE_LEVELS, &texture_levels);
+			glGetTextureParameteriv(texture.id, GL_TEXTURE_IMMUTABLE_LEVELS, &texture_levels);
+
+			GLenum format;
+			glGetTextureLevelParameteriv(texture.id, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+			if (format == GL_RGB8) texture_format = "RGB8";
+			else if (format == GL_RGBA8) texture_format = "RGBA8";
+			else if (format == GL_RGB32F) texture_format = "RGB32F";
+			else if (format == GL_RGBA32F) texture_format = "RGBA32F";
+			else if (format == GL_SRGB8) texture_format = "SRGB8";
+			else if (format == GL_SRGB8_ALPHA8) texture_format = "SRGB8_ALPHA8";
+			else texture_format = "UNKNOWN";
+
+			texture_size = 0;
+			int is_compressed;
+			glGetTextureLevelParameteriv(texture.id, 0, GL_TEXTURE_COMPRESSED, &is_compressed);
+			if (is_compressed)
+				for (int i = 0; i < texture_levels; ++i)
+				{
+					i32 level_size;
+					glGetTextureLevelParameteriv(texture.id, i, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &level_size);
+					texture_size += level_size;
+				}
+			else
+			{
+				// assumes all levels have the same format (because Texture2D uses glTextureStorage2D)
+				i32 channel_bits, texel_size = 0;
+				glGetTextureLevelParameteriv(texture.id, 0, GL_TEXTURE_RED_SIZE, &channel_bits), texel_size += channel_bits;
+				glGetTextureLevelParameteriv(texture.id, 0, GL_TEXTURE_GREEN_SIZE, &channel_bits), texel_size += channel_bits;
+				glGetTextureLevelParameteriv(texture.id, 0, GL_TEXTURE_BLUE_SIZE, &channel_bits), texel_size += channel_bits;
+				glGetTextureLevelParameteriv(texture.id, 0, GL_TEXTURE_ALPHA_SIZE, &channel_bits), texel_size += channel_bits;
+				texel_size /= 8;
+
+				for (int i = 0; i < texture_levels; ++i)
+				{
+					i32x2 dimensions;
+					glGetTextureLevelParameteriv(texture.id, i, GL_TEXTURE_WIDTH, &dimensions.x);
+					glGetTextureLevelParameteriv(texture.id, i, GL_TEXTURE_HEIGHT, &dimensions.y);
+
+					texture_size += texel_size * compMul(dimensions);
+				}
+			}
+
 
 			is_texture_changed = false;
 			is_level_changed = true;
 		}
+
+		LabelText("Format", "%.*s", texture_format.size(), texture_format.data());
+		if (texture_size >> 20 != 0)
+			LabelText("Size", "%d MiB", texture_size >> 20);
+		else
+			LabelText("Size", "%d KiB", texture_size >> 10);
 
 		if (SliderInt("Level", &current_level, 0, texture_levels - 1))
 			is_level_changed = true;
 
 		if (is_level_changed)
 		{
-			GL::Texture2D new_view;
+			using namespace GL;
+
+			Texture2D new_view;
 			new_view.init(
-				GL::Texture2D::ViewDesc{
+				Texture2D::ViewDesc{
 					.source = texture,
 					.base_level = current_level,
 					.level_count = 1
@@ -647,15 +698,15 @@ void TextureWindow::update(Context & ctx)
 			);
 			view = move(new_view);
 
-			GL::glGetTextureLevelParameterfv(view.id, 0, GL::GL_TEXTURE_WIDTH, &texture_size.x);
-			GL::glGetTextureLevelParameterfv(view.id, 0, GL::GL_TEXTURE_HEIGHT, &texture_size.y);
+			glGetTextureLevelParameterfv(view.id, 0, GL_TEXTURE_WIDTH, &level_resolution.x);
+			glGetTextureLevelParameterfv(view.id, 0, GL_TEXTURE_HEIGHT, &level_resolution.y);
 
 			f32 const max_resolution = 240;
-			view_size = max_resolution / glm::compMax(texture_size) * texture_size;
+			view_size = max_resolution / compMax(level_resolution) * level_resolution;
 
 			is_level_changed = false;
 		}
-		LabelText("Resolution", "%d x %d", i32(texture_size.x), i32(texture_size.y));
+		LabelText("Resolution", "%d x %d", i32(level_resolution.x), i32(level_resolution.y));
 		ImageGL(
 			reinterpret_cast<void *>(i64(view.id)),
 			{view_size.x, view_size.y}
