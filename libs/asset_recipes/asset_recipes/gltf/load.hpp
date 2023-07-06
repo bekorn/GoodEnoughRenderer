@@ -109,7 +109,8 @@ struct Scene
 
 struct LoadedData
 {
-	ByteBuffer buffer;
+	ByteBuffer geometry_buffer;
+	ByteBuffer image_buffer;
 
 	vector<Image> images;
 	vector<Sampler> samplers;

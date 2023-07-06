@@ -1,5 +1,6 @@
 #include "gltf.hpp"
 #include "book.hpp"
+#include "core/intrinsics.hpp"
 
 // Pattern: String into Geometry::Attribute::Key
 Geometry::Key IntoAttributeKey(std::string_view name)
@@ -155,6 +156,34 @@ ByteBuffer ConvertAttrib(ByteBuffer const & src, Geometry::Vector const & src_ve
 	return dst_buffer;
 }
 
+const char * to_string(GLTF::EncodedImage::MimeType type)
+{
+	using enum GLTF::EncodedImage::MimeType;
+	switch (type)
+	{
+		case PNG: return "png";
+		case JPEG: return "jpeg";
+		case BC7: return "BC7";
+		case BC6: return "BC6";
+		default: assert_enum_out_of_range();
+	}
+}
+GLTF::EncodedImage::MimeType ParseMimeType(std::string_view str)
+{
+	using enum GLTF::EncodedImage::MimeType;
+	if (str == "image/png") return PNG;
+	if (str == "image/jpeg") return JPEG;
+	assert_failure("MimeType is not supported");
+}
+GLTF::EncodedImage::MimeType MimeTypeFromExtension(std::string_view str)
+{
+	using enum GLTF::EncodedImage::MimeType;
+	if (str == ".png") return PNG;
+	if (str == ".jpg") return JPEG;
+	if (str == ".jpeg") return JPEG;
+	assert_failure("Image type is not supported");
+}
+
 void GLTF::Serve(Book const & book, Desc const & desc)
 {
 	using namespace GLTF;
@@ -165,15 +194,16 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 	Document document;
 	document.Parse(LoadAsString(desc.path).c_str());
 
+	auto const gltf_dir = desc.path.parent_path();
 
 	/// Parse
 	vector<ByteBuffer> loaded_buffers;
 	vector<BufferView> loaded_buffer_views;
 	vector<Accessor> loaded_accessors;
 	vector<RawMesh> loaded_meshes;
+	vector<RawImage> loaded_images;
 	{
 		// Parse buffers
-		auto const file_dir = desc.path.parent_path();
 		for (auto const & item: document["buffers"].GetArray())
 		{
 			auto const & buffer = item.GetObject();
@@ -181,7 +211,7 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 			auto file_size = buffer["byteLength"].GetUint64();
 			auto file_name = buffer["uri"].GetString();
 			// Limitation: only loads separate file binaries
-			loaded_buffers.emplace_back(LoadAsBytes(file_dir / file_name, file_size));
+			loaded_buffers.emplace_back(LoadAsBytes(gltf_dir / file_name, file_size));
 		}
 
 		// Parse buffer views
@@ -244,21 +274,45 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 
 				for (auto const & attribute: primitive["attributes"].GetObject())
 					attributes.push_back({
-											 .name = attribute.name.GetString(),
-											 .accessor_index = attribute.value.GetUint(),
-										 });
+						.name = attribute.name.GetString(),
+						.accessor_index = attribute.value.GetUint(),
+					});
 
 				primitives.push_back({
-										 .attributes = attributes,
-										 .indices_accessor_index = GetOptionalU32(primitive, "indices"),
-										 .material_index = GetOptionalU32(primitive, "material"),
-									 });
+					.attributes = attributes,
+					.indices_accessor_index = GetOptionalU32(primitive, "indices"),
+					.material_index = GetOptionalU32(primitive, "material"),
+				});
 			}
 
 			loaded_meshes.push_back({
-										.primitives = primitives,
-									});
+				.primitives = primitives,
+			});
 		}
+
+
+		// Parse images
+		if (auto iter = document.FindMember("images"); iter != document.MemberEnd())
+			for (auto const & item: iter->value.GetArray())
+			{
+				auto const & image = item.GetObject();
+
+				auto uri = GetString(image, "uri", {});
+				if (uri.size() > 5 and uri[5] == ':') // check for "data:" (base64 encoded data as a json string)
+					assert_failure("images that embed data into uri are not supported yet");
+				else if (not uri.empty())
+					loaded_images.push_back({
+						.uri = uri,
+						.buffer_view_index = {},
+						.mime_type = {},
+					});
+				else
+					loaded_images.push_back({
+						.uri = {},
+						.buffer_view_index = image["bufferView"].GetUint(),
+						.mime_type = image["mimeType"].GetString(),
+					});
+			}
 	}
 
 
@@ -393,46 +447,87 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 				else
 				{
 					primitive.indices.init(vertex_count);
-					for (auto i = 0; auto & index : primitive.indices.as_span())
+					for (auto i = 0; auto & index: primitive.indices.as_span())
 						index = i++;
 				}
 			}
 		}
 	}
 
+	/// Load Images
+	vector<EncodedImage> encoded_images;
+	encoded_images.reserve(loaded_images.size());
+	{
+		for (const auto & loaded_image: loaded_images)
+			if (loaded_image.uri.empty())
+			{
+				assert_failure("Textures with BufferView are not supported yet");
+			}
+			else
+			{
+				encoded_images.push_back({
+					.buffer = LoadAsBytes(gltf_dir / loaded_image.uri),
+					.mime_type = MimeTypeFromExtension(File::Path(loaded_image.uri).extension().string()),
+				});
+			}
+
+//		// tag sRGB images
+//		auto const & textures = document["textures"].GetArray();
+//
+//		auto const mark_sRGB = [&textures, &images](JSONObj material, const char * name)
+//		{
+//			if (auto iter = material.FindMember(name); iter != material.MemberEnd())
+//			{
+//				auto const & tex_info = iter->value.GetObject();
+//				auto texture_idx = tex_info["index"].GetUint();
+//				auto image_idx = textures[texture_idx]["source"].GetUint();
+//				images[image_idx].is_sRGB = true;
+//			}
+//		};
+//
+//		if (auto iter = document.FindMember("materials"); iter != document.MemberEnd())
+//			for (auto const & item : iter->value.GetArray())
+//			{
+//				auto const & material = item.GetObject();
+//				mark_sRGB(material, "emissiveTexture");
+//
+//				if (auto iter = material.FindMember("pbrMetallicRoughness"); iter != material.MemberEnd())
+//					mark_sRGB(iter->value.GetObject(), "baseColorTexture");
+//			}
+	}
+
 
 	/// Convert
-	ByteBuffer converted_buffer;
+	document.RemoveMember("bufferViews");
+
+	/// Convert Geometry
+	auto const geometry_buffer_rel_path = "geometry.bin";
+	ByteBuffer geometry_buffer;
 	{
 		auto & alloc = document.GetAllocator();
 
-		/// Buffer
+		document["buffers"] = Value(kArrayType);
+
+		/// Buffer {buffers[0]}
 		{
 			auto total_size = 0;
 			for (const auto & primitives: mesh_to_prim)
 				for (const auto & prim: primitives)
 					total_size += prim.vertices.buffer.size + prim.indices.buffer.size;
-			converted_buffer = ByteBuffer(total_size);
+			geometry_buffer = ByteBuffer(total_size);
 
 			Value buffer(kObjectType);
-			buffer.AddMember("byteLength", converted_buffer.size, alloc);
-			auto uri = desc.path.filename().replace_extension("bin");
-			buffer.AddMember("uri", Value(uri.string().c_str(), alloc), alloc);
+			buffer.AddMember("byteLength", geometry_buffer.size, alloc);
+			buffer.AddMember("uri", Value(geometry_buffer_rel_path, alloc), alloc);
 
-			Value buffers(kArrayType);
-			buffers.PushBack(buffer, alloc);
-
-			document["buffers"] = buffers;
+			document["buffers"].PushBack(buffer, alloc);
 		}
 
-
-		/// Rest
+		/// JSON
 		// Each mesh will have 2 buffer views for VertexBuffer + IndexBuffer
 		// IndexBuffer will have 1 accessors, VertexBuffer will have N for each attribute
 		// Each primitive will have "extras/formatted_buffer_views": [vertex_buffer_view_idx, index_buffer_view_idx]
-		auto * converted_buffer_ptr = converted_buffer.data_as<byte>();
-		Value converted_buffer_views(kArrayType);
-		Value converted_accessors(kArrayType);
+		auto * converted_buffer_ptr = geometry_buffer.data_as<byte>();
 
 		auto const get_type = [](u32 dimension) -> const char *
 		{
@@ -498,83 +593,19 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 				auto const & prim = prims[i].GetObject();
 				auto const & loaded_prim = loaded_prims[i];
 
-				// Edit primitive
-				auto accessor_idx = converted_accessors.Size();
-				Value attribs(kObjectType);
-				for (const auto & attrib: loaded_prim.layout->attributes)
-				{
-					if (not attrib.is_used()) continue;
-					auto key = Value(get_attrib_name(attrib.key).c_str(), alloc);
-					attribs.AddMember(key, accessor_idx, alloc);
-					accessor_idx++;
-				}
-				prim["attributes"] = attribs;
-				prim["indices"] = accessor_idx;
-
 				// Add buffer views and copy to buffer
-				u32 vertex_buffer_view_idx, index_buffer_view_idx;
 				usize vertex_buffer_begin, index_buffer_begin;
 				{
-					// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_bufferview_target
-					auto const TARGET_ARRAY_BUFFER = 34962;
-					auto const TARGET_ELEMENT_ARRAY_BUFFER = 34963;
-
-					vertex_buffer_view_idx = converted_buffer_views.Size();
-					vertex_buffer_begin = converted_buffer_ptr - converted_buffer.data.get();
-
-					Value vertex_buffer_view(kObjectType);
-					vertex_buffer_view.AddMember("buffer", 0, alloc);
-					vertex_buffer_view.AddMember("byteOffset", vertex_buffer_begin, alloc);
-					vertex_buffer_view.AddMember("byteLength", loaded_prim.vertices.buffer.size, alloc);
-					vertex_buffer_view.AddMember("target", TARGET_ARRAY_BUFFER, alloc);
-					converted_buffer_views.PushBack(vertex_buffer_view, alloc);
+					vertex_buffer_begin = converted_buffer_ptr - geometry_buffer.data.get();
 
 					std::memcpy(converted_buffer_ptr, loaded_prim.vertices.buffer.data.get(), loaded_prim.vertices.buffer.size);
 					converted_buffer_ptr += loaded_prim.vertices.buffer.size;
 
-
-					index_buffer_view_idx = vertex_buffer_view_idx + 1;
-					index_buffer_begin = converted_buffer_ptr - converted_buffer.data.get();
+					index_buffer_begin = converted_buffer_ptr - geometry_buffer.data.get();
 					auto index_buffer_size = loaded_prim.indices.buffer.size;
-
-					Value index_buffer_view(kObjectType);
-					index_buffer_view.AddMember("buffer", 0, alloc);
-					index_buffer_view.AddMember("byteOffset", index_buffer_begin, alloc);
-					index_buffer_view.AddMember("byteLength", index_buffer_size, alloc);
-					index_buffer_view.AddMember("target", TARGET_ELEMENT_ARRAY_BUFFER, alloc);
-					converted_buffer_views.PushBack(index_buffer_view, alloc);
 
 					std::memcpy(converted_buffer_ptr, loaded_prim.indices.buffer.data.get(), index_buffer_size);
 					converted_buffer_ptr += index_buffer_size;
-				}
-				// Add accessors
-				auto vertex_buffer_size = 0;
-				{
-					for (auto ai = 0; ai < Geometry::ATTRIBUTE_COUNT; ++ai)
-					{
-						auto const & attrib = loaded_prim.layout->attributes[ai];
-						if (not attrib.is_used()) continue;
-
-						Value accessor(kObjectType);
-						accessor.AddMember("bufferView", vertex_buffer_view_idx, alloc);
-						accessor.AddMember("byteOffset", vertex_buffer_size, alloc);
-						accessor.AddMember("componentType", get_component_type(attrib.vec.type), alloc);
-						accessor.AddMember("type", Value(get_type(attrib.vec.dimension), alloc), alloc);
-						accessor.AddMember("count", loaded_prim.vertices.count, alloc);
-						accessor.AddMember("normalized", attrib.vec.type.is_normalized(), alloc);
-						converted_accessors.PushBack(accessor, alloc);
-
-						vertex_buffer_size += loaded_prim.vertices.count * attrib.vec.size();
-					}
-				}
-				{
-					Value accessor(kObjectType);
-					accessor.AddMember("bufferView", index_buffer_view_idx, alloc);
-					accessor.AddMember("byteOffset", 0, alloc);
-					accessor.AddMember("componentType", get_component_type(Geometry::Type::U32), alloc);
-					accessor.AddMember("type", Value(get_type(1), alloc), alloc);
-					accessor.AddMember("count", loaded_prim.indices.count, alloc);
-					converted_accessors.PushBack(accessor, alloc);
 				}
 
 				// Add extras for shortcut
@@ -598,26 +629,45 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 				}
 			}
 		}
-
-		document["bufferViews"] = converted_buffer_views;
-		document["accessors"] = converted_accessors;
-
-
-		/// Specify KHR_mesh_quantization extension for the extended data types
-		// !!! this extension does not cover all the data types so the served gltf might not be compliant to the spec
-		Value::StringRefType const EXTENSION = "KHR_mesh_quantization";
-
-		if (auto iter = document.FindMember("extensionsUsed"); iter != document.MemberEnd())
-			iter->value.GetArray().PushBack(EXTENSION, alloc);
-		else
-			document.AddMember("extensionsUsed", Value(kArrayType).PushBack(EXTENSION, alloc), alloc);
-
-		if (auto iter = document.FindMember("extensionsRequired"); iter != document.MemberEnd())
-			iter->value.GetArray().PushBack(EXTENSION, alloc);
-		else
-			document.AddMember("extensionsRequired", Value(kArrayType).PushBack(EXTENSION, alloc), alloc);
 	}
 
+	/// Convert Images
+	auto const image_buffer_rel_path = "image.bin";
+	ByteBuffer image_buffer;
+	if (not encoded_images.empty())
+	{
+		auto & alloc = document.GetAllocator();
+
+		/// Buffer {buffers[1]}
+		{
+			auto total_size = 0;
+			for (const auto & image: encoded_images)
+				total_size += image.buffer.size;
+			image_buffer = ByteBuffer(total_size);
+
+			Value buffer(kObjectType);
+			buffer.AddMember("byteLength", image_buffer.size, alloc);
+			buffer.AddMember("uri", Value(image_buffer_rel_path, alloc), alloc);
+
+			document["buffers"].PushBack(buffer, alloc);
+		}
+
+		/// JSON
+		auto buffer_offset = 0;
+		Value images(kArrayType);
+		for (auto const & encoded_image: encoded_images)
+		{
+			Value image(kObjectType);
+			image.AddMember("mimeType", Value(to_string(encoded_image.mime_type), alloc), alloc);
+			image.AddMember("offset", buffer_offset, alloc);
+			image.AddMember("size", encoded_image.buffer.size, alloc);
+			images.PushBack(image, alloc);
+
+			std::memcpy(image_buffer.data_as<byte>(buffer_offset), encoded_image.buffer.data.get(), encoded_image.buffer.size);
+			buffer_offset += encoded_image.buffer.size;
+		}
+		document["images"] = images;
+	}
 
 	/// Write to file
 	{
@@ -633,25 +683,11 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 		StringBuffer buffer;
 		PrettyWriter writer(buffer);
 		document.Accept(writer);
-
 		File::WriteString(served_path, {buffer.GetString(), buffer.GetSize()});
 
 		// Binary
-		File::WriteBytes(served_dir / relative_path.filename().replace_extension("bin"), converted_buffer);
-
-		// Copy the rest
-		for (auto const & dir_entry : std::filesystem::directory_iterator(asset_dir))
-		{
-			if (dir_entry.is_regular_file())
-			{
-				auto extension = dir_entry.path().extension();
-				if (extension == ".gltf" or extension == ".bin")
-					continue;
-			}
-
-			auto dst_path = served_dir / std::filesystem::relative(dir_entry.path(), asset_dir);
-			using enum std::filesystem::copy_options;
-			std::filesystem::copy(dir_entry.path(), dst_path, recursive | skip_existing);
-		}
+		File::WriteBytes(served_dir / geometry_buffer_rel_path, geometry_buffer);
+		if (not encoded_images.empty())
+			File::WriteBytes(served_dir / image_buffer_rel_path, image_buffer);
 	}
 }

@@ -46,5 +46,19 @@ struct RawMesh
 	vector<RawPrimitive> primitives;
 };
 
+struct RawImage
+{
+	std::string uri;
+	// or
+	u32 buffer_view_index;
+	std::string mime_type;
+};
+
+struct EncodedImage
+{
+	ByteBuffer buffer;
+	enum MimeType {PNG, JPEG, BC7, BC6} mime_type;
+};
+
 void Serve(Book const & book, Desc const & desc);
 };

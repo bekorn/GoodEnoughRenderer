@@ -20,46 +20,55 @@ LoadedData Load(Desc const & desc)
 
 	auto const file_dir = desc.path.parent_path();
 
-	// Parse buffer
+	// Parse buffers
 	{
 		auto const & buffers = document["buffers"].GetArray();
-		assert(buffers.Size() == 1, "Served GLTF should have only 1 buffer");
-		auto const & buffer = buffers[0].GetObject();
 
-		auto file_size = buffer["byteLength"].GetUint64();
-		auto file_name = buffer["uri"].GetString();
-		// Limitation: only loads separate file binaries
-		loaded.buffer = LoadAsBytes(file_dir / file_name, file_size);
+		auto const & geometry_buffer = buffers[0].GetObject();
+		loaded.geometry_buffer = LoadAsBytes(
+			file_dir / geometry_buffer["uri"].GetString(),
+			geometry_buffer["byteLength"].GetUint64()
+		);
+
+		if (buffers.Size() > 1)
+		{
+			auto const & image_buffer = buffers[1].GetObject();
+			loaded.image_buffer = LoadAsBytes(
+				file_dir / image_buffer["uri"].GetString(),
+				image_buffer["byteLength"].GetUint64()
+			);
+		}
 	}
 
 	// Parse images
 	if (auto const member = document.FindMember("images"); member != document.MemberEnd())
 	{
-		auto const & items = member->value.GetArray();
-		loaded.images.resize(items.Size());
+		auto const & images = member->value.GetArray();
+		loaded.images.resize(images.Size());
+		auto const & image_buffer = loaded.image_buffer;
+
 		std::transform(
 			std::execution::par_unseq,
-			items.Begin(), items.End(),
+			images.Begin(), images.End(),
 			loaded.images.data(),
-			[&file_dir](Document::Array::ValueType const & item) -> GLTF::Image
+			[&image_buffer](Value const & item) -> GLTF::Image
 			{
 				auto const & image = item.GetObject();
 
-				auto const member = image.FindMember("uri");
-				if (member == image.MemberEnd())
-					throw std::runtime_error("images without a uri file path are not supported yet");
-
-				auto uri = member->value.GetString();
-				if (uri[5] == ':') // check for "data:" (base64 encoded data as a json string)
-					throw std::runtime_error("images without a uri file path are not supported yet");
+				auto const mime_type = image["mimeType"].GetString();
+				auto const offset = image["offset"].GetUint();
+				auto const size = image["size"].GetUint();
+				auto const buffer = image_buffer.span_as<byte>(offset, size);
 
 				// gltf textures (first-pixel == uv(0,0)) do not require a vertical flip
-				auto image_file = File::LoadImage(file_dir / uri, false);
+				auto outcome = File::DecodeImage(buffer, false);
+				assert(outcome, "Failed to decode image in gltf");
 
+				auto decoded_image = outcome.into_result();
 				return {
-					.data = move(image_file.buffer),
-					.dimensions = image_file.dimensions,
-					.channels = image_file.channels,
+					.data = move(decoded_image.buffer),
+					.dimensions = decoded_image.dimensions,
+					.channels = decoded_image.channels,
 					.is_sRGB = false,
 				};
 			}
@@ -367,7 +376,7 @@ void Convert(
 			Geometry::Primitive primitive;
 			primitive.layout = &layout;
 
-			auto * buffer_ptr = loaded.buffer.data.get();
+			auto * buffer_ptr = loaded.geometry_buffer.data.get();
 
 			primitive.vertices.init(*primitive.layout, loaded_primitive.vertex_count);
 			memcpy(primitive.vertices.buffer.begin(), buffer_ptr + loaded_primitive.vertex_buffer_offset, primitive.vertices.buffer.size);

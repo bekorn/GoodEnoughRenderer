@@ -88,33 +88,45 @@ void WriteString(Path const & path, std::string_view sv)
 
 Image LoadImage(Path const & path, bool should_flip_vertically)
 {
-	auto const file_data = LoadAsBytes(path);
+	auto buffer = LoadAsBytes(path);
+	auto outcome = DecodeImage(buffer, should_flip_vertically);
 
+	if (outcome)
+		return outcome.into_result();
+
+	fmt::print(stderr, "File::DecodeImage failed. path: {}, error: {}\n", path, outcome.into_error());
+	return {};
+}
+Expected<Image, const char *> DecodeImage(span<byte> buffer, bool should_flip_vertically)
+{
 	stbi_set_flip_vertically_on_load_thread(should_flip_vertically);
 
-	Image image;
-	image.is_format_f32 = stbi_is_hdr_from_memory(file_data.data_as<const unsigned char>(), file_data.size);
+	auto const buffer_begin = reinterpret_cast<const unsigned char *>(buffer.data());
+	auto const buffer_size = buffer.size();
 
-	void * raw_pixel_data;
+	Image image;
+	image.is_format_f32 = stbi_is_hdr_from_memory(buffer_begin, buffer_size);
+
+	void * decoded_buffer;
 	if (image.is_format_f32)
-		raw_pixel_data = stbi_loadf_from_memory(
-			file_data.data_as<const unsigned char>(), file_data.size,
+		decoded_buffer = stbi_loadf_from_memory(
+			buffer_begin, buffer_size,
 			&image.dimensions.x, &image.dimensions.y,
 			&image.channels, 0
 		);
 	else
-		raw_pixel_data = stbi_load_from_memory(
-			file_data.data_as<const unsigned char>(), file_data.size,
+		decoded_buffer = stbi_load_from_memory(
+			buffer_begin, buffer_size,
 			&image.dimensions.x, &image.dimensions.y,
 			&image.channels, 0
 		);
 
-	if (raw_pixel_data == nullptr)
-		fmt::print(stderr, "File::LoadImage failed. path: {}, error: {}\n", path, stbi_failure_reason());
+	if (decoded_buffer == nullptr)
+		return {stbi_failure_reason()};
 
-	image.buffer = ByteBuffer(move(raw_pixel_data), image.dimensions.x * image.dimensions.y * image.channels);
+	image.buffer = ByteBuffer(move(decoded_buffer), image.dimensions.x * image.dimensions.y * image.channels);
 
-	return image;
+	return {move(image)};
 }
 void WriteImage(Path const & path, Image const & image, bool should_flip_vertically)
 {
