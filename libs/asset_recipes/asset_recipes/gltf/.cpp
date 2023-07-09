@@ -153,7 +153,7 @@ LoadedData Load(Desc const & desc)
 	NameGenerator material_name_generator{.prefix = desc.name + ":material:"};
 	for (auto const & item: document["materials"].GetArray())
 	{
-		auto const get_tex_info = [](JSONObj material, Key key) -> optional<Material::TexInfo>
+		auto const get_tex_info = [](ConstObj material, Key key) -> optional<Material::TexInfo>
 		{
 			auto member = material.FindMember(key.data());
 			if (member != material.MemberEnd())
@@ -430,7 +430,7 @@ void Convert(
 	}
 }
 
-std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
+std::pair<Name, Desc> Parse(File::JSON::ConstObj o, std::filesystem::path const & root_dir)
 {
 	auto const & name = o["name"].GetString();
 	return {

@@ -168,6 +168,7 @@ const char * to_string(GLTF::EncodedImage::MimeType type)
 		default: assert_enum_out_of_range();
 	}
 }
+
 GLTF::EncodedImage::MimeType ParseMimeType(std::string_view str)
 {
 	using enum GLTF::EncodedImage::MimeType;
@@ -175,6 +176,7 @@ GLTF::EncodedImage::MimeType ParseMimeType(std::string_view str)
 	if (str == "image/jpeg") return JPEG;
 	assert_failure("MimeType is not supported");
 }
+
 GLTF::EncodedImage::MimeType MimeTypeFromExtension(std::string_view str)
 {
 	using enum GLTF::EncodedImage::MimeType;

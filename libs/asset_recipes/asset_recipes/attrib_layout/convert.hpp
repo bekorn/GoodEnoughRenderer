@@ -10,5 +10,5 @@ namespace AttribLayout
 {
 inline constexpr const char * ASSET_NAME = "attrib_layout";
 
-std::pair<Name, Geometry::Layout> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir);
+std::pair<Name, Geometry::Layout> Parse(File::JSON::ConstObj o, std::filesystem::path const & root_dir);
 }

@@ -3,7 +3,7 @@
 
 namespace Envmap
 {
-std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
+std::pair<Name, Desc> Parse(File::JSON::ConstObj o, std::filesystem::path const & root_dir)
 {
 	return {
 		o.FindMember("name")->value.GetString(),

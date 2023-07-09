@@ -1,18 +1,42 @@
 #pragma once
 
+#include <rapidjson/document.h>
 #include <core/core.hpp>
 
 namespace File::JSON
 {
-using JSONObj = rapidjson::Document::ConstObject const &;
+template<bool Const>
+using Obj = rapidjson::GenericObject<Const, rapidjson::Value> const &;
+using ConstObj = Obj<true>;
+using MutObj = Obj<false>;
 using Key = std::string_view const &;
 
-inline u32 GetU32(JSONObj obj, Key key)
+template<bool Const>
+inline u32 GetU32(Obj<Const> obj, Key key)
 {
 	return obj[key.data()].GetUint();
 }
+template<bool Const>
+inline u32 GetU32(Obj<Const> obj, Key key, u32 def_value)
+{
+	auto member = obj.FindMember(key.data());
+	if (member != obj.MemberEnd())
+		return member->value.GetUint();
+	else
+		return def_value;
+}
+template<bool Const>
+inline optional<u32> GetOptionalU32(Obj<Const> obj, Key key)
+{
+	auto member = obj.FindMember(key.data());
+	if (member != obj.MemberEnd())
+		return member->value.GetUint();
+	else
+		return nullopt;
+}
 
-inline i32 GetI32(JSONObj obj, Key key, i32 def_value)
+template<bool Const>
+inline i32 GetI32(Obj<Const> obj, Key key, i32 def_value)
 {
 	auto member = obj.FindMember(key.data());
 	if (member != obj.MemberEnd())
@@ -21,25 +45,8 @@ inline i32 GetI32(JSONObj obj, Key key, i32 def_value)
 		return def_value;
 }
 
-inline u32 GetU32(JSONObj obj, Key key, u32 def_value)
-{
-	auto member = obj.FindMember(key.data());
-	if (member != obj.MemberEnd())
-		return member->value.GetUint();
-	else
-		return def_value;
-}
-
-inline optional<u32> GetOptionalU32(JSONObj obj, Key key)
-{
-	auto member = obj.FindMember(key.data());
-	if (member != obj.MemberEnd())
-		return member->value.GetUint();
-	else
-		return nullopt;
-}
-
-inline std::string GetString(JSONObj obj, Key key, std::string const & def_value)
+template<bool Const>
+inline std::string GetString(Obj<Const> obj, Key key, std::string const & def_value)
 {
 	auto member = obj.FindMember(key.data());
 	if (member != obj.MemberEnd())
@@ -47,8 +54,8 @@ inline std::string GetString(JSONObj obj, Key key, std::string const & def_value
 	else
 		return def_value;
 }
-
-inline optional<std::string> GetOptionalString(JSONObj obj, Key key)
+template<bool Const>
+inline optional<std::string> GetOptionalString(Obj<Const> obj, Key key)
 {
 	auto member = obj.FindMember(key.data());
 	if (member != obj.MemberEnd())
@@ -57,7 +64,8 @@ inline optional<std::string> GetOptionalString(JSONObj obj, Key key)
 		return nullopt;
 }
 
-inline bool GetBool(JSONObj obj, Key key, bool def_value)
+template<bool Const>
+inline bool GetBool(Obj<Const> obj, Key key, bool def_value)
 {
 	auto member = obj.FindMember(key.data());
 	if (member != obj.MemberEnd())
@@ -66,7 +74,8 @@ inline bool GetBool(JSONObj obj, Key key, bool def_value)
 		return def_value;
 }
 
-inline f32 GetF32(JSONObj obj, Key key, f32 def_value)
+template<bool Const>
+inline f32 GetF32(Obj<Const> obj, Key key, f32 def_value)
 {
 	auto member = obj.FindMember(key.data());
 	if (member != obj.MemberEnd())
@@ -75,7 +84,8 @@ inline f32 GetF32(JSONObj obj, Key key, f32 def_value)
 		return def_value;
 }
 
-inline f32x3 GetF32x3(JSONObj obj, Key key, f32x3 def_value)
+template<bool Const>
+inline f32x3 GetF32x3(Obj<Const> obj, Key key, f32x3 const & def_value)
 {
 	auto member = obj.FindMember(key.data());
 	if (member != obj.MemberEnd())
@@ -90,7 +100,8 @@ inline f32x3 GetF32x3(JSONObj obj, Key key, f32x3 def_value)
 		return def_value;
 }
 
-inline f32x4 GetF32x4(JSONObj obj, Key key, f32x4 def_value)
+template<bool Const>
+inline f32x4 GetF32x4(Obj<Const> obj, Key key, f32x4 const & def_value)
 {
 	auto member = obj.FindMember(key.data());
 	if (member != obj.MemberEnd())
@@ -110,7 +121,8 @@ struct NameGenerator
 	std::string const prefix;
 	u64 idx = 0;
 
-	std::string get(JSONObj obj, Key key)
+	template<bool Const>
+	std::string get(Obj<Const> obj, Key key)
 	{
 		auto member = obj.FindMember(key.data());
 		if (member != obj.MemberEnd())

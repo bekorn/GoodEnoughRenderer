@@ -20,7 +20,7 @@ GL::GLenum to_glenum(std::string_view filter)
 }
 }
 
-std::pair<Name, Desc> Parse(File::JSON::JSONObj o, std::filesystem::path const & root_dir)
+std::pair<Name, Desc> Parse(File::JSON::ConstObj o, std::filesystem::path const & root_dir)
 {
 	Desc desc;
 	desc.path = root_dir / o.FindMember("path")->value.GetString();
