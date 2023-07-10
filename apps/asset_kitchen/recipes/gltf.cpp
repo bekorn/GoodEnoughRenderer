@@ -1,6 +1,8 @@
 #include "gltf.hpp"
 #include "book.hpp"
-#include "core/intrinsics.hpp"
+
+#include <core/intrinsics.hpp>
+#include <file_io/json_utils.hpp>
 
 // Pattern: String into Geometry::Attribute::Key
 Geometry::Key IntoAttributeKey(std::string_view name)
@@ -120,6 +122,7 @@ void ConvertFromF64(f64 src, Geometry::Type const & type, byte * dst)
 	}
 }
 
+// TODO(bekorn): maybe move this into lib/core/geometry.cpp
 ByteBuffer ConvertAttrib(ByteBuffer const & src, Geometry::Vector const & src_vec, Geometry::Vector const & dst_vec)
 {
 	auto const vertex_count = src.size / src_vec.size();
@@ -526,63 +529,10 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 		}
 
 		/// JSON
-		// Each mesh will have 2 buffer views for VertexBuffer + IndexBuffer
-		// IndexBuffer will have 1 accessors, VertexBuffer will have N for each attribute
-		// Each primitive will have "extras/formatted_buffer_views": [vertex_buffer_view_idx, index_buffer_view_idx]
+		// Each primitive will have:
+		// - vertex_{offset, size}, index_{offset, size} that point to geometry buffer
+		// - material index
 		auto * converted_buffer_ptr = geometry_buffer.data_as<byte>();
-
-		auto const get_type = [](u32 dimension) -> const char *
-		{
-			if (dimension == 1) return "SCALAR";
-			if (dimension == 2) return "VEC2";
-			if (dimension == 3) return "VEC3";
-			if (dimension == 4) return "VEC4";
-			if (dimension == 4) return "MAT2"; // TODO(bekorn): :(
-			if (dimension == 9) return "MAT3";
-			/*if(dimension == 16)*/ return "MAT4";
-		};
-		auto const get_component_type = [](Geometry::Type::Value const & type) -> int
-		{
-			// https://javagl.github.io/GLConstantsTranslator/GLConstantsTranslator.html
-			using enum Geometry::Type::Value;
-			switch (type)
-			{
-				case F32: return 5126;
-				case I8:
-				case I8NORM: return 5120;
-				case U8:
-				case U8NORM: return 5121;
-				case I16:
-				case I16NORM: return 5122;
-				case U16:
-				case U16NORM: return 5123;
-				case I32:
-				case I32NORM: return 5124;
-				case U32:
-				case U32NORM: return 5125;
-			}
-			assert_enum_out_of_range();
-		};
-		auto const get_attrib_name = [](Geometry::Key const & key) -> std::string
-		{
-			auto & name = key.name;
-
-			if (holds_alternative<std::string>(name))
-				return get<std::string>(name).data();
-
-			using enum Geometry::Key::Common;
-			switch (get<Geometry::Key::Common>(name))
-			{
-				case POSITION: return "POSITION";
-				case NORMAL: return "NORMAL";
-				case TANGENT: return "TANGENT";
-				case TEXCOORD: return fmt::format("{}_{}", "TEXCOORD", key.layer);
-				case COLOR: return fmt::format("{}_{}", "COLOR", key.layer);
-				case JOINTS: return fmt::format("{}_{}", "JOINTS", key.layer);
-				case WEIGHTS: return fmt::format("{}_{}", "WEIGHTS", key.layer);
-			}
-			assert_enum_out_of_range();
-		};
 
 		for (auto mesh_idx = 0; auto & item: document["meshes"].GetArray())
 		{
@@ -592,43 +542,24 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 
 			for (auto i = 0; i < loaded_prims.size(); ++i)
 			{
-				auto const & prim = prims[i].GetObject();
-				auto const & loaded_prim = loaded_prims[i];
+				auto const & prim_js = prims[i].GetObject();
+				auto const & prim = loaded_prims[i];
 
-				// Add buffer views and copy to buffer
-				usize vertex_buffer_begin, index_buffer_begin;
-				{
-					vertex_buffer_begin = converted_buffer_ptr - geometry_buffer.data.get();
+				auto const material_idx = GetOptionalU32(prim_js, "material");
 
-					std::memcpy(converted_buffer_ptr, loaded_prim.vertices.buffer.data.get(), loaded_prim.vertices.buffer.size);
-					converted_buffer_ptr += loaded_prim.vertices.buffer.size;
+				prim_js.EraseMember(prim_js.MemberBegin(), prim_js.MemberEnd());
 
-					index_buffer_begin = converted_buffer_ptr - geometry_buffer.data.get();
-					auto index_buffer_size = loaded_prim.indices.buffer.size;
+				if (material_idx.has_value()) prim_js.AddMember("material", material_idx.value(), alloc);
 
-					std::memcpy(converted_buffer_ptr, loaded_prim.indices.buffer.data.get(), index_buffer_size);
-					converted_buffer_ptr += index_buffer_size;
-				}
+				prim_js.AddMember("vertex_offset", converted_buffer_ptr - geometry_buffer.data.get(), alloc);
+				prim_js.AddMember("vertex_count", prim.vertices.count, alloc);
+				std::memcpy(converted_buffer_ptr, prim.vertices.buffer.data.get(), prim.vertices.buffer.size);
+				converted_buffer_ptr += prim.vertices.buffer.size;
 
-				// Add extras for shortcut
-				{
-					Value vertex_buffer(kObjectType);
-					vertex_buffer.AddMember("offset", vertex_buffer_begin, alloc);
-					vertex_buffer.AddMember("count", loaded_prim.vertices.count, alloc);
-
-					Value index_buffer(kObjectType);
-					index_buffer.AddMember("offset", index_buffer_begin, alloc);
-					index_buffer.AddMember("count", loaded_prim.indices.count, alloc);
-
-					Value buffers(kObjectType);
-					buffers.AddMember("vertex", vertex_buffer, alloc);
-					buffers.AddMember("index", index_buffer, alloc);
-
-					Value extras(kObjectType);
-					extras.AddMember("buffers", buffers, alloc);
-
-					prim.AddMember("extras", extras, alloc);
-				}
+				prim_js.AddMember("index_offset", converted_buffer_ptr - geometry_buffer.data.get(), alloc);
+				prim_js.AddMember("index_count", prim.indices.count, alloc);
+				std::memcpy(converted_buffer_ptr, prim.indices.buffer.data.get(), prim.indices.buffer.size);
+				converted_buffer_ptr += prim.indices.buffer.size;
 			}
 		}
 	}

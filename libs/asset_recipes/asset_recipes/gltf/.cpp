@@ -125,18 +125,13 @@ LoadedData Load(Desc const & desc)
 		{
 			auto const & primitive = item.GetObject();
 
-			auto const & extras = primitive["extras"].GetObject();
-			auto const & buffers = extras["buffers"].GetObject();
-			auto const & vertex_buffer = buffers["vertex"].GetObject();
-			auto const & index_buffer = buffers["index"].GetObject();
-
 			primitives.push_back({
 				.name = primitive_name_generator.get(primitive, "name"),
 				.material_index = GetOptionalU32(primitive, "material"),
-				.vertex_buffer_offset = vertex_buffer["offset"].GetUint(),
-				.vertex_count = vertex_buffer["count"].GetUint(),
-				.index_buffer_offset = index_buffer["offset"].GetUint(),
-				.index_count = index_buffer["count"].GetUint(),
+				.vertex_buffer_offset = primitive["vertex_offset"].GetUint(),
+				.vertex_count = primitive["vertex_count"].GetUint(),
+				.index_buffer_offset = primitive["index_offset"].GetUint(),
+				.index_count = primitive["index_count"].GetUint(),
 			});
 		}
 
