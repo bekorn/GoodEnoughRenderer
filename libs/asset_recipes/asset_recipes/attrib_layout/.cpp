@@ -37,8 +37,6 @@ std::pair<Name, Geometry::Layout> Parse(File::JSON::ConstObj o, std::filesystem:
 		location++;
 	}
 
-	fmt::print("Layout {}:\n{}\n", o["name"].GetString(), layout);
-
 	return {
 		o["name"].GetString(),
 		{layout}
