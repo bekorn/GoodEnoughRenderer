@@ -1,8 +1,9 @@
 #include "gltf.hpp"
 #include "book.hpp"
-#include "file_io/core.hpp"
+#include "../tools/compressonator_facade.hpp"
 
 #include <core/intrinsics.hpp>
+#include <file_io/core.hpp>
 #include <file_io/json_utils.hpp>
 
 // Pattern: String into Geometry::Attribute::Key
@@ -464,6 +465,9 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 	vector<File::Image> decoded_images;
 	decoded_images.reserve(loaded_images.size());
 	{
+		Timer<std::chrono::milliseconds> timer;
+		fmt::print("{}", "Loading images:\n");
+
 		for (const auto & loaded_image: loaded_images)
 			if (loaded_image.uri.empty())
 			{
@@ -475,7 +479,11 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 				auto outcome = File::DecodeImage(encoded_buffer, false);
 				assert(outcome, "Failed to decode image");
 
-				decoded_images.push_back(outcome.into_result());
+				auto decoded_image = outcome.into_result();
+				decoded_image.buffer = BC7(decoded_image);
+				timer.timeit(stdout, loaded_image.uri);
+
+				decoded_images.push_back(move(decoded_image));
 			}
 
 //		// tag sRGB images
@@ -587,9 +595,8 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 		for (auto const & image: decoded_images)
 		{
 			Value image_js(kObjectType);
-			image_js.AddMember("is_format_f32", image.is_format_f32, alloc);
-			image_js.AddMember("channel_count", image.channels, alloc);
 			image_js.AddMember("width", image.dimensions.x, alloc);
+			image_js.AddMember("height", image.dimensions.y, alloc);
 			image_js.AddMember("offset", buffer_offset, alloc);
 			image_js.AddMember("size", image.buffer.size, alloc);
 			images.PushBack(image_js, alloc);

@@ -51,22 +51,19 @@ LoadedData Load(Desc const & desc)
 		{
 			auto const & image = item.GetObject();
 
-			auto channel_count = image["channel_count"].GetUint();
-			auto is_format_f32 = image["is_format_f32"].GetBool();
 			auto width = image["width"].GetUint();
+			auto height = image["height"].GetUint();
 			auto offset = image["offset"].GetUint();
 			auto size = image["size"].GetUint();
 
-			auto pixel_size = channel_count * (is_format_f32 ? sizeof(f32) : sizeof(u8));
-			auto height = size / (width * pixel_size);
 			auto buffer = ByteBuffer(size);
 			memcpy(buffer.data.get(), loaded.image_buffer.data.get() + offset, size);
 
 			loaded.images.push_back({
 				.data = move(buffer),
 				.dimensions = {width, height},
-				.channels = i32(channel_count),
 				.is_sRGB = false,
+				.compression = GLTF::Image::BC7,
 			});
 		}
 	}
@@ -293,10 +290,10 @@ void Convert(
 		);
 
 		textures.generate(loaded_texture.name).data.init(
-			GL::Texture2D::ImageDesc{
+			GL::Texture2D::CompressedImageDesc{
 				.dimensions = loaded_image.dimensions,
-				.has_alpha = loaded_image.channels == 4,
-				.color_space = loaded_image.is_sRGB ? GL::COLOR_SPACE::SRGB_U8 : GL::COLOR_SPACE::LINEAR_U8,
+				.is_sRGB = loaded_image.is_sRGB,
+				.compression = GL::Texture2D::CompressedImageDesc::BC7,
 
 				.levels = should_have_mipmaps ? 0 : 1,
 

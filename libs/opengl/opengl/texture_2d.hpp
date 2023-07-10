@@ -124,6 +124,104 @@ struct Texture2D : OpenGLObject
 		glMakeTextureHandleResidentARB(handle);
 	}
 
+	struct CompressedImageDesc
+	{
+		i32x2 dimensions;
+		bool is_sRGB = false;
+		enum Compression{ BC7, } compression;
+
+		// levels = 0 to generate mips all the way to 1x1
+		i32 levels = 1;
+
+		GLenum min_filter = GL_LINEAR;
+		GLenum mag_filter = GL_LINEAR;
+
+		GLenum wrap_s = GL_CLAMP_TO_EDGE;
+		GLenum wrap_t = GL_CLAMP_TO_EDGE;
+
+		span<byte> data = {};
+	};
+
+	void init(CompressedImageDesc const & desc)
+	{
+		glCreateTextures(GL_TEXTURE_2D, 1, &id);
+
+		int channel_count;
+		switch (desc.compression)
+		{
+			case CompressedImageDesc::BC7: channel_count = 4; break;
+		}
+
+		// Pick correct levels
+		i32 levels = desc.levels != 0
+			? desc.levels
+			: 1 + i32(glm::log2(f32(compMax(desc.dimensions))));
+
+		// Pick correct internal format
+		GLenum format;
+		if (desc.is_sRGB)
+			switch (desc.compression)
+			{
+			case CompressedImageDesc::BC7: format = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;   break;
+			}
+		else
+			switch (desc.compression)
+			{
+				case CompressedImageDesc::BC7: format = GL_COMPRESSED_RGBA_BPTC_UNORM; break;
+			}
+
+		glTextureStorage2D(
+			id, levels, format,
+			desc.dimensions.x, desc.dimensions.y
+		);
+
+		int is_stored_compressed;
+		glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_COMPRESSED, &is_stored_compressed);
+		assert(is_stored_compressed);
+
+		i32x2 dim;
+		glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_WIDTH, &dim.x);
+		glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_HEIGHT, &dim.y);
+		assert(dim == desc.dimensions);
+
+		GLenum internal_format;
+		glGetTextureLevelParameteriv(id, 0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
+		assert(internal_format == format);
+
+		glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, desc.min_filter);
+		glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, desc.mag_filter);
+
+		glTextureParameteri(id, GL_TEXTURE_WRAP_S, desc.wrap_s);
+		glTextureParameteri(id, GL_TEXTURE_WRAP_T, desc.wrap_t);
+
+		if (not desc.data.empty())
+		{
+			auto aligns_to_4 = (desc.dimensions.x * channel_count) % 4 == 0;
+			if (not aligns_to_4)
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+			glCompressedTextureSubImage2D(
+				id,
+				0,
+				0, 0,
+				desc.dimensions.x, desc.dimensions.y,
+				format,
+				desc.data.size(),
+				desc.data.data()
+			);
+
+			if (not aligns_to_4)
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // set back to default
+
+//			if (not (desc.min_filter == GL_NEAREST or desc.min_filter == GL_LINEAR))
+//				glGenerateTextureMipmap(id);
+		}
+
+		handle = glGetTextureHandleARB(id);
+		// Since all the textures will always be needed, their residency doesn't need management
+		glMakeTextureHandleResidentARB(handle);
+	}
+
 	struct ViewDesc
 	{
 		Texture2D const & source;
