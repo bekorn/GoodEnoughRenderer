@@ -1,9 +1,9 @@
+#include "file_io/core.hpp"
+
 #pragma message("-- read ASSET/GLTF/.Cpp --")
 
 #include "load.hpp"
 #include "convert.hpp"
-
-#include <execution>
 
 namespace GLTF
 {
@@ -33,10 +33,11 @@ LoadedData Load(Desc const & desc)
 		if (buffers.Size() > 1)
 		{
 			auto const & image_buffer = buffers[1].GetObject();
-			loaded.image_buffer = LoadAsBytes(
+			auto compressed_image_buffer = LoadAsBytes(
 				file_dir / image_buffer["uri"].GetString(),
 				image_buffer["byteLength"].GetUint64()
 			);
+			loaded.image_buffer = DeCompress(compressed_image_buffer, image_buffer["byteLengthUncompressed"].GetUint());
 		}
 	}
 
@@ -44,35 +45,30 @@ LoadedData Load(Desc const & desc)
 	if (auto const member = document.FindMember("images"); member != document.MemberEnd())
 	{
 		auto const & images = member->value.GetArray();
-		loaded.images.resize(images.Size());
-		auto const & image_buffer = loaded.image_buffer;
 
-		std::transform(
-			std::execution::par_unseq,
-			images.Begin(), images.End(),
-			loaded.images.data(),
-			[&image_buffer](Value const & item) -> GLTF::Image
-			{
-				auto const & image = item.GetObject();
+		loaded.images.reserve(images.Size());
+		for (const auto & item: images)
+		{
+			auto const & image = item.GetObject();
 
-				auto const mime_type = image["mimeType"].GetString();
-				auto const offset = image["offset"].GetUint();
-				auto const size = image["size"].GetUint();
-				auto const buffer = image_buffer.span_as<byte>(offset, size);
+			auto channel_count = image["channel_count"].GetUint();
+			auto is_format_f32 = image["is_format_f32"].GetBool();
+			auto width = image["width"].GetUint();
+			auto offset = image["offset"].GetUint();
+			auto size = image["size"].GetUint();
 
-				// gltf textures (first-pixel == uv(0,0)) do not require a vertical flip
-				auto outcome = File::DecodeImage(buffer, false);
-				assert(outcome, "Failed to decode image in gltf");
+			auto pixel_size = channel_count * (is_format_f32 ? sizeof(f32) : sizeof(u8));
+			auto height = size / (width * pixel_size);
+			auto buffer = ByteBuffer(size);
+			memcpy(buffer.data.get(), loaded.image_buffer.data.get() + offset, size);
 
-				auto decoded_image = outcome.into_result();
-				return {
-					.data = move(decoded_image.buffer),
-					.dimensions = decoded_image.dimensions,
-					.channels = decoded_image.channels,
-					.is_sRGB = false,
-				};
-			}
-		);
+			loaded.images.push_back({
+				.data = move(buffer),
+				.dimensions = {width, height},
+				.channels = i32(channel_count),
+				.is_sRGB = false,
+			});
+		}
 	}
 
 	// Parse samplers

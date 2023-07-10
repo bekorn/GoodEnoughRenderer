@@ -1,5 +1,6 @@
 #include "gltf.hpp"
 #include "book.hpp"
+#include "file_io/core.hpp"
 
 #include <core/intrinsics.hpp>
 #include <file_io/json_utils.hpp>
@@ -460,8 +461,8 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 	}
 
 	/// Load Images
-	vector<EncodedImage> encoded_images;
-	encoded_images.reserve(loaded_images.size());
+	vector<File::Image> decoded_images;
+	decoded_images.reserve(loaded_images.size());
 	{
 		for (const auto & loaded_image: loaded_images)
 			if (loaded_image.uri.empty())
@@ -470,10 +471,11 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 			}
 			else
 			{
-				encoded_images.push_back({
-					.buffer = LoadAsBytes(gltf_dir / loaded_image.uri),
-					.mime_type = MimeTypeFromExtension(File::Path(loaded_image.uri).extension().string()),
-				});
+				auto encoded_buffer = LoadAsBytes(gltf_dir / loaded_image.uri);
+				auto outcome = File::DecodeImage(encoded_buffer, false);
+				assert(outcome, "Failed to decode image");
+
+				decoded_images.push_back(outcome.into_result());
 			}
 
 //		// tag sRGB images
@@ -567,39 +569,51 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 	/// Convert Images
 	auto const image_buffer_rel_path = "image.bin";
 	ByteBuffer image_buffer;
-	if (not encoded_images.empty())
+	if (not decoded_images.empty())
 	{
 		auto & alloc = document.GetAllocator();
 
 		/// Buffer {buffers[1]}
 		{
 			auto total_size = 0;
-			for (const auto & image: encoded_images)
+			for (const auto & image: decoded_images)
 				total_size += image.buffer.size;
 			image_buffer = ByteBuffer(total_size);
-
-			Value buffer(kObjectType);
-			buffer.AddMember("byteLength", image_buffer.size, alloc);
-			buffer.AddMember("uri", Value(image_buffer_rel_path, alloc), alloc);
-
-			document["buffers"].PushBack(buffer, alloc);
 		}
 
 		/// JSON
 		auto buffer_offset = 0;
 		Value images(kArrayType);
-		for (auto const & encoded_image: encoded_images)
+		for (auto const & image: decoded_images)
 		{
-			Value image(kObjectType);
-			image.AddMember("mimeType", Value(to_string(encoded_image.mime_type), alloc), alloc);
-			image.AddMember("offset", buffer_offset, alloc);
-			image.AddMember("size", encoded_image.buffer.size, alloc);
-			images.PushBack(image, alloc);
+			Value image_js(kObjectType);
+			image_js.AddMember("is_format_f32", image.is_format_f32, alloc);
+			image_js.AddMember("channel_count", image.channels, alloc);
+			image_js.AddMember("width", image.dimensions.x, alloc);
+			image_js.AddMember("offset", buffer_offset, alloc);
+			image_js.AddMember("size", image.buffer.size, alloc);
+			images.PushBack(image_js, alloc);
 
-			std::memcpy(image_buffer.data_as<byte>(buffer_offset), encoded_image.buffer.data.get(), encoded_image.buffer.size);
-			buffer_offset += encoded_image.buffer.size;
+			std::memcpy(image_buffer.data_as<byte>(buffer_offset), image.buffer.data.get(), image.buffer.size);
+			buffer_offset += image.buffer.size;
 		}
 		document["images"] = images;
+
+
+		auto compressed_image_buffer = Compress(image_buffer);
+		fmt::print(
+			"Image buffer {} KiB compressed into {} KiB ({}%)",
+			image_buffer.size >> 10, compressed_image_buffer.size >> 10,
+			f32(100) * compressed_image_buffer.size / image_buffer.size
+		);
+
+		Value buffer_js(kObjectType);
+		buffer_js.AddMember("byteLengthUncompressed", image_buffer.size, alloc);
+		buffer_js.AddMember("byteLength", compressed_image_buffer.size, alloc);
+		buffer_js.AddMember("uri", Value(image_buffer_rel_path, alloc), alloc);
+		document["buffers"].PushBack(buffer_js, alloc);
+
+		image_buffer = move(compressed_image_buffer);
 	}
 
 	/// Write to file
@@ -616,11 +630,11 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 		StringBuffer buffer;
 		PrettyWriter writer(buffer);
 		document.Accept(writer);
-		File::WriteString(served_path, {buffer.GetString(), buffer.GetSize()});
+		WriteString(served_path, {buffer.GetString(), buffer.GetSize()});
 
 		// Binary
-		File::WriteBytes(served_dir / geometry_buffer_rel_path, geometry_buffer);
-		if (not encoded_images.empty())
-			File::WriteBytes(served_dir / image_buffer_rel_path, image_buffer);
+		WriteBytes(served_dir / geometry_buffer_rel_path, geometry_buffer);
+		if (not decoded_images.empty())
+			WriteBytes(served_dir / image_buffer_rel_path, image_buffer);
 	}
 }

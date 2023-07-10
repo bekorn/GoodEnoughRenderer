@@ -27,5 +27,8 @@ Image LoadImage(Path const & path, bool should_flip_vertically);
 Expected<Image, const char *> DecodeImage(span<byte> buffer, bool should_flip_vertically);
 void WriteImage(Path const & path, Image const & image, bool should_flip_vertically);
 
+ByteBuffer Compress(ByteBuffer const & buffer);
+ByteBuffer DeCompress(ByteBuffer const & buffer, usize uncompressed_size);
+
 optional<std::error_code> ClearFolder(Path const & path);
 }

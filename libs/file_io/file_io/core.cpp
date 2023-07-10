@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+#include <lz4.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #define STBI_ONLY_JPEG
@@ -151,6 +153,25 @@ void WriteImage(Path const & path, Image const & image, bool should_flip_vertica
 
 	if (not success)
 		fmt::print(stderr, "File::WriteImage failed. path {}, error: {}\n", path, stbi_failure_reason());
+}
+
+ByteBuffer Compress(const ByteBuffer & src)
+{
+	auto dst = ByteBuffer(LZ4_compressBound(src.size));
+	auto compressed_size = LZ4_compress_default(src.data_as<const char>(), dst.data_as<char>(), src.size, dst.size);
+	assert(compressed_size > 0, "File::Compress failed");
+	dst.size = compressed_size; // this breaks the relation between the allocated memory and size but it should be fine
+	// TODO(bekorn): realloc?
+	return dst;
+}
+ByteBuffer DeCompress(const ByteBuffer & src, usize uncompressed_size)
+{
+	auto dst = ByteBuffer(uncompressed_size);
+	auto decompressed_size = LZ4_decompress_safe(src.data_as<const char>(), dst.data_as<char>(), src.size, dst.size);
+	assert(decompressed_size == uncompressed_size, "File::DeCompress failed");
+	dst.size = decompressed_size; // this breaks the relation between the allocated memory and size but it should be fine
+	// TODO(bekorn): realloc?
+	return dst;
 }
 
 optional<std::error_code> ClearFolder(Path const & path)

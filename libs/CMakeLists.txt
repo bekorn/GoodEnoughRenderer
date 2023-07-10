@@ -6,6 +6,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(RapidJSON CONFIG REQUIRED)
+find_package(lz4 CONFIG REQUIRED)
 find_path(STB_INCLUDE_DIRS "stb.h")
 find_package(fmt CONFIG REQUIRED)
 
@@ -34,7 +35,8 @@ target_link_libraries(FileIO PUBLIC
     Core)
 
 target_link_libraries(FileIO PUBLIC
-    rapidjson)
+    rapidjson
+    lz4::lz4)
 target_include_directories(FileIO PRIVATE
     ${STB_INCLUDE_DIRS})
 
