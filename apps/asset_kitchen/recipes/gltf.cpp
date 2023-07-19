@@ -1,11 +1,13 @@
 #include "gltf.hpp"
 #include "book.hpp"
-#include "../tools/compressonator_facade.hpp"
+#include "../tools/image_compression.hpp"
 
 #include <core/intrinsics.hpp>
 #include <file_io/core.hpp>
 #include <file_io/json_utils.hpp>
 
+namespace
+{
 // Pattern: String into Geometry::Attribute::Key
 Geometry::Key IntoAttributeKey(std::string_view name)
 {
@@ -189,6 +191,7 @@ GLTF::EncodedImage::MimeType MimeTypeFromExtension(std::string_view str)
 	if (str == ".jpg") return JPEG;
 	if (str == ".jpeg") return JPEG;
 	assert_failure("Image type is not supported");
+}
 }
 
 void GLTF::Serve(Book const & book, Desc const & desc)
@@ -462,13 +465,41 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 	}
 
 	/// Load Images
-	vector<File::Image> decoded_images;
-	decoded_images.reserve(loaded_images.size());
+	vector<Image> images;
+	if (not loaded_images.empty())
 	{
+		images.resize(loaded_images.size());
+		ImgComp::Initialize();
+
 		Timer<std::chrono::milliseconds> timer;
 		fmt::print("{}", "Loading images:\n");
 
-		for (const auto & loaded_image: loaded_images)
+		// tag sRGB images
+		auto const & textures = document["textures"].GetArray();
+
+		auto const mark_sRGB = [&textures, &images](ConstObj material, const char * name)
+		{
+			if (auto iter = material.FindMember(name); iter != material.MemberEnd())
+			{
+				auto const & tex_info = iter->value.GetObject();
+				auto texture_idx = tex_info["index"].GetUint();
+				auto image_idx = textures[texture_idx]["source"].GetUint();
+				images[image_idx].is_sRGB = true;
+			}
+		};
+
+		if (auto iter = document.FindMember("materials"); iter != document.MemberEnd())
+			for (auto const & item : iter->value.GetArray())
+			{
+				auto const & material = item.GetObject();
+				mark_sRGB(material, "emissiveTexture");
+
+				if (auto iter = material.FindMember("pbrMetallicRoughness"); iter != material.MemberEnd())
+					mark_sRGB(iter->value.GetObject(), "baseColorTexture");
+			}
+
+		// load images
+		for (int i = 0; const auto & loaded_image: loaded_images)
 			if (loaded_image.uri.empty())
 			{
 				assert_failure("Textures with BufferView are not supported yet");
@@ -479,36 +510,34 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 				auto outcome = File::DecodeImage(encoded_buffer, false);
 				assert(outcome, "Failed to decode image");
 
-				auto decoded_image = outcome.into_result();
-				decoded_image.buffer = BC7(decoded_image);
+				File::Image decoded_image = outcome.into_result();
+				assert(not decoded_image.is_format_f32, "HDR in GLTF is not supported yet");
+
+				// expand to 4 channels
+				if (decoded_image.channels != 4)
+				{
+					auto * src_pixels = decoded_image.buffer.data_as<u8>();
+					auto src_pixel_size = decoded_image.channels;
+
+					ByteBuffer expanded(compMul(decoded_image.dimensions) * sizeof(u8[4]));
+					auto * dst_pixels = expanded.data_as<u8[4]>();
+
+					for (auto & dst_pixel : expanded.span_as<u8[4]>())
+						memcpy(dst_pixel, src_pixels, src_pixel_size),
+						src_pixels += src_pixel_size;
+
+					decoded_image.buffer = move(expanded);
+					decoded_image.channels = 4;
+				}
+
+				decoded_image.buffer = ImgComp::BC7(decoded_image);
 				timer.timeit(stdout, loaded_image.uri);
 
-				decoded_images.push_back(move(decoded_image));
+				auto & image = images[i++];
+				image.data = move(decoded_image.buffer);
+				image.dimensions = decoded_image.dimensions;
+				image.compression = Image::BC7;
 			}
-
-//		// tag sRGB images
-//		auto const & textures = document["textures"].GetArray();
-//
-//		auto const mark_sRGB = [&textures, &images](JSONObj material, const char * name)
-//		{
-//			if (auto iter = material.FindMember(name); iter != material.MemberEnd())
-//			{
-//				auto const & tex_info = iter->value.GetObject();
-//				auto texture_idx = tex_info["index"].GetUint();
-//				auto image_idx = textures[texture_idx]["source"].GetUint();
-//				images[image_idx].is_sRGB = true;
-//			}
-//		};
-//
-//		if (auto iter = document.FindMember("materials"); iter != document.MemberEnd())
-//			for (auto const & item : iter->value.GetArray())
-//			{
-//				auto const & material = item.GetObject();
-//				mark_sRGB(material, "emissiveTexture");
-//
-//				if (auto iter = material.FindMember("pbrMetallicRoughness"); iter != material.MemberEnd())
-//					mark_sRGB(iter->value.GetObject(), "baseColorTexture");
-//			}
 	}
 
 
@@ -577,34 +606,39 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 	/// Convert Images
 	auto const image_buffer_rel_path = "image.bin";
 	ByteBuffer image_buffer;
-	if (not decoded_images.empty())
+	if (not images.empty())
 	{
 		auto & alloc = document.GetAllocator();
 
 		/// Buffer {buffers[1]}
 		{
 			auto total_size = 0;
-			for (const auto & image: decoded_images)
-				total_size += image.buffer.size;
+			for (const auto & image: images)
+				total_size += image.data.size;
 			image_buffer = ByteBuffer(total_size);
 		}
 
 		/// JSON
 		auto buffer_offset = 0;
-		Value images(kArrayType);
-		for (auto const & image: decoded_images)
+		Value images_js(kArrayType);
+		for (auto const & image: images)
 		{
 			Value image_js(kObjectType);
 			image_js.AddMember("width", image.dimensions.x, alloc);
 			image_js.AddMember("height", image.dimensions.y, alloc);
 			image_js.AddMember("offset", buffer_offset, alloc);
-			image_js.AddMember("size", image.buffer.size, alloc);
-			images.PushBack(image_js, alloc);
+			image_js.AddMember("size", image.data.size, alloc);
+			images_js.PushBack(image_js, alloc);
 
-			std::memcpy(image_buffer.data_as<byte>(buffer_offset), image.buffer.data.get(), image.buffer.size);
-			buffer_offset += image.buffer.size;
+			auto * image_buffer_b = image_buffer.data.get();
+			auto * image_buffer_e = image_buffer.data.get() + image_buffer.size;
+			auto * image_b = image.data.data.get();
+			auto * image_e = image.data.data.get() + image.data.size;
+
+			std::memcpy(image_buffer.data_as<byte>(buffer_offset), image.data.data.get(), image.data.size);
+			buffer_offset += image.data.size;
 		}
-		document["images"] = images;
+		document["images"] = images_js;
 
 
 		auto compressed_image_buffer = Compress(image_buffer);
@@ -641,7 +675,7 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 
 		// Binary
 		WriteBytes(served_dir / geometry_buffer_rel_path, geometry_buffer);
-		if (not decoded_images.empty())
+		if (not images.empty())
 			WriteBytes(served_dir / image_buffer_rel_path, image_buffer);
 	}
 }

@@ -56,8 +56,9 @@ list(APPEND AllTargets ${APPS} ${LIBS})
 
 # this only works like this, /MD flag prints wanings on builds and
 # set_property(GLOBAL PROPERTY MSVC_RUNTIME_LIBRARY MultiThreadedDLL) has no effect
-if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-    foreach (Target ${AllTargets})
-        set_property(TARGET ${Target} PROPERTY MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
-    endforeach ()
-endif ()
+# TODO(bekorn): This is disabled because DirectxTex does not compile otherwise. Enable it
+#if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+#    foreach (Target ${AllTargets})
+#        set_property(TARGET ${Target} PROPERTY MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+#    endforeach ()
+#endif ()

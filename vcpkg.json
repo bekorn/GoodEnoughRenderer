@@ -37,6 +37,10 @@
       "version>=": "2020-09-14"
     },
     {
+      "name": "directxtex",
+      "version>=": "2023-01-31"
+    },
+    {
       "name": "fmt",
       "version>=": "9.0.0"
     }
