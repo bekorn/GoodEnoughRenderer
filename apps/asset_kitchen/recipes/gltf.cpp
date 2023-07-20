@@ -203,8 +203,14 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 
 	Document document;
 	document.Parse(LoadAsString(desc.path).c_str());
+	auto & alloc = document.GetAllocator();
 
-	auto const gltf_dir = desc.path.parent_path();
+	auto const rel_file_path = std::filesystem::relative(desc.path, book.assets_dir);
+	auto const asset_abs_file_path = book.assets_dir / rel_file_path;
+	auto const asset_abs_dir_path = asset_abs_file_path.parent_path();
+	auto const served_abs_file_path = book.served_dir / rel_file_path;
+	auto const served_abs_dir_path = served_abs_file_path.parent_path();
+	std::filesystem::create_directories(served_abs_dir_path);
 
 	/// Parse
 	vector<ByteBuffer> loaded_buffers;
@@ -221,7 +227,7 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 			auto file_size = buffer["byteLength"].GetUint64();
 			auto file_name = buffer["uri"].GetString();
 			// Limitation: only loads separate file binaries
-			loaded_buffers.emplace_back(LoadAsBytes(gltf_dir / file_name, file_size));
+			loaded_buffers.emplace_back(LoadAsBytes(asset_abs_dir_path / file_name, file_size));
 		}
 
 		// Parse buffer views
@@ -300,9 +306,9 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 			});
 		}
 
-
 		// Parse images
 		if (auto iter = document.FindMember("images"); iter != document.MemberEnd())
+		{
 			for (auto const & item: iter->value.GetArray())
 			{
 				auto const & image = item.GetObject();
@@ -323,6 +329,30 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 						.mime_type = image["mimeType"].GetString(),
 					});
 			}
+
+			// tag sRGB images
+			auto const & textures = document["textures"].GetArray();
+
+			auto const mark_sRGB = [&textures, &loaded_images](ConstObj material, const char * name)
+			{
+				if (auto iter = material.FindMember(name); iter != material.MemberEnd())
+				{
+					auto const & tex_info = iter->value.GetObject();
+					auto texture_idx = tex_info["index"].GetUint();
+					auto image_idx = textures[texture_idx]["source"].GetUint();
+					loaded_images[image_idx].is_sRGB = true;
+				}
+			};
+
+			for (auto const & item : document["materials"].GetArray())
+			{
+				auto const & material = item.GetObject();
+				mark_sRGB(material, "emissiveTexture");
+
+				if (auto iter = material.FindMember("pbrMetallicRoughness"); iter != material.MemberEnd())
+					mark_sRGB(iter->value.GetObject(), "baseColorTexture");
+			}
+		}
 	}
 
 
@@ -464,92 +494,11 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 		}
 	}
 
-	/// Load Images
-	vector<Image> images;
-	if (not loaded_images.empty())
-	{
-		images.resize(loaded_images.size());
-		ImgComp::Initialize();
-
-		Timer<std::chrono::milliseconds> timer;
-		fmt::print("{}", "Loading images:\n");
-
-		// tag sRGB images
-		auto const & textures = document["textures"].GetArray();
-
-		auto const mark_sRGB = [&textures, &images](ConstObj material, const char * name)
-		{
-			if (auto iter = material.FindMember(name); iter != material.MemberEnd())
-			{
-				auto const & tex_info = iter->value.GetObject();
-				auto texture_idx = tex_info["index"].GetUint();
-				auto image_idx = textures[texture_idx]["source"].GetUint();
-				images[image_idx].is_sRGB = true;
-			}
-		};
-
-		if (auto iter = document.FindMember("materials"); iter != document.MemberEnd())
-			for (auto const & item : iter->value.GetArray())
-			{
-				auto const & material = item.GetObject();
-				mark_sRGB(material, "emissiveTexture");
-
-				if (auto iter = material.FindMember("pbrMetallicRoughness"); iter != material.MemberEnd())
-					mark_sRGB(iter->value.GetObject(), "baseColorTexture");
-			}
-
-		// load images
-		for (int i = 0; const auto & loaded_image: loaded_images)
-			if (loaded_image.uri.empty())
-			{
-				assert_failure("Textures with BufferView are not supported yet");
-			}
-			else
-			{
-				auto encoded_buffer = LoadAsBytes(gltf_dir / loaded_image.uri);
-				auto outcome = File::DecodeImage(encoded_buffer, false);
-				assert(outcome, "Failed to decode image");
-
-				File::Image decoded_image = outcome.into_result();
-				assert(not decoded_image.is_format_f32, "HDR in GLTF is not supported yet");
-
-				// expand to 4 channels
-				if (decoded_image.channels != 4)
-				{
-					auto * src_pixels = decoded_image.buffer.data_as<u8>();
-					auto src_pixel_size = decoded_image.channels;
-
-					ByteBuffer expanded(compMul(decoded_image.dimensions) * sizeof(u8[4]));
-					auto * dst_pixels = expanded.data_as<u8[4]>();
-
-					for (auto & dst_pixel : expanded.span_as<u8[4]>())
-						memcpy(dst_pixel, src_pixels, src_pixel_size),
-						src_pixels += src_pixel_size;
-
-					decoded_image.buffer = move(expanded);
-					decoded_image.channels = 4;
-				}
-
-				decoded_image.buffer = ImgComp::BC7(decoded_image);
-				timer.timeit(stdout, loaded_image.uri);
-
-				auto & image = images[i++];
-				image.data = move(decoded_image.buffer);
-				image.dimensions = decoded_image.dimensions;
-				image.compression = Image::BC7;
-			}
-	}
-
-
-	/// Convert
-	document.RemoveMember("bufferViews");
 
 	/// Convert Geometry
 	auto const geometry_buffer_rel_path = "geometry.bin";
 	ByteBuffer geometry_buffer;
 	{
-		auto & alloc = document.GetAllocator();
-
 		document["buffers"] = Value(kArrayType);
 
 		/// Buffer {buffers[0]}
@@ -603,14 +552,70 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 		}
 	}
 
-	/// Convert Images
-	auto const image_buffer_rel_path = "image.bin";
-	ByteBuffer image_buffer;
-	if (not images.empty())
-	{
-		auto & alloc = document.GetAllocator();
 
-		/// Buffer {buffers[1]}
+	/// Process Images
+	if (not loaded_images.empty())
+	{
+		auto const image_buffer_rel_path = "image.bin";
+
+		vector<Image> images;
+		images.reserve(loaded_images.size());
+
+		ImgComp::Initialize();
+
+		Timer<std::chrono::milliseconds> timer;
+		fmt::print("{}", "Processing images:\n");
+
+
+		/// Load into RAM and encode each image
+		for (const auto & loaded_image: loaded_images)
+		{
+			File::Image decoded_image;
+			if (loaded_image.uri.empty())
+			{
+				assert_failure("Textures with BufferView are not supported yet");
+			}
+			else
+			{
+				auto encoded_buffer = LoadAsBytes(asset_abs_dir_path / loaded_image.uri);
+				auto outcome = File::DecodeImage(encoded_buffer, false);
+				assert(outcome, "Failed to decode image");
+
+				decoded_image = outcome.into_result();
+			}
+			assert(not decoded_image.is_format_f32, "HDR in GLTF is not supported yet");
+
+			// BC7 takes 4 channeled, so expand
+			if (decoded_image.channels != 4)
+			{
+				auto * src_pixels = decoded_image.buffer.data_as<u8>();
+				auto src_pixel_size = decoded_image.channels;
+
+				ByteBuffer expanded(compMul(decoded_image.dimensions) * sizeof(u8[4]));
+				auto * dst_pixels = expanded.data_as<u8[4]>();
+
+				for (auto & dst_pixel : expanded.span_as<u8[4]>())
+					memcpy(dst_pixel, src_pixels, src_pixel_size),
+					src_pixels += src_pixel_size;
+
+				decoded_image.buffer = move(expanded);
+				decoded_image.channels = 4;
+			}
+
+			decoded_image.buffer = ImgComp::BC7(decoded_image);
+			timer.timeit(stdout, loaded_image.uri);
+
+			images.push_back({
+				.data = move(decoded_image.buffer),
+				.dimensions = decoded_image.dimensions,
+				.is_sRGB = loaded_image.is_sRGB,
+				.compression = Image::BC7,
+			});
+		}
+
+
+		/// Merge images into image_buffer {buffers[1]} and populate GLTF:Images
+		ByteBuffer image_buffer;
 		{
 			auto total_size = 0;
 			for (const auto & image: images)
@@ -618,29 +623,26 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 			image_buffer = ByteBuffer(total_size);
 		}
 
-		/// JSON
-		auto buffer_offset = 0;
 		Value images_js(kArrayType);
-		for (auto const & image: images)
+		for (usize offset = 0; auto const & image: images)
 		{
 			Value image_js(kObjectType);
 			image_js.AddMember("width", image.dimensions.x, alloc);
 			image_js.AddMember("height", image.dimensions.y, alloc);
-			image_js.AddMember("offset", buffer_offset, alloc);
+			image_js.AddMember("offset", offset, alloc);
 			image_js.AddMember("size", image.data.size, alloc);
 			images_js.PushBack(image_js, alloc);
 
-			auto * image_buffer_b = image_buffer.data.get();
-			auto * image_buffer_e = image_buffer.data.get() + image_buffer.size;
-			auto * image_b = image.data.data.get();
-			auto * image_e = image.data.data.get() + image.data.size;
+			memcpy(image_buffer.data_as<byte>(offset), image.data.data.get(), image.data.size);
 
-			std::memcpy(image_buffer.data_as<byte>(buffer_offset), image.data.data.get(), image.data.size);
-			buffer_offset += image.data.size;
+			offset += image.data.size;
 		}
 		document["images"] = images_js;
 
+		images.clear();
 
+
+		/// Compress and populate GLTF:Buffers
 		auto compressed_image_buffer = Compress(image_buffer);
 		fmt::print(
 			"Image buffer {} KiB compressed into {} KiB ({}%)",
@@ -654,28 +656,26 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 		buffer_js.AddMember("uri", Value(image_buffer_rel_path, alloc), alloc);
 		document["buffers"].PushBack(buffer_js, alloc);
 
-		image_buffer = move(compressed_image_buffer);
+
+		/// Write to disk
+		WriteBytes(served_abs_dir_path / image_buffer_rel_path, compressed_image_buffer);
 	}
+
+
+	/// Edit JSON
+	document.RemoveMember("bufferViews");
+
 
 	/// Write to file
 	{
-		auto const relative_path = std::filesystem::relative(desc.path, book.assets_dir);
-		auto const asset_path = book.assets_dir / relative_path;
-		auto const asset_dir = asset_path.parent_path();
-		auto const served_path = book.served_dir / relative_path;
-		auto const served_dir = served_path.parent_path();
-		std::filesystem::create_directories(served_dir);
-
 		// JSON
 		// see: https://rapidjson.org/md_doc_stream.html#FileWriteStream
 		StringBuffer buffer;
 		PrettyWriter writer(buffer);
 		document.Accept(writer);
-		WriteString(served_path, {buffer.GetString(), buffer.GetSize()});
+		WriteString(served_abs_file_path, {buffer.GetString(), buffer.GetSize()});
 
 		// Binary
-		WriteBytes(served_dir / geometry_buffer_rel_path, geometry_buffer);
-		if (not images.empty())
-			WriteBytes(served_dir / image_buffer_rel_path, image_buffer);
+		WriteBytes(served_abs_dir_path / geometry_buffer_rel_path, geometry_buffer);
 	}
 }

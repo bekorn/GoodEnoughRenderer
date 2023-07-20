@@ -52,6 +52,8 @@ struct RawImage
 	// or
 	u32 buffer_view_index;
 	std::string mime_type;
+
+	bool is_sRGB;
 };
 
 struct EncodedImage
