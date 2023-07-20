@@ -205,10 +205,10 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 	document.Parse(LoadAsString(desc.path).c_str());
 	auto & alloc = document.GetAllocator();
 
-	auto const rel_file_path = std::filesystem::relative(desc.path, book.assets_dir);
-	auto const asset_abs_file_path = book.assets_dir / rel_file_path;
+	auto const rel_file_path = std::filesystem::relative(desc.path, book.assets_abs_dir_path);
+	auto const asset_abs_file_path = book.assets_abs_dir_path / rel_file_path;
 	auto const asset_abs_dir_path = asset_abs_file_path.parent_path();
-	auto const served_abs_file_path = book.served_dir / rel_file_path;
+	auto const served_abs_file_path = book.served_abs_dir_path / rel_file_path;
 	auto const served_abs_dir_path = served_abs_file_path.parent_path();
 	std::filesystem::create_directories(served_abs_dir_path);
 
@@ -496,7 +496,7 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 
 
 	/// Convert Geometry
-	auto const geometry_buffer_rel_path = "geometry.bin";
+	auto const geometry_buffer_rel_file_path = "geometry.bin";
 	ByteBuffer geometry_buffer;
 	{
 		document["buffers"] = Value(kArrayType);
@@ -511,7 +511,7 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 
 			Value buffer(kObjectType);
 			buffer.AddMember("byteLength", geometry_buffer.size, alloc);
-			buffer.AddMember("uri", Value(geometry_buffer_rel_path, alloc), alloc);
+			buffer.AddMember("uri", Value(geometry_buffer_rel_file_path, alloc), alloc);
 
 			document["buffers"].PushBack(buffer, alloc);
 		}
@@ -556,7 +556,7 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 	/// Process Images
 	if (not loaded_images.empty())
 	{
-		auto const image_buffer_rel_path = "image.bin";
+		auto const image_buffer_rel_file_path = "image.bin";
 
 		vector<Image> images;
 		images.reserve(loaded_images.size());
@@ -653,12 +653,12 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 		Value buffer_js(kObjectType);
 		buffer_js.AddMember("byteLengthUncompressed", image_buffer.size, alloc);
 		buffer_js.AddMember("byteLength", compressed_image_buffer.size, alloc);
-		buffer_js.AddMember("uri", Value(image_buffer_rel_path, alloc), alloc);
+		buffer_js.AddMember("uri", Value(image_buffer_rel_file_path, alloc), alloc);
 		document["buffers"].PushBack(buffer_js, alloc);
 
 
 		/// Write to disk
-		WriteBytes(served_abs_dir_path / image_buffer_rel_path, compressed_image_buffer);
+		WriteBytes(served_abs_dir_path / image_buffer_rel_file_path, compressed_image_buffer);
 	}
 
 
@@ -676,6 +676,6 @@ void GLTF::Serve(Book const & book, Desc const & desc)
 		WriteString(served_abs_file_path, {buffer.GetString(), buffer.GetSize()});
 
 		// Binary
-		WriteBytes(served_abs_dir_path / geometry_buffer_rel_path, geometry_buffer);
+		WriteBytes(served_abs_dir_path / geometry_buffer_rel_file_path, geometry_buffer);
 	}
 }
