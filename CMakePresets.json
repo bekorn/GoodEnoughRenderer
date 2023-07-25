@@ -9,9 +9,9 @@
         "value": "x64",
         "strategy": "external"
       },
-      "binaryDir": "build/${presetName}-Project",
+      "binaryDir": "${sourceDir}/build/${presetName}-Project",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "./build/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/build/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_MANIFEST_INSTALL": "ON",
         "VCPKG_FEATURE_FLAGS": "versions"
       }
@@ -29,16 +29,13 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "Debug",
-      "configurePreset": "Debug"
     },
     {
-      "name": "RelWithDebInfo",
-      "configurePreset": "RelWithDebInfo"
+      "inherits": "baseNinja",
+      "name": "Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     }
   ]
 }

@@ -18,4 +18,4 @@ target_link_libraries(AssetKitchen PRIVATE
     )
 
 find_package(directxtex CONFIG REQUIRED)
-target_link_libraries(AssetKitchen PRIVATE Microsoft::DirectXTex)
+target_link_libraries(AssetKitchen PRIVATE Microsoft::DirectXTex "Ole32.lib")
